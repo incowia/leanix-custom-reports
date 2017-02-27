@@ -11,6 +11,10 @@ Each custom report is located in its own subdirectory. It is expected that the s
 * Create a new directory named after the custom report by copying the ```template``` directory
 * Add a new line to ```build.sh``` for your subdirectory 
 
+### npm run createLink
+
+You can use ```npm run createLink``` (in project root) to create a link.html file that automatically contains the required query parameters (baseUrl, apiBaseUrl, token etc.) to start a report. See ```default.env``` for more information.
+
 ### Publishing for github pages
 In order to publish the current master or develop branch to github pages the command ```publish.sh``` can be executed. Before doing this make shure that the dist directory is up-to-date by executing ```build.sh```.
 
