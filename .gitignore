@@ -5,7 +5,7 @@
 !/dist
 dist
 .idea
-.DS_Store
-npm-debug.log
-.env
-link.html
+**/.DS_Store
+**/npm-debug.log
+**/link.properties
+**/link.html
