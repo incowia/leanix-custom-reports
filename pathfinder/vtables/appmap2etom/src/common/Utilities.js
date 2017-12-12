@@ -33,7 +33,7 @@ function parseDateString(date) {
 	const result = Date.parse(date + ' 00:00:00');
 	if (Number.isNaN(result)) {
 		const values = date.split('-');
-		return new Date(parseInt(values[0]), parseInt(values[1]) - 1, parseInt(values[2]));
+		return new Date(parseInt(values[0], 10), parseInt(values[1], 10) - 1, parseInt(values[2], 10));
 	}
 	return result;
 }
