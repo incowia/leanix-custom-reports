@@ -448,7 +448,7 @@ class Report extends Component {
 			return;
 		}
 		// that's a timestamp as number
-		return Date.parse(application.lastMajorUpgradeDate + ' 00:00:00');
+		return Utilities.parseDateString(application.lastMajorUpgradeDate);
 	}
 
 	_getProvider(index, itc) {

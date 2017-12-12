@@ -53,8 +53,17 @@ function _getTimestamp(value, start) {
 	if (!value) {
 		return;
 	}
-	const timestamp = Date.parse(value + ' 00:00:00');
+	const timestamp = _parseDateString(value);
 	return start ? timestamp : timestamp - 1;
+}
+
+function _parseDateString(date) {
+	const result = Date.parse(date + ' 00:00:00');
+	if (Number.isNaN(result)) {
+		const values = date.split('-');
+		return new Date(parseInt(values[0], 10), parseInt(values[1], 10) - 1, parseInt(values[2], 10)).getTime();
+	}
+	return result;
 }
 
 function getFactsheetTypesObjects(factSheets) {
