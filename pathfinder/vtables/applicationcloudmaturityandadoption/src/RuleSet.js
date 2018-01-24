@@ -9,9 +9,18 @@ const cloudTBDRE = /Cloud\s*TBD/i;
 // 'FYnn/nn'
 const financialYearRE = /FY(\d{2}\/\d{2})/i;
 
-const singleRules = [{
+// single rule array indexes => table row indexes (keep in sync with the 'singleRules' definition!)
+const RULE_PHYSICAL_APPS = 0;
+const RULE_VIRTUAL_APPS = 1;
+const RULE_CLOUD_TBD = 2;
+const RULE_CLOUD_READY = 3;
+const RULE_CLOUD_NATIVE = 4;
+const RULE_TOTAL = 5;
+
+const singleRules = [
+	{ // RULE_PHYSICAL_APPS
 		name: 'Total number of physical applications',
-		additionalNote: 'An application needs a \'Cloud Maturity\' tag of \'Physical/Legacy\' to be counted.',
+		additionalNote: 'An application has to be within 80% of TCO and it needs a \'Cloud Maturity\' tag of \'Physical/Legacy\' to be counted.',
 		appliesTo: (index, application) => {
 			const cloudMaturityTag = index.getFirstTagFromGroup(application, 'Cloud Maturity');
 			return cloudMaturityTag && cloudMaturityTag.name === 'Physical/Legacy';
@@ -23,9 +32,9 @@ const singleRules = [{
 				}
 			});
 		}
-	}, {
+	}, { // RULE_VIRTUAL_APPS
 		name: 'Total number of virtualised applications',
-		additionalNote: 'An application needs a \'Cloud Maturity\' tag of \'Virtualised\' or '
+		additionalNote: 'An application has to be within 80% of TCO and it needs a \'Cloud Maturity\' tag of \'Virtualised\' or '
 			+ 'a project with a name that contains \'Virtualised\' to be counted.',
 		appliesTo: (index, application) => {
 			return true;
@@ -36,9 +45,9 @@ const singleRules = [{
 			// check and add from projects for financial years
 			_addFromProjects(index, application, virtualisedRE, marketRow);
 		}
-	}, {
-		name: 'Total number of Cloud TBD applications',
-		additionalNote: 'An application needs a project with a name that contains \'Cloud TBD\' to be counted.',
+	}, { // RULE_CLOUD_TBD
+		name: 'Total number of Cloud TBD applications within 80% of TCO',
+		additionalNote: 'An application has to be within 80% of TCO and it needs a project with a name that contains \'Cloud TBD\' to be counted.',
 		appliesTo: (index, application) => {
 			return true;
 		},
@@ -46,9 +55,9 @@ const singleRules = [{
 			// check and add from projects for financial years
 			_addFromProjects(index, application, cloudTBDRE, marketRow);
 		}
-	}, {
+	}, { // RULE_CLOUD_READY
 		name: 'Total number of Cloud Ready applications',
-		additionalNote: 'An application needs a \'Cloud Maturity\' tag of \'Cloud Ready\' or '
+		additionalNote: 'An application has to be within 80% of TCO and it needs a \'Cloud Maturity\' tag of \'Cloud Ready\' or '
 			+ 'a project with a name that contains \'Cloud Ready\' to be counted.',
 		appliesTo: (index, application) => {
 			return true;
@@ -59,9 +68,9 @@ const singleRules = [{
 			// check and add from projects for financial years
 			_addFromProjects(index, application, cloudReadyRE, marketRow);
 		}
-	}, {
+	}, { // RULE_CLOUD_NATIVE
 		name: 'Total number of Cloud Native applications',
-		additionalNote: 'An application needs a \'Cloud Maturity\' tag of \'Cloud Native\' or '
+		additionalNote: 'An application has to be within 80% of TCO and it needs a \'Cloud Maturity\' tag of \'Cloud Native\' or '
 			+ 'a project with a name that contains \'Cloud Native\' to be counted.',
 		appliesTo: (index, application) => {
 			return true;
@@ -72,24 +81,9 @@ const singleRules = [{
 			// check and add from projects for financial years
 			_addFromProjects(index, application, cloudNativeRE, marketRow);
 		}
-	}, {
-		name: 'Total number of group applications used',
-		additionalNote: 'An application is counted if it is related to a market that uses applications having a name '
-			+ 'which is prefixed by \'VGS\' or \'VGE\' and  an \'Active\' and/or \'Phase Out\' lifecycle phase in the financial year.',
-		appliesTo: (index, application) => {
-			const subIndex = application.relApplicationToOwningUserGroup;
-			if (!subIndex) {
-				return false;
-			}
-			return true;
-		},
-		compute: (index, application, productionPhase, marketRow, config) => {
-			// check and add from owing user groups for financial years
-			_addFromOwningUsergroups(index, application, productionPhase, marketRow);
-		}
-	}, {
+	}, { // RULE_TOTAL
 		name: 'Total number of deployed applications according to IT scope',
-		additionalNote: 'An application is counted if its lifecycle phase is \'Active\' '
+		additionalNote: 'An application is counted if it is within 80% of TCO and if its lifecycle phase is \'Active\' '
 			+ 'and/or \'Phase Out\' in the financial year.',
 		overallRule: true,
 		appliesTo: (index, application) => {
@@ -101,8 +95,6 @@ const singleRules = [{
 					e.apps.push(application);
 				}
 			});
-			// check and add from owing user groups for financial years
-			_addFromOwningUsergroups(index, application, productionPhase, marketRow);
 		}
 	}
 ];
@@ -176,65 +168,25 @@ function _addFromCloudMaturity(index, application, productionPhase, marketRow, c
 	}
 }
 
-/**
-  * adapt FY counters depending on related 'owned user groups' and
-  * their 'used applications' with Prefix 'VGS' or 'VGE'
-  */
-function _addFromOwningUsergroups(index, application, productionPhase, marketRow) {
-	// get the applicaton's related 'owning user groups'
-	const subIndex = application.relApplicationToOwningUserGroup;
-	if (!subIndex) {
-		return;
-	}
-	// access userGroups - there can be more than one and
-	// there could be more at the parents
-	subIndex.nodes.forEach((ug) => {
-		let currentUG = index.byID[ug.id];
-		while (currentUG) {
-			const usedApplIndex = currentUG.relUserGroupToApplication;
-			if (!usedApplIndex) {
-				currentUG = index.getParent('userGroups', currentUG.id);
-				continue;
-			}
-			usedApplIndex.nodes.forEach((e) => {
-				const usedApp = index.byID[e.id];
-				if (!usedApp || (!usedApp.name.startsWith('VGS') && !usedApp.name.startsWith('VGE'))) {
-					return;
-				}
-				marketRow.forEach((e1) => {
-					// TODO use productionPhase from usedApp
-					if (_isOverlapping(e1, productionPhase) && !_includesID(e1.apps, usedApp.id)) {
-						e1.apps.push(usedApp);
-					}
-				});
-			});
-			// set parent as next
-			currentUG = index.getParent('userGroups', currentUG.id);
-		}
-	});
-}
-
 const adoptingApps = {
 	name: '% Cloud applications',
 	compute: (marketRows, config) => {
 		const result = {};
-		const cloudTBDRow = marketRows[singleRules[2].name];
-		const cloudReadyRow = marketRows[singleRules[3].name];
-		const cloudNativeRow = marketRows[singleRules[4].name];
-		const groupAppsRow = marketRows[singleRules[5].name];
-		const totalRow = marketRows[singleRules[6].name];
+		const cloudTBDRow = marketRows[singleRules[RULE_CLOUD_TBD].name];
+		const cloudReadyRow = marketRows[singleRules[RULE_CLOUD_READY].name];
+		const cloudNativeRow = marketRows[singleRules[RULE_CLOUD_NATIVE].name];
+		const totalRow = marketRows[singleRules[RULE_TOTAL].name];
 		totalRow.forEach((e, i) => {
 			const cloudTBD = cloudTBDRow[i].apps.length;
 			const cloudReady = cloudReadyRow[i].apps.length;
 			const cloudNative = cloudNativeRow[i].apps.length;
-			const groupApps = groupAppsRow[i].apps.length;
 			const total = totalRow[i].apps.length;
 			/* formula:
-				fy0 -> (cloudTBD + cloudReady + cloudNative + groupApps) * 100 / total
-				fy1-n & current -> (cloudReady + cloudNative + groupApps) * 100 / total
+				fy0   -> (cloudTBD + cloudReady + cloudNative) * 100 / total
+				fy1..n & current -> (cloudReady + cloudNative) * 100 / total
 			*/
 			const percentage = total === 0 ? 0
-				: ((i === 0 ? 0 : cloudTBD) + cloudReady + cloudNative + groupApps) * 100 / total;
+				: ((i === 0 ? 0 : cloudTBD) + cloudReady + cloudNative) * 100 / total;
 			result[(i > 0 ? 'fy' + (i - 1) : 'current')] = Math.round(percentage * 10) / 10;
 		});
 		return result;

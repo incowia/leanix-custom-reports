@@ -30,3 +30,19 @@ body {
 .react-bs-table-tool-bar {
 	margin-bottom: 10px;
 }
+
+.react-bs-table .glyphicon {
+	padding: 0px 2px;
+}
+
+.react-bs-table tr .month {
+	color: #970;
+}
+
+.react-bs-table .clickable {
+	cursor: pointer;
+}
+
+.react-bs-table .month {
+	font-size: 80%;
+}
