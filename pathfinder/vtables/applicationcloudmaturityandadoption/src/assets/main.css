@@ -31,18 +31,13 @@ body {
 	margin-bottom: 10px;
 }
 
-.react-bs-table .glyphicon {
-	padding: 0px 2px;
+.legend, .legend * {
+	font-size: small;
+	margin: 0px;
 }
-
-.react-bs-table tr .month {
-	color: #970;
+.legend dt {
+	float: left;
 }
-
-.react-bs-table .clickable {
-	cursor: pointer;
-}
-
-.react-bs-table .month {
-	font-size: 80%;
+.legend dd {
+	padding-left: 2em;
 }
