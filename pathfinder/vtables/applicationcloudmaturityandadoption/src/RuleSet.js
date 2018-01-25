@@ -17,8 +17,7 @@ const RULE_CLOUD_READY = 3;
 const RULE_CLOUD_NATIVE = 4;
 const RULE_TOTAL = 5;
 
-const singleRules = [
-	{ // RULE_PHYSICAL_APPS
+const singleRules = [{ // RULE_PHYSICAL_APPS
 		name: 'Total number of physical applications',
 		additionalNote: 'a \'Cloud Maturity\' tag of \'Physical/Legacy\'.',
 		appliesTo: (index, application) => {
@@ -35,7 +34,7 @@ const singleRules = [
 	}, { // RULE_VIRTUAL_APPS
 		name: 'Total number of virtualised applications',
 		additionalNote: 'a \'Cloud Maturity\' tag of \'Virtualised\' or '
-			+ 'a project with a name that contains \'Virtualised\'.',
+		 + 'a project with a name that contains \'Virtualised\'.',
 		appliesTo: (index, application) => {
 			return true;
 		},
@@ -58,7 +57,7 @@ const singleRules = [
 	}, { // RULE_CLOUD_READY
 		name: 'Total number of Cloud Ready applications',
 		additionalNote: 'a \'Cloud Maturity\' tag of \'Cloud Ready\' or '
-			+ 'a project with a name that contains \'Cloud Ready\'.',
+		 + 'a project with a name that contains \'Cloud Ready\'.',
 		appliesTo: (index, application) => {
 			return true;
 		},
@@ -71,7 +70,7 @@ const singleRules = [
 	}, { // RULE_CLOUD_NATIVE
 		name: 'Total number of Cloud Native applications',
 		additionalNote: 'a \'Cloud Maturity\' tag of \'Cloud Native\' or '
-			+ 'a project with a name that contains \'Cloud Native\'.',
+		 + 'a project with a name that contains \'Cloud Native\'.',
 		appliesTo: (index, application) => {
 			return true;
 		},
@@ -84,7 +83,7 @@ const singleRules = [
 	}, { // RULE_TOTAL
 		name: 'Total number of deployed applications according to IT scope',
 		additionalNote: 'a \'Lifecycle Phase\' of \'Active\' '
-			+ 'or \'Phase Out\' in the regarding financial year.',
+		 + 'and/or \'Phase Out\' in the respective financial year.',
 		overallRule: true,
 		appliesTo: (index, application) => {
 			return true;
@@ -113,11 +112,11 @@ const adoptingApps = {
 			const cloudNative = cloudNativeRow[i].apps.length;
 			const total = totalRow[i].apps.length;
 			/* formula:
-				fy0   -> (cloudTBD + cloudReady + cloudNative) * 100 / total
-				fy1..n & current -> (cloudReady + cloudNative) * 100 / total
-			*/
+			fy0   -> (cloudTBD + cloudReady + cloudNative) * 100 / total
+			fy1..n & current -> (cloudReady + cloudNative) * 100 / total
+			 */
 			const percentage = total === 0 ? 0
-				: ((i === 0 ? 0 : cloudTBD) + cloudReady + cloudNative) * 100 / total;
+				 : ((i === 0 ? 0 : cloudTBD) + cloudReady + cloudNative) * 100 / total;
 			result[(i > 0 ? 'fy' + (i - 1) : 'current')] = Math.round(percentage * 10) / 10;
 		});
 		return result;

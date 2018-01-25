@@ -30,14 +30,3 @@ body {
 .react-bs-table-tool-bar {
 	margin-bottom: 10px;
 }
-
-.legend, .legend * {
-	font-size: small;
-	margin: 0px;
-}
-.legend dt {
-	float: left;
-}
-.legend dd {
-	padding-left: 2em;
-}

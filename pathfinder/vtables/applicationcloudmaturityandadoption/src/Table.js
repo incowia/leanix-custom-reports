@@ -7,12 +7,7 @@ class Table extends Component {
 
 	constructor(props) {
 		super(props);
-		this.currentFY = this.props.currentFYear % 100; // two-digit year
-
 		this._formatRule = this._formatRule.bind(this);
-		this._renderYearCountsColumn = this._renderYearCountsColumn.bind(this);
-		this._renderYearAppsColumn = this._renderYearAppsColumn.bind(this);
-		this._renderColumnTitle = this._renderColumnTitle.bind(this);
 	}
 
 	_formatRule(cell, row, enums) {
@@ -29,8 +24,30 @@ class Table extends Component {
 		if (cell === undefined || cell === null || Number.isNaN(cell)) {
 			return '';
 		}
+		if (row.isPercentage) {
+			return (
+				<div>
+					<span style={{
+						display: 'inline-block',
+						width: '4em',
+						marginLeft: '0.2em',
+						textAlign: 'right'
+					}}>{cell} %</span>
+				</div>
+			);
+		}
+		if (cell === 0) {
+			return '';
+		}
 		return (
-			<span className='cell'>{(row.isPercentage ? cell + ' %' : cell)}</span>
+			<div>
+				<span style={{
+					display: 'inline-block',
+					width: '4em',
+					marginLeft: '0.2em',
+					textAlign: 'right'
+				}}>{cell}</span>
+			</div>
 		);
 	}
 
@@ -45,87 +62,138 @@ class Table extends Component {
 		if (row.overallRule) {
 			return 'info';
 		}
+		return '';
 	}
 
-	_renderYearCountsColumn(yearOffset) {
-		// number type parameters will be preceeded by 'fy', otherwise it's the 'current' column
-		const fiscalYear = isNaN(yearOffset) ? 'current' : 'fy' + yearOffset;
-		return (
-			<TableHeaderColumn columnClassName={'year ' + fiscalYear}
-				dataField={fiscalYear}
-				dataAlign='right'
-				headerAlign='left'
-				dataFormat={this._formatNumber}
-				csvHeader={(isNaN(yearOffset) ? 'current' : 'fy-' + (this.currentFY + yearOffset) + '/' + (this.currentFY + yearOffset + 1))}
-				csvFormat={this._csvFormatNumber}
-				>{this._renderColumnTitle(yearOffset)}
-			</TableHeaderColumn>
-		);
-	}
-
-	_renderYearAppsColumn(yearOffset) {
-		// number type parameters will be preceeded by 'fy', otherwise it's the 'current' column
-		const fiscalYear = isNaN(yearOffset) ? 'current' : 'fy' + yearOffset;
-		return (
-			<TableHeaderColumn hidden export columnClassName={'year apps ' + fiscalYear}
-				dataField={fiscalYear + '_Apps'}
-				csvHeader={(isNaN(yearOffset) ? 'current' : 'fy-' + (this.currentFY + yearOffset) + '/' + (this.currentFY + yearOffset + 1)) + '-apps'}
-				csvFormat={TableUtilities.formatArray}
-				csvFormatExtraData=';'
-				>{this._renderColumnTitle(yearOffset) + ' - Applications'}
-			</TableHeaderColumn>
-		);
-	}
-
-	_renderColumnTitle(yearOffset) {
-		return (
-			isNaN(yearOffset) ? 'Current' : 'FY ' + (this.currentFY + yearOffset) + '/' + (this.currentFY + yearOffset + 1)
-		);
-	}
 	render() {
+		const financialYear = this.props.currentFYear - 2000;
 		return (
 			<BootstrapTable data={this.props.data} keyField='id'
-				striped hover exportCSV condensed
-				pagination
-				options={{
+				 striped hover exportCSV condensed
+				 pagination
+				 options={{
 					sizePerPage: this.props.pageSize,
 					hideSizePerPage: true
-				}}
-				trClassName={this._trClassname}>
-				<TableHeaderColumn dataSort columnClassName='market'
-					dataField='market'
-					width='80px'
-					dataAlign='left'
-					dataFormat={TableUtilities.formatEnum}
-					formatExtraData={this.props.options.market}
-					csvFormat={TableUtilities.formatEnum}
-					csvFormatExtraData={this.props.options.market}
-					filter={TableUtilities.selectFilter(this.props.options.market)}
+				 }}
+				 trClassName={this._trClassname}>
+				<TableHeaderColumn dataSort
+					 dataField='market'
+					 width='100px'
+					 dataAlign='left'
+					 dataFormat={TableUtilities.formatEnum}
+					 formatExtraData={this.props.options.market}
+					 csvFormat={TableUtilities.formatEnum}
+					 csvFormatExtraData={this.props.options.market}
+					 filter={TableUtilities.selectFilter(this.props.options.market)}
 					>Market</TableHeaderColumn>
-				<TableHeaderColumn dataSort columnClassName='small rule'
-					dataField='rule'
-					width='400px'
-					dataAlign='left'
-					dataFormat={this._formatRule}
-					formatExtraData={this.props.options.rule}
-					csvFormat={TableUtilities.formatEnum}
-					csvFormatExtraData={this.props.options.rule}
-					filter={TableUtilities.selectFilter(this.props.options.rule)}
+				<TableHeaderColumn dataSort columnClassName='small'
+					 dataField='rule'
+					 width='500px'
+					 dataAlign='left'
+					 dataFormat={this._formatRule}
+					 formatExtraData={this.props.options.rule}
+					 csvFormat={TableUtilities.formatEnum}
+					 csvFormatExtraData={this.props.options.rule}
+					 filter={TableUtilities.selectFilter(this.props.options.rule)}
 					>Rule</TableHeaderColumn>
-				{this._renderYearCountsColumn()}
-				{this._renderYearAppsColumn()}
-				{this._renderYearCountsColumn(0)}
-				{this._renderYearAppsColumn(0)}
-				{this._renderYearCountsColumn(1)}
-				{this._renderYearAppsColumn(1)}
-				{this._renderYearCountsColumn(2)}
-				{this._renderYearAppsColumn(2)}
-				{this._renderYearCountsColumn(3)}
-				{this._renderYearAppsColumn(3)}
-				{this._renderYearCountsColumn(4)}
-				{this._renderYearAppsColumn(4)}
-				{this._renderYearCountsColumn(5)}
-				{this._renderYearAppsColumn(5)}
+				<TableHeaderColumn
+					 dataField='current'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'current'}
+					 csvFormat={this._csvFormatNumber}
+					>Current</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='currentApps'
+					 csvHeader={'current-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>Current - Applications</TableHeaderColumn>
+				<TableHeaderColumn
+					 dataField='fy0'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'fy-' + financialYear + '/' + (financialYear + 1)}
+					 csvFormat={this._csvFormatNumber}
+					>FY {financialYear}/{financialYear + 1}</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='fy0Apps'
+					 csvHeader={'fy-' + financialYear + '/' + (financialYear + 1) + '-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>FY {financialYear}/{financialYear + 1} - Applications</TableHeaderColumn>
+				<TableHeaderColumn
+					 dataField='fy1'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'fy-' + (financialYear + 1) + '/' + (financialYear + 2)}
+					 csvFormat={this._csvFormatNumber}
+					>FY {financialYear + 1}/{financialYear + 2}</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='fy1Apps'
+					 csvHeader={'fy-' + (financialYear + 1) + '/' + (financialYear + 2) + '-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>FY {financialYear + 1}/{financialYear + 2} - Applications</TableHeaderColumn>
+				<TableHeaderColumn
+					 dataField='fy2'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'fy-' + (financialYear + 2) + '/' + (financialYear + 3)}
+					 csvFormat={this._csvFormatNumber}
+					>FY {financialYear + 2}/{financialYear + 3}</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='fy2Apps'
+					 csvHeader={'fy-' + (financialYear + 2) + '/' + (financialYear + 3) + '-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>FY {financialYear + 2}/{financialYear + 3} - Applications</TableHeaderColumn>
+				<TableHeaderColumn
+					 dataField='fy3'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'fy-' + (financialYear + 3) + '/' + (financialYear + 4)}
+					 csvFormat={this._csvFormatNumber}
+					>FY {financialYear + 3}/{financialYear + 4}</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='fy3Apps'
+					 csvHeader={'fy-' + (financialYear + 3) + '/' + (financialYear + 4) + '-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>FY {financialYear + 3}/{financialYear + 4} - Applications</TableHeaderColumn>
+				<TableHeaderColumn
+					 dataField='fy4'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'fy-' + (financialYear + 4) + '/' + (financialYear + 5)}
+					 csvFormat={this._csvFormatNumber}
+					>FY {financialYear + 4}/{financialYear + 5}</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='fy4Apps'
+					 csvHeader={'fy-' + (financialYear + 4) + '/' + (financialYear + 5) + '-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>FY {financialYear + 4}/{financialYear + 5} - Applications</TableHeaderColumn>
+				<TableHeaderColumn
+					 dataField='fy5'
+					 dataAlign='right'
+					 headerAlign='left'
+					 dataFormat={this._formatNumber}
+					 csvHeader={'fy-' + (financialYear + 5) + '/' + (financialYear + 6)}
+					 csvFormat={this._csvFormatNumber}
+					>FY {financialYear + 5}/{financialYear + 6}</TableHeaderColumn>
+				<TableHeaderColumn hidden export
+					 dataField='fy5Apps'
+					 csvHeader={'fy-' + (financialYear + 5) + '/' + (financialYear + 6) + '-apps'}
+					 csvFormat={TableUtilities.formatArray}
+					 csvFormatExtraData=';'
+					>FY {financialYear + 5}/{financialYear + 6} - Applications</TableHeaderColumn>
 			</BootstrapTable>
 		);
 	}
@@ -140,28 +208,26 @@ Table.propTypes = {
 			overallRule: PropTypes.bool,
 			isPercentage: PropTypes.bool.isRequired,
 			current: PropTypes.number.isRequired,
-			current_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+			currentApps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 			fy0: PropTypes.number.isRequired,
-			fy0_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-			fy0: PropTypes.number.isRequired,
-			fy0_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+			fy0Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 			fy1: PropTypes.number.isRequired,
-			fy1_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+			fy1Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 			fy2: PropTypes.number.isRequired,
-			fy2_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+			fy2Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 			fy3: PropTypes.number.isRequired,
-			fy3_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+			fy3Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 			fy4: PropTypes.number.isRequired,
-			fy4_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+			fy4Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 			fy5: PropTypes.number.isRequired,
-			fy5_Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired
+			fy5Apps: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired
 		}).isRequired
 	).isRequired,
 	currentFYear: PropTypes.number.isRequired,
 	additionalNotes: PropTypes.object.isRequired,
 	options: PropTypes.shape({
 		market: TableUtilities.PropTypes.options,
-		rule: TableUtilities.PropTypes.options,
+		rule: TableUtilities.PropTypes.options
 	}).isRequired,
 	pageSize: PropTypes.number.isRequired,
 	setup: PropTypes.object

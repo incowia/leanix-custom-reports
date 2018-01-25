@@ -13,11 +13,12 @@ const END_OF_LIFE = 'endOfLife';
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
+const LOADING_ERROR = 2;
 
 const RULE_OPTIONS = Utilities.createOptionsObj([RuleSet.adoptingApps].concat(RuleSet.singleRules));
 
 const CURRENT_DATE = new Date();
-	CURRENT_DATE.setHours(0, 0, 0, 0);
+CURRENT_DATE.setHours(0, 0, 0, 0);
 const CURRENT_MONTH = CURRENT_DATE.getMonth();
 const CURRENT_YEAR = CURRENT_MONTH >= 3 ? CURRENT_DATE.getFullYear() : CURRENT_DATE.getFullYear() - 1; // 3 ... April
 const CURRENT_DATE_TS = CURRENT_DATE.getTime();
@@ -53,7 +54,7 @@ function getFinancialYear(year, isCurrentYear) {
 	const endDateTS = endDate.getTime();
 	return {
 		// name property is used as a comparable identifier in RuleSet
-		name: (startDate.getFullYear() % 100) + '/' + (endDate.getFullYear() % 100),
+		name: (startDate.getFullYear() - 2000) + '/' + (endDate.getFullYear() - 2000),
 		start: startDateTS,
 		end: endDateTS,
 		isCurrentYear: isCurrentYear
@@ -66,11 +67,11 @@ class Report extends Component {
 		super(props);
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
+		this._handleError = this._handleError.bind(this);
 		this._addLifecyclePhaseEnd = this._addLifecyclePhaseEnd.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderAdditionalNotes = this._renderAdditionalNotes.bind(this);
 		this.MARKET_OPTIONS = {};
-
 		this.state = {
 			loadingState: LOADING_INIT,
 			setup: null,
@@ -79,7 +80,7 @@ class Report extends Component {
 	}
 
 	componentDidMount() {
-		lx.init().then(this._initReport);
+		lx.init().then(this._initReport).catch(this._handleError);
 	}
 
 	_initReport(setup) {
@@ -97,18 +98,14 @@ class Report extends Component {
 			lx.executeGraphQL(this._createQuery(applicationTagId, itTagId)).then((data) => {
 				index.put(data);
 				this._handleData(index, applicationTagId, itTagId);
-			});
-		});
+			}).catch(this._handleError);
+		}).catch(this._handleError);
 	}
 
 	_createConfig() {
 		return {
 			allowEditing: false
 		};
-	}
-
-	_plainFactsheetRelation(relationName) {
-		return `${relationName}{edges{node{factSheet{id}}}}`;
 	}
 
 	_createQuery(applicationTagId, itTagId) {
@@ -148,11 +145,19 @@ class Report extends Component {
 					edges { node {
 						id name
 						...on UserGroup {
-							${this._plainFactsheetRelation('relUserGroupToApplication')}
-							${this._plainFactsheetRelation('relToParent')}
+							relUserGroupToApplication { edges { node { factSheet { id } } } }
+							relToParent { edges { node { factSheet { id } } } }
 						}
 					}}
 				}}`;
+	}
+
+	_handleError(err) {
+		console.error(err);
+		this.setState({
+			loadingState: LOADING_ERROR
+		});
+		lx.hideSpinner();
 	}
 
 	_handleData(index, applicationTagId, itTagId) {
@@ -230,31 +235,31 @@ class Report extends Component {
 					overallRule: e.overallRule,
 					isPercentage: false,
 					current: marketRows[e.name][0].apps.length,
-					current_Apps: marketRows[e.name][0].apps.map((e) => {
+					currentApps: marketRows[e.name][0].apps.map((e) => {
 						return e.name;
 					}),
 					fy0: marketRows[e.name][1].apps.length,
-					fy0_Apps: marketRows[e.name][1].apps.map((e) => {
+					fy0Apps: marketRows[e.name][1].apps.map((e) => {
 						return e.name;
 					}),
 					fy1: marketRows[e.name][2].apps.length,
-					fy1_Apps: marketRows[e.name][2].apps.map((e) => {
+					fy1Apps: marketRows[e.name][2].apps.map((e) => {
 						return e.name;
 					}),
 					fy2: marketRows[e.name][3].apps.length,
-					fy2_Apps: marketRows[e.name][3].apps.map((e) => {
+					fy2Apps: marketRows[e.name][3].apps.map((e) => {
 						return e.name;
 					}),
 					fy3: marketRows[e.name][4].apps.length,
-					fy3_Apps: marketRows[e.name][4].apps.map((e) => {
+					fy3Apps: marketRows[e.name][4].apps.map((e) => {
 						return e.name;
 					}),
 					fy4: marketRows[e.name][5].apps.length,
-					fy4_Apps: marketRows[e.name][5].apps.map((e) => {
+					fy4Apps: marketRows[e.name][5].apps.map((e) => {
 						return e.name;
 					}),
 					fy5: marketRows[e.name][6].apps.length,
-					fy5_Apps: marketRows[e.name][6].apps.map((e) => {
+					fy5Apps: marketRows[e.name][6].apps.map((e) => {
 						return e.name;
 					}),
 				});
@@ -267,19 +272,19 @@ class Report extends Component {
 				rule: this._getOptionKeyFromValue(RULE_OPTIONS, RuleSet.adoptingApps.name),
 				isPercentage: true,
 				current: ruleResult.current,
-				current_Apps: [],
+				currentApps: [],
 				fy0: ruleResult.fy0,
-				fy0_Apps: [],
+				fy0Apps: [],
 				fy1: ruleResult.fy1,
-				fy1_Apps: [],
+				fy1Apps: [],
 				fy2: ruleResult.fy2,
-				fy2_Apps: [],
+				fy2Apps: [],
 				fy3: ruleResult.fy3,
-				fy3_Apps: [],
+				fy3Apps: [],
 				fy4: ruleResult.fy4,
-				fy4_Apps: [],
+				fy4Apps: [],
 				fy5: ruleResult.fy5,
-				fy5_Apps: [],
+				fy5Apps: [],
 			};
 		}
 		lx.hideSpinner();
@@ -366,15 +371,19 @@ class Report extends Component {
 					return this._renderProcessingStep('There is no fitting data.');
 				}
 				return this._renderSuccessful();
+			case LOADING_ERROR:
+				return this._renderError();
 			default:
 				throw new Error('Unknown loading state: ' + this.state.loadingState);
 		}
 	}
 
 	_renderProcessingStep(stepInfo) {
-		return (
-			<h4 className='text-center'>{stepInfo}</h4>
-		);
+		return (<h4 className='text-center'>{stepInfo}</h4>);
+	}
+
+	_renderError() {
+		return null;
 	}
 
 	_renderSuccessful() {
@@ -401,8 +410,8 @@ class Report extends Component {
 			arr[additionalNote.marker] = additionalNote.note;
 		}
 		return (
-			<div className='legend'>
-				<p>Only applications are counted that are <b>within 80% of TCO</b> and that have</p>
+			<div className='small'>
+				<p>In general, applications need to be <b>within 80% of TCO</b> to be included and for specific rules that have</p>
 				<dl>
 					{arr.map((e, i) => {
 						return (
