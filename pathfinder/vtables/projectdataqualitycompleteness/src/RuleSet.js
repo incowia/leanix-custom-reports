@@ -39,8 +39,8 @@ const singleRules = [{
 			return _allNodesHaveImpact(subIndex);
 		}
 	}, {
-		name: 'Decommissioning project has relations to applications w/ impact \'Sunsets\'',
-		additionalNote: 'Rule includes projects which have \'Decommissioning\' in name and '
+		name: 'Decommissioning project has relations to applications w/ impact \'Sunsets\' only',
+		additionalNote: 'Rule includes projects which have \'Decommissioning\' in it\'s name and '
 			+ 'a \'Project Type\' tag group assignment of \'Legacy\'.',
 		appliesTo: (index, project) => {
 			return _isInTimeframe(project) && decommissioningRE.test(project.name) && _hasProjectType(index, project, 'Legacy');
@@ -51,6 +51,27 @@ const singleRules = [{
 				return false;
 			}
 			return _allNodesHaveImpact(subIndex, 'Sunsets');
+		}
+	}, {
+		name: 'Each application relation of a decommissioning project w/ impact \'Sunsets\' needs to have a \'Decommissioning Type\' set',
+		additionalNote: 'Rule includes projects which have \'Decommissioning\' in it\'s name and '
+			+ 'a \'Project Type\' tag group assignment of \'Legacy\'.',
+		appliesTo: (index, project) => {
+			return _isInTimeframe(project) && decommissioningRE.test(project.name) && _hasProjectType(index, project, 'Legacy');
+		},
+		compute: (index, project, config) => {
+			const subIndex = project.relProjectToApplication;
+			if (!subIndex) {
+				return true;
+			}
+			return subIndex.nodes.every((e) => {
+				const impact = e.relationAttr.projectImpact;
+				if (impact !== 'Sunsets') {
+					return true;
+				}
+				const decommissioningType = e.relationAttr.projectType;
+				return decommissioningType !== undefined && decommissioningType !== null;
+			});
 		}
 	}, {
 		name: 'Transformation project has relations to applications w/ any impact',

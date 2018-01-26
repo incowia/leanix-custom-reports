@@ -5,6 +5,10 @@ import Utilities from './common/Utilities';
 import RuleSet from './RuleSet';
 import Table from './Table';
 
+const LOADING_INIT = 0;
+const LOADING_SUCCESSFUL = 1;
+const LOADING_ERROR = 2;
+
 const RULE_OPTIONS = Utilities.createOptionsObj(
 	RuleSet.singleRules.concat(RuleSet.overallRule));
 
@@ -14,16 +18,19 @@ class Report extends Component {
 		super(props);
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
+		this._handleError = this._handleError.bind(this);
+		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderAdditionalNotes = this._renderAdditionalNotes.bind(this);
 		this.MARKET_OPTIONS = {};
 		this.state = {
+			loadingState: LOADING_INIT,
 			setup: null,
 			data: []
 		};
 	}
 
 	componentDidMount() {
-		lx.init().then(this._initReport);
+		lx.init().then(this._initReport).catch(this._handleError);
 	}
 
 	_initReport(setup) {
@@ -39,8 +46,8 @@ class Report extends Component {
 			lx.executeGraphQL(this._createQuery()).then((data) => {
 				index.put(data);
 				this._handleData(index);
-			});
-		});
+			}).catch(this._handleError);
+		}).catch(this._handleError);
 	}
 
 	_createConfig() {
@@ -60,11 +67,19 @@ class Report extends Component {
         				id name tags { name }
 						... on Project {
 							lifecycle { phases { phase startDate } }
-							relProjectToApplication { edges { node { projectImpact factSheet { id } }}}
+							relProjectToApplication { edges { node { projectImpact projectType factSheet { id } }}}
 							relProjectToUserGroup { edges { node { factSheet { id } }}}
 						}
         			}}
         		}}`;
+	}
+
+	_handleError(err) {
+		console.error(err);
+		this.setState({
+			loadingState: LOADING_ERROR
+		});
+		lx.hideSpinner();
 	}
 
 	_handleData(index) {
@@ -153,6 +168,7 @@ class Report extends Component {
 		}
 		lx.hideSpinner();
 		this.setState({
+			loadingState: LOADING_SUCCESSFUL,
 			data: tableData,
 			additionalNotes: additionalNotes
 		});
@@ -162,14 +178,14 @@ class Report extends Component {
 		let marketCount = 0;
 		const groupedByMarket = {};
 		const marketOptions = {};
-		const unknownMarket = [];
+		const unknownMarkets = [];
 		nodes.forEach((e) => {
 			if (additionalFilter && additionalFilter(e)) {
 				return;
 			}
 			let market = Utilities.getMarket(e);
 			if (!market) {
-				unknownMarket.push(e);
+				unknownMarkets.push(e);
 				return;
 			}
 			if (!groupedByMarket[market]) {
@@ -182,7 +198,7 @@ class Report extends Component {
 			count: marketCount,
 			groups: groupedByMarket,
 			options: marketOptions,
-			unknown: unknownMarket
+			unknown: unknownMarkets
 		};
 	}
 
@@ -211,9 +227,30 @@ class Report extends Component {
 	}
 
 	render() {
-		if (this.state.data.length === 0) {
-			return (<h4 className='text-center'>Loading data...</h4>);
+		switch (this.state.loadingState) {
+			case LOADING_INIT:
+				return this._renderProcessingStep('Loading data...');
+			case LOADING_SUCCESSFUL:
+				if (this.state.data.length === 0) {
+					return this._renderProcessingStep('There is no fitting data.');
+				}
+				return this._renderSuccessful();
+			case LOADING_ERROR:
+				return this._renderError();
+			default:
+				throw new Error('Unknown loading state: ' + this.state.loadingState);
 		}
+	}
+
+	_renderProcessingStep(stepInfo) {
+		return (<h4 className='text-center'>{stepInfo}</h4>);
+	}
+
+	_renderError() {
+		return null;
+	}
+
+	_renderSuccessful() {
 		return (
 			<div>
 				<Table data={this.state.data}
@@ -236,16 +273,21 @@ class Report extends Component {
 			arr[additionalNote.marker] = additionalNote.note;
 		}
 		return (
-			<dl className='small'>
-				{arr.map((e, i) => {
-					return (
-						<span key={i}>
-							<dt>{i + 1}.</dt>
-							<dd>{e}</dd>
-						</span>
-					);
-				})}
-			</dl>
+			<div className='small'>
+				<p>In general, projects need to have an 'Active', 'Phase out' or 'End of live' life cycle phase defined
+				in the time frame between minus/plus one year of the current year to be included,
+				except for the life cycle rule</p>
+				<dl>
+					{arr.map((e, i) => {
+						return (
+							<span key={i}>
+								<dt>[{i + 1}]</dt>
+								<dd>{e}</dd>
+							</span>
+						);
+					})}
+				</dl>
+			</div>
 		);
 	}
 }
