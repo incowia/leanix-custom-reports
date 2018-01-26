@@ -5,6 +5,10 @@ import Utilities from './common/Utilities';
 import RuleSet from './RuleSet';
 import Table from './Table';
 
+const LOADING_INIT = 0;
+const LOADING_SUCCESSFUL = 1;
+const LOADING_ERROR = 2;
+
 const RULE_OPTIONS = Utilities.createOptionsObj(
 	RuleSet.singleRules.concat(RuleSet.appTypeRule, RuleSet.overallRule));
 
@@ -14,16 +18,19 @@ class Report extends Component {
 		super(props);
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
+		this._handleError = this._handleError.bind(this);
+		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderAdditionalNotes = this._renderAdditionalNotes.bind(this);
 		this.MARKET_OPTIONS = {};
 		this.state = {
+			loadingState: LOADING_INIT,
 			setup: null,
 			data: []
 		};
 	}
 
 	componentDidMount() {
-		lx.init().then(this._initReport);
+		lx.init().then(this._initReport).catch(this._handleError);
 	}
 
 	_initReport(setup) {
@@ -42,8 +49,8 @@ class Report extends Component {
 			lx.executeGraphQL(this._createQuery(applicationTagId, itTagId, appMapId)).then((data) => {
 				index.put(data);
 				this._handleData(index, applicationTagId, itTagId, appMapId);
-			});
-		});
+			}).catch(this._handleError);
+		}).catch(this._handleError);
 	}
 
 	_createConfig() {
@@ -117,6 +124,14 @@ class Report extends Component {
 				) {
 					edges { node { id name } }
 				}}`;
+	}
+
+	_handleError(err) {
+		console.error(err);
+		this.setState({
+			loadingState: LOADING_ERROR
+		});
+		lx.hideSpinner();
 	}
 
 	_handleData(index, applicationTagId, itTagId, appMapId) {
@@ -251,6 +266,7 @@ class Report extends Component {
 		}
 		lx.hideSpinner();
 		this.setState({
+			loadingState: LOADING_SUCCESSFUL,
 			data: tableData,
 			additionalNotes: additionalNotes
 		});
@@ -305,9 +321,30 @@ class Report extends Component {
 	}
 
 	render() {
-		if (this.state.data.length === 0) {
-			return (<h4 className='text-center'>Loading data...</h4>);
+		switch (this.state.loadingState) {
+			case LOADING_INIT:
+				return this._renderProcessingStep('Loading data...');
+			case LOADING_SUCCESSFUL:
+				if (this.state.data.length === 0) {
+					return this._renderProcessingStep('There is no fitting data.');
+				}
+				return this._renderSuccessful();
+			case LOADING_ERROR:
+				return this._renderError();
+			default:
+				throw new Error('Unknown loading state: ' + this.state.loadingState);
 		}
+	}
+
+	_renderProcessingStep(stepInfo) {
+		return (<h4 className='text-center'>{stepInfo}</h4>);
+	}
+
+	_renderError() {
+		return null;
+	}
+
+	_renderSuccessful() {
 		return (
 			<div>
 				<Table data={this.state.data}
