@@ -66,7 +66,7 @@ class Table extends Component {
 	}
 
 	render() {
-		const financialYear = this.props.currentFYear - 2000;
+		const financialYear = this.props.currentFYear % 100; // two-digits fiscal year
 		return (
 			<BootstrapTable data={this.props.data} keyField='id'
 				 striped hover exportCSV condensed
@@ -115,85 +115,85 @@ class Table extends Component {
 					 dataAlign='right'
 					 headerAlign='left'
 					 dataFormat={this._formatNumber}
-					 csvHeader={'fy-' + financialYear + '/' + (financialYear + 1)}
+					 csvHeader={'end-of-fy-' + financialYear + '/' + (financialYear + 1)}
 					 csvFormat={this._csvFormatNumber}
-					>FY {financialYear}/{financialYear + 1}</TableHeaderColumn>
+					>End of FY {financialYear}/{financialYear + 1}</TableHeaderColumn>
 				<TableHeaderColumn hidden export
 					 dataField='fy0Apps'
-					 csvHeader={'fy-' + financialYear + '/' + (financialYear + 1) + '-apps'}
+					 csvHeader={'end-of-fy-' + financialYear + '/' + (financialYear + 1) + '-apps'}
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
-					>FY {financialYear}/{financialYear + 1} - Applications</TableHeaderColumn>
+					>End of FY {financialYear}/{financialYear + 1} - Applications</TableHeaderColumn>
 				<TableHeaderColumn
 					 dataField='fy1'
 					 dataAlign='right'
 					 headerAlign='left'
 					 dataFormat={this._formatNumber}
-					 csvHeader={'fy-' + (financialYear + 1) + '/' + (financialYear + 2)}
+					 csvHeader={'end-of-fy-' + (financialYear + 1) + '/' + (financialYear + 2)}
 					 csvFormat={this._csvFormatNumber}
-					>FY {financialYear + 1}/{financialYear + 2}</TableHeaderColumn>
+					>End of FY {financialYear + 1}/{financialYear + 2}</TableHeaderColumn>
 				<TableHeaderColumn hidden export
 					 dataField='fy1Apps'
-					 csvHeader={'fy-' + (financialYear + 1) + '/' + (financialYear + 2) + '-apps'}
+					 csvHeader={'end-of-fy-' + (financialYear + 1) + '/' + (financialYear + 2) + '-apps'}
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
-					>FY {financialYear + 1}/{financialYear + 2} - Applications</TableHeaderColumn>
+					>End of FY {financialYear + 1}/{financialYear + 2} - Applications</TableHeaderColumn>
 				<TableHeaderColumn
 					 dataField='fy2'
 					 dataAlign='right'
 					 headerAlign='left'
 					 dataFormat={this._formatNumber}
-					 csvHeader={'fy-' + (financialYear + 2) + '/' + (financialYear + 3)}
+					 csvHeader={'end-of-fy-' + (financialYear + 2) + '/' + (financialYear + 3)}
 					 csvFormat={this._csvFormatNumber}
-					>FY {financialYear + 2}/{financialYear + 3}</TableHeaderColumn>
+					>End of FY {financialYear + 2}/{financialYear + 3}</TableHeaderColumn>
 				<TableHeaderColumn hidden export
 					 dataField='fy2Apps'
-					 csvHeader={'fy-' + (financialYear + 2) + '/' + (financialYear + 3) + '-apps'}
+					 csvHeader={'end-of-fy-' + (financialYear + 2) + '/' + (financialYear + 3) + '-apps'}
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
-					>FY {financialYear + 2}/{financialYear + 3} - Applications</TableHeaderColumn>
+					>End of FY {financialYear + 2}/{financialYear + 3} - Applications</TableHeaderColumn>
 				<TableHeaderColumn
 					 dataField='fy3'
 					 dataAlign='right'
 					 headerAlign='left'
 					 dataFormat={this._formatNumber}
-					 csvHeader={'fy-' + (financialYear + 3) + '/' + (financialYear + 4)}
+					 csvHeader={'end-of-fy-' + (financialYear + 3) + '/' + (financialYear + 4)}
 					 csvFormat={this._csvFormatNumber}
-					>FY {financialYear + 3}/{financialYear + 4}</TableHeaderColumn>
+					>End of FY {financialYear + 3}/{financialYear + 4}</TableHeaderColumn>
 				<TableHeaderColumn hidden export
 					 dataField='fy3Apps'
-					 csvHeader={'fy-' + (financialYear + 3) + '/' + (financialYear + 4) + '-apps'}
+					 csvHeader={'end-of-fy-' + (financialYear + 3) + '/' + (financialYear + 4) + '-apps'}
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
-					>FY {financialYear + 3}/{financialYear + 4} - Applications</TableHeaderColumn>
+					>End of FY {financialYear + 3}/{financialYear + 4} - Applications</TableHeaderColumn>
 				<TableHeaderColumn
 					 dataField='fy4'
 					 dataAlign='right'
 					 headerAlign='left'
 					 dataFormat={this._formatNumber}
-					 csvHeader={'fy-' + (financialYear + 4) + '/' + (financialYear + 5)}
+					 csvHeader={'end-of-fy-' + (financialYear + 4) + '/' + (financialYear + 5)}
 					 csvFormat={this._csvFormatNumber}
-					>FY {financialYear + 4}/{financialYear + 5}</TableHeaderColumn>
+					>End of FY {financialYear + 4}/{financialYear + 5}</TableHeaderColumn>
 				<TableHeaderColumn hidden export
 					 dataField='fy4Apps'
-					 csvHeader={'fy-' + (financialYear + 4) + '/' + (financialYear + 5) + '-apps'}
+					 csvHeader={'end-of-fy-' + (financialYear + 4) + '/' + (financialYear + 5) + '-apps'}
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
-					>FY {financialYear + 4}/{financialYear + 5} - Applications</TableHeaderColumn>
+					>End of FY {financialYear + 4}/{financialYear + 5} - Applications</TableHeaderColumn>
 				<TableHeaderColumn
 					 dataField='fy5'
 					 dataAlign='right'
 					 headerAlign='left'
 					 dataFormat={this._formatNumber}
-					 csvHeader={'fy-' + (financialYear + 5) + '/' + (financialYear + 6)}
+					 csvHeader={'end-of-fy-' + (financialYear + 5) + '/' + (financialYear + 6)}
 					 csvFormat={this._csvFormatNumber}
-					>FY {financialYear + 5}/{financialYear + 6}</TableHeaderColumn>
+					>End of FY {financialYear + 5}/{financialYear + 6}</TableHeaderColumn>
 				<TableHeaderColumn hidden export
 					 dataField='fy5Apps'
-					 csvHeader={'fy-' + (financialYear + 5) + '/' + (financialYear + 6) + '-apps'}
+					 csvHeader={'end-of-fy-' + (financialYear + 5) + '/' + (financialYear + 6) + '-apps'}
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
-					>FY {financialYear + 5}/{financialYear + 6} - Applications</TableHeaderColumn>
+					>End of FY {financialYear + 5}/{financialYear + 6} - Applications</TableHeaderColumn>
 			</BootstrapTable>
 		);
 	}

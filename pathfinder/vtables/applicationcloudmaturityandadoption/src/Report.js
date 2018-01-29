@@ -23,41 +23,44 @@ const CURRENT_MONTH = CURRENT_DATE.getMonth();
 const CURRENT_YEAR = CURRENT_MONTH >= 3 ? CURRENT_DATE.getFullYear() : CURRENT_DATE.getFullYear() - 1; // 3 ... April
 const CURRENT_DATE_TS = CURRENT_DATE.getTime();
 
+// indexes of the marketRow columns
+const IDX_CURRENT = 0;
+const IDX_FY0 = 1;
+const IDX_FY1 = 2;
+const IDX_FY2 = 3;
+const IDX_FY3 = 4;
+const IDX_FY4 = 5;
+const IDX_FY5 = 6;
 // that's a template for the _handleData method
 const MARKET_ROW_COLUMNS = [
-	// the 'current' column must always be right before the current fiscal year!
 	getCurrentDate(),
-	getFinancialYear(CURRENT_YEAR, true),
-	getFinancialYear(CURRENT_YEAR + 1, false),
-	getFinancialYear(CURRENT_YEAR + 2, false),
-	getFinancialYear(CURRENT_YEAR + 3, false),
-	getFinancialYear(CURRENT_YEAR + 4, false),
-	getFinancialYear(CURRENT_YEAR + 5, false)
+	getFinancialYear(CURRENT_YEAR),
+	getFinancialYear(CURRENT_YEAR + 1),
+	getFinancialYear(CURRENT_YEAR + 2),
+	getFinancialYear(CURRENT_YEAR + 3),
+	getFinancialYear(CURRENT_YEAR + 4),
+	getFinancialYear(CURRENT_YEAR + 5)
 ];
 
 function getCurrentDate() {
+	// name property is used as a comparable identifier in RuleSet
 	return {
-		// name property is used as a comparable identifier in RuleSet
 		name: 'current',
 		start: CURRENT_DATE_TS,
-		end: CURRENT_DATE_TS + 86400000, // (usually) next day at 00:00:00:000
-		isCurrentYear: true
+		end: CURRENT_DATE_TS + 86400000 // (usually) next day at 00:00:00:000
 	};
 }
 
-function getFinancialYear(year, isCurrentYear) {
-	// get start point
-	const startDate = new Date(year, 3, 1, 0, 0, 0, 0); // 1st apr
+function getFinancialYear(year) {
+	const startDate = new Date(year, 3, 1, 0, 0, 0, 0); // April 1st
 	const startDateTS = startDate.getTime();
-	// get end point
-	const endDate = new Date(year + 1, 2, 31, 0, 0, 0, 0); // 31th mar
+	const endDate = new Date(year + 1, 3, 1, 0, 0, 0, 0); // April 1st of next year
 	const endDateTS = endDate.getTime();
+	// name property is used as a comparable identifier in RuleSet
 	return {
-		// name property is used as a comparable identifier in RuleSet
-		name: (startDate.getFullYear() - 2000) + '/' + (endDate.getFullYear() - 2000),
+		name: (startDate.getFullYear() % 100) + '/' + (endDate.getFullYear() % 100),
 		start: startDateTS,
-		end: endDateTS,
-		isCurrentYear: isCurrentYear
+		end: endDateTS
 	};
 }
 
@@ -163,11 +166,11 @@ class Report extends Component {
 	_handleData(index, applicationTagId, itTagId) {
 		const tableData = [];
 		let additionalNotesMarker = 0;
-		const additionalNotes = RuleSet.singleRules.reduce((obj, e) => {
-			if (e.additionalNote) {
-				obj[e.name] = {
+		const additionalNotes = RuleSet.singleRules.reduce((obj, rule) => {
+			if (rule.additionalNote) {
+				obj[rule.name] = {
 					marker: additionalNotesMarker++,
-					note: e.additionalNote
+					note: rule.additionalNote
 				};
 			}
 			return obj;
@@ -189,8 +192,8 @@ class Report extends Component {
 			// must be placed first, but computation is later
 			const adoptingAppsIndex = tableData.length;
 			tableData.push({});
-			allApplications.forEach((e) => {
-				const lifecycles = Utilities.getLifecycles(e);
+			allApplications.forEach((appl) => {
+				const lifecycles = Utilities.getLifecycles(appl);
 				const activePhase = Utilities.getLifecyclePhase(lifecycles, ACTIVE);
 				const phaseOutPhase = Utilities.getLifecyclePhase(lifecycles, PHASE_OUT);
 				if (!activePhase && !phaseOutPhase) {
@@ -211,56 +214,56 @@ class Report extends Component {
 				productionPhase.start = productionPhase.startDate;
 				productionPhase.end = productionPhase.endDate;
 				// process single rules
-				RuleSet.singleRules.forEach((e2) => {
+				RuleSet.singleRules.forEach((rule) => {
 					// create row entry, if necessary
-					if (!marketRows[e2.name]) {
-						marketRows[e2.name] = MARKET_ROW_COLUMNS.map((e3) => {
-							const copy = Utilities.copyObject(e3);
+					if (!marketRows[rule.name]) {
+						marketRows[rule.name] = MARKET_ROW_COLUMNS.map((fyEntry) => {
+							const copy = Utilities.copyObject(fyEntry);
 							copy.apps = [];
 							return copy;
 						});
 					}
-					if (!e2.appliesTo(index, e)) {
+					if (!rule.appliesTo(index, appl)) {
 						return;
 					}
-					e2.compute(index, e, productionPhase, marketRows[e2.name], ruleConfig);
+					rule.compute(index, appl, productionPhase, marketRows[rule.name], ruleConfig);
 				});
 			});
 			// add results to tableData (singleRules)
-			RuleSet.singleRules.forEach((e) => {
+			RuleSet.singleRules.forEach((rule) => {
 				tableData.push({
-					id: market + '-' + e.name,
+					id: market + '-' + rule.name,
 					market: this._getOptionKeyFromValue(this.MARKET_OPTIONS, market),
-					rule: this._getOptionKeyFromValue(RULE_OPTIONS, e.name),
-					overallRule: e.overallRule,
+					rule: this._getOptionKeyFromValue(RULE_OPTIONS, rule.name),
+					overallRule: rule.overallRule,
 					isPercentage: false,
-					current: marketRows[e.name][0].apps.length,
-					currentApps: marketRows[e.name][0].apps.map((e) => {
-						return e.name;
+					current: marketRows[rule.name][IDX_CURRENT].apps.length,
+					currentApps: marketRows[rule.name][IDX_CURRENT].apps.map((appl) => {
+						return appl.name;
 					}),
-					fy0: marketRows[e.name][1].apps.length,
-					fy0Apps: marketRows[e.name][1].apps.map((e) => {
-						return e.name;
+					fy0: marketRows[rule.name][IDX_FY0].apps.length,
+					fy0Apps: marketRows[rule.name][IDX_FY0].apps.map((appl) => {
+						return appl.name;
 					}),
-					fy1: marketRows[e.name][2].apps.length,
-					fy1Apps: marketRows[e.name][2].apps.map((e) => {
-						return e.name;
+					fy1: marketRows[rule.name][IDX_FY1].apps.length,
+					fy1Apps: marketRows[rule.name][IDX_FY1].apps.map((appl) => {
+						return appl.name;
 					}),
-					fy2: marketRows[e.name][3].apps.length,
-					fy2Apps: marketRows[e.name][3].apps.map((e) => {
-						return e.name;
+					fy2: marketRows[rule.name][IDX_FY2].apps.length,
+					fy2Apps: marketRows[rule.name][IDX_FY2].apps.map((appl) => {
+						return appl.name;
 					}),
-					fy3: marketRows[e.name][4].apps.length,
-					fy3Apps: marketRows[e.name][4].apps.map((e) => {
-						return e.name;
+					fy3: marketRows[rule.name][IDX_FY3].apps.length,
+					fy3Apps: marketRows[rule.name][IDX_FY3].apps.map((appl) => {
+						return appl.name;
 					}),
-					fy4: marketRows[e.name][5].apps.length,
-					fy4Apps: marketRows[e.name][5].apps.map((e) => {
-						return e.name;
+					fy4: marketRows[rule.name][IDX_FY4].apps.length,
+					fy4Apps: marketRows[rule.name][IDX_FY4].apps.map((appl) => {
+						return appl.name;
 					}),
-					fy5: marketRows[e.name][6].apps.length,
-					fy5Apps: marketRows[e.name][6].apps.map((e) => {
-						return e.name;
+					fy5: marketRows[rule.name][IDX_FY5].apps.length,
+					fy5Apps: marketRows[rule.name][IDX_FY5].apps.map((appl) => {
+						return appl.name;
 					}),
 				});
 			});

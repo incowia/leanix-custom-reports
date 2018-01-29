@@ -9,7 +9,10 @@ const cloudTBDRE = /Cloud\s*TBD/i;
 // 'FYnn/nn'
 const financialYearRE = /FY(\d{2}\/\d{2})/i;
 
-// singleRules array indexes referenced in 'adoptingApps' member (keep in sync with the 'singleRules' definition!)
+const IDX_CURRENT = 0; // index of today ('current') in marketRow array
+const IDX_FY0 = 1; // index of current fiscal year ('fy0') in marketRow array
+
+// singleRules array indexes referenced in 'adoptingApps' (keep in sync with the 'singleRules' definition!)
 const RULE_PHYSICAL_APPS = 0;
 const RULE_VIRTUAL_APPS = 1;
 const RULE_CLOUD_TBD = 2;
@@ -25,9 +28,9 @@ const singleRules = [{ // RULE_PHYSICAL_APPS
 			return cloudMaturityTag && cloudMaturityTag.name === 'Physical/Legacy';
 		},
 		compute: (index, application, productionPhase, marketRow, config) => {
-			marketRow.forEach((e) => {
-				if (_isOverlapping(e, productionPhase) && !_includesID(e.apps, application.id)) {
-					e.apps.push(application);
+			marketRow.forEach((fiscalYear) => {
+				if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
+					fiscalYear.apps.push(application);
 				}
 			});
 		}
@@ -89,9 +92,9 @@ const singleRules = [{ // RULE_PHYSICAL_APPS
 			return true;
 		},
 		compute: (index, application, productionPhase, marketRow, config) => {
-			marketRow.forEach((e) => {
-				if (_isOverlapping(e, productionPhase) && !_includesID(e.apps, application.id)) {
-					e.apps.push(application);
+			marketRow.forEach((fiscalYear) => {
+				if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
+					fiscalYear.apps.push(application);
 				}
 			});
 		}
@@ -102,22 +105,22 @@ const adoptingApps = {
 	name: '% Cloud applications',
 	compute: (marketRows, config) => {
 		const result = {};
-		const cloudTBDRow = marketRows[singleRules[RULE_CLOUD_TBD].name];
-		const cloudReadyRow = marketRows[singleRules[RULE_CLOUD_READY].name];
-		const cloudNativeRow = marketRows[singleRules[RULE_CLOUD_NATIVE].name];
+		const tbdRow = marketRows[singleRules[RULE_CLOUD_TBD].name];
+		const readyRow = marketRows[singleRules[RULE_CLOUD_READY].name];
+		const nativeRow = marketRows[singleRules[RULE_CLOUD_NATIVE].name];
 		const totalRow = marketRows[singleRules[RULE_TOTAL].name];
 		totalRow.forEach((e, i) => {
-			const cloudTBD = cloudTBDRow[i].apps.length;
-			const cloudReady = cloudReadyRow[i].apps.length;
-			const cloudNative = cloudNativeRow[i].apps.length;
-			const total = totalRow[i].apps.length;
+			const nTbd = tbdRow[i].apps.length;
+			const nReady = readyRow[i].apps.length;
+			const nNative = nativeRow[i].apps.length;
+			const nTotal = totalRow[i].apps.length;
 			/* formula:
-			fy0   -> (cloudTBD + cloudReady + cloudNative) * 100 / total
-			fy1..n & current -> (cloudReady + cloudNative) * 100 / total
+			index  0: current -> (       nReady + nNative) * 100 / total
+			index  1: fy0     -> (nTbd + nReady + nNative) * 100 / total
+			index >1: fy1...n -> (       nReady + nNative) * 100 / total
 			 */
-			const percentage = total === 0 ? 0
-				 : ((i === 0 ? 0 : cloudTBD) + cloudReady + cloudNative) * 100 / total;
-			result[(i > 0 ? 'fy' + (i - 1) : 'current')] = Math.round(percentage * 10) / 10;
+			const percentage = nTotal === 0 ? 0 : ((i === IDX_FY0 ? nTbd : 0) + nReady + nNative) * 100 / nTotal;
+			result[i === IDX_CURRENT ? 'current' : 'fy' + (i - 1)] = Math.round(percentage * 10) / 10;
 		});
 		return result;
 	}
@@ -133,13 +136,21 @@ function _isOverlapping(first, second) {
 	if (!first || !second) {
 		return false;
 	}
-	if (first.end < second.start || first.start > second.end) {
+	// equality does not mean overlapping!
+	if (first.end <= second.start || first.start >= second.end) {
 		return false;
 	}
 	return true;
 }
 
-function _getFinancialYearFromProject(project, cloudRE, marketRow) {
+/*
+ * Check a project's name whether or not it passes a 'fiscal year search' regular expression
+ * @returns null or the market row's index of the identified fiscal year
+ * null ... no match
+ *    1 ... current fiscal year
+ *    6 ... 5 years later
+ */
+function _getFinancialYearIndexFromProject(project, cloudRE, marketRow) {
 	if (!cloudRE.test(project.name)) {
 		return;
 	}
@@ -153,40 +164,46 @@ function _getFinancialYearFromProject(project, cloudRE, marketRow) {
 	});
 }
 
+/*
+ * index: an index over all of the requested workspace objects (dataset)
+ * application: the application-under-investigation
+ * cloudRE: the Reg Expression to check the related project names
+ * marketRow: a (single) rule's 'fiscal years' array, to gather the fitting applications per rule and fiscal year
+ * marketRow[0] ... current (i.e. today)
+ * marketRow[1] ... fy0 (current fiscal year)
+ * marketRow[6] ... fy5 (5 years later)
+ */
 function _addFromProjects(index, application, cloudRE, marketRow) {
 	const subIndex = application.relApplicationToProject;
 	if (!subIndex) {
 		return;
 	}
-	subIndex.nodes.forEach((e) => {
-		// access projects
-		const project = index.byID[e.id];
-		const financialYearIndex = _getFinancialYearFromProject(project, cloudRE, marketRow);
-		const financialYear = marketRow[financialYearIndex];
-		if (financialYear && !_includesID(financialYear.apps, application.id)) {
-			financialYear.apps.push(application);
-			// TODO das irgendwie anders gestalten
-			if (financialYear.isCurrentYear && financialYearIndex > 0) {
-				// the 'current' column is always right before the current fiscal year!
-				marketRow[financialYearIndex - 1].apps.push(application);
-			}
-			// add application for future financial years as well
-			for (let i = financialYearIndex + 1; i < marketRow.length; i++) {
-				const futureFY = marketRow[i];
-				if (!_includesID(futureFY.apps, application.id)) {
-					futureFY.apps.push(application);
-				}
-			}
+
+	// subindex holds all the projects related to the given application
+	subIndex.nodes.forEach((prj) => {
+		// access project object
+		const project = index.byID[prj.id];
+		const fyIndex = _getFinancialYearIndexFromProject(project, cloudRE, marketRow); // null or number
+		if (!fyIndex) {
+			return;
 		}
+		marketRow.forEach((fiscalYear, i) => {
+			if (i < fyIndex) {
+				return; // 'current' or before relevant fiscalYear -> add nothing
+			}
+			if (!_includesID(fiscalYear.apps, application.id)) {
+				fiscalYear.apps.push(application);
+			}
+		});
 	});
 }
 
 function _addFromCloudMaturity(index, application, productionPhase, marketRow, cloudMaturityTagName) {
 	const cloudMaturityTag = index.getFirstTagFromGroup(application, 'Cloud Maturity');
 	if (cloudMaturityTag && cloudMaturityTag.name === cloudMaturityTagName) {
-		marketRow.forEach((e) => {
-			if (_isOverlapping(e, productionPhase) && !_includesID(e.apps, application.id)) {
-				e.apps.push(application);
+		marketRow.forEach((fiscalYear) => {
+			if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
+				fiscalYear.apps.push(application);
 			}
 		});
 	}
