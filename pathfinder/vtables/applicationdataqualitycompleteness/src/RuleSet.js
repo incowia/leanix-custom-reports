@@ -134,13 +134,13 @@ const singleRules = [{
 			return _hasSubscriptionRole(application, 'IT Owner');
 		}
 	}, {
-		name: 'has SPOC (only active)',
+		name: 'has APM SPOC (only active)',
 		appliesTo: (index, application) => {
 			const currentLifecycle = Utilities.getCurrentLifecycle(application);
 			return currentLifecycle && currentLifecycle.phase === 'active';
 		},
 		compute: (index, application, config) => {
-			return _hasSubscriptionRole(application, 'SPOC');
+			return _hasSubscriptionRole(application, 'APM SPOC');
 		}
 	}, {
 		name: 'has Business Value (only active)',

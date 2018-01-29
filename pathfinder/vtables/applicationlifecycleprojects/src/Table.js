@@ -37,7 +37,7 @@ class Table extends Component {
 					>Cost Centre</TableHeaderColumn>
 				<TableHeaderColumn dataSort
 					 dataField='deployment'
-					 width='320px'
+					 width='250px'
 					 dataAlign='left'
 					 dataFormat={TableUtilities.formatEnum}
 					 formatExtraData={this.props.options.deployment}
@@ -87,16 +87,16 @@ class Table extends Component {
 					 filter={TableUtilities.selectFilter(this.props.options.projectImpact)}
 					>Project impact</TableHeaderColumn>
 				<TableHeaderColumn dataSort
-					 dataField='projectType'
-					 width='150px'
+					 dataField='decommissioningType'
+					 width='200px'
 					 dataAlign='left'
 					 dataFormat={TableUtilities.formatEnum}
-					 formatExtraData={this.props.options.projectType}
+					 formatExtraData={this.props.options.decommissioningType}
 					 csvHeader='project-type'
 					 csvFormat={TableUtilities.formatEnum}
-					 csvFormatExtraData={this.props.options.projectType}
-					 filter={TableUtilities.selectFilter(this.props.options.projectType)}
-					>Project type</TableHeaderColumn>
+					 csvFormatExtraData={this.props.options.decommissioningType}
+					 filter={TableUtilities.selectFilter(this.props.options.decommissioningType)}
+					>Decommissioning type</TableHeaderColumn>
 			</BootstrapTable>
 		);
 	}
@@ -113,7 +113,7 @@ Table.propTypes = {
 			projectId: PropTypes.string,
 			projectName: PropTypes.string,
 			projectImpact: PropTypes.number,
-			projectType: PropTypes.number,
+			decommissioningType: PropTypes.number,
 			lifecyclePhase: PropTypes.number,
 			lifecycleStart: PropTypes.instanceOf(Date)
 		}).isRequired
@@ -123,7 +123,7 @@ Table.propTypes = {
 		deployment: TableUtilities.PropTypes.options,
 		lifecyclePhase: TableUtilities.PropTypes.options,
 		projectImpact: TableUtilities.PropTypes.options,
-		projectType: TableUtilities.PropTypes.options
+		decommissioningType: TableUtilities.PropTypes.options
 	}).isRequired,
 	setup: PropTypes.object
 };

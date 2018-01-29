@@ -339,11 +339,11 @@ class Table extends Component {
 					 dataAlign='left'
 					 dataFormat={TableUtilities.formatArray}
 					 formatExtraData='<br/>'
-					 csvHeader='spocs'
+					 csvHeader='apm-spocs'
 					 csvFormat={TableUtilities.formatArray}
 					 csvFormatExtraData=';'
 					 filter={TableUtilities.textFilter}
-					>SPOCs</TableHeaderColumn>
+					>APM SPOCs</TableHeaderColumn>
 				<TableHeaderColumn columnClassName='small'
 					 dataField='operationsOwners'
 					 width='280px'

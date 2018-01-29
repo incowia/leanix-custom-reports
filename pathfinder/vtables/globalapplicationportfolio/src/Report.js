@@ -4,6 +4,10 @@ import DataIndex from './common/DataIndex';
 import Utilities from './common/Utilities';
 import Table from './Table';
 
+const LOADING_INIT = 0;
+const LOADING_SUCCESSFUL = 1;
+const LOADING_ERROR = 2;
+
 // TODO https://facebook.github.io/react/docs/optimizing-performance.html#webpack
 
 class Report extends Component {
@@ -12,6 +16,8 @@ class Report extends Component {
 		super(props);
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
+		this._handleError = this._handleError.bind(this);
+		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._getMultipleOptionKeysFromValue = this._getMultipleOptionKeysFromValue.bind(this);
 		this.LIFECYCLE_PHASE_OPTIONS = {};
 		this.RECOMMENDATION_OPTIONS = {};
@@ -35,13 +41,14 @@ class Report extends Component {
 		this.CLOUD_MATURITY_OPTIONS = {};
 		this.CLOUD_DEPLOYMENT_MODEL_OPTIONS = {};
 		this.state = {
+			loadingState: LOADING_INIT,
 			setup: null,
 			data: []
 		};
 	}
 
 	componentDidMount() {
-		lx.init().then(this._initReport);
+		lx.init().then(this._initReport).catch(this._handleError);
 	}
 
 	_initReport(setup) {
@@ -91,8 +98,8 @@ class Report extends Component {
 			lx.executeGraphQL(this._createQuery(applicationTagId, appMapId)).then((data) => {
 				index.put(data);
 				this._handleData(index, applicationTagId, appMapId);
-			});
-		});
+			}).catch(this._handleError);
+		}).catch(this._handleError);
 	}
 
 	_createConfig() {
@@ -185,6 +192,14 @@ class Report extends Component {
 				) {
 					edges { node { id name tags { name } } }
 				}}`;
+	}
+
+	_handleError(err) {
+		console.error(err);
+		this.setState({
+			loadingState: LOADING_ERROR
+		});
+		lx.hideSpinner();
 	}
 
 	_handleData(index, applicationTagId, appMapId) {
@@ -315,7 +330,7 @@ class Report extends Component {
 							case 'Business Owner':
 								businessOwners.push(userEMail);
 								break;
-							case 'SPOC':
+							case 'APM SPOC':
 								spocs.push(userEMail);
 								break;
 							case 'Operations Owner':
@@ -439,6 +454,7 @@ class Report extends Component {
 		this.MARKET_OPTIONS = Utilities.createOptionsObj(markets);
 		lx.hideSpinner();
 		this.setState({
+			loadingState: LOADING_SUCCESSFUL,
 			data: tableData
 		});
 	}
@@ -510,9 +526,30 @@ class Report extends Component {
 	}
 
 	render() {
-		if (this.state.data.length === 0) {
-			return (<h4 className='text-center'>Loading data...</h4>);
+		switch (this.state.loadingState) {
+			case LOADING_INIT:
+				return this._renderProcessingStep('Loading data...');
+			case LOADING_SUCCESSFUL:
+				if (this.state.data.length === 0) {
+					return this._renderProcessingStep('There is no fitting data.');
+				}
+				return this._renderSuccessful();
+			case LOADING_ERROR:
+				return this._renderError();
+			default:
+				throw new Error('Unknown loading state: ' + this.state.loadingState);
 		}
+	}
+
+	_renderProcessingStep(stepInfo) {
+		return (<h4 className='text-center'>{stepInfo}</h4>);
+	}
+
+	_renderError() {
+		return null;
+	}
+
+	_renderSuccessful() {
 		return (
 			<Table data={this.state.data}
 				options={{
