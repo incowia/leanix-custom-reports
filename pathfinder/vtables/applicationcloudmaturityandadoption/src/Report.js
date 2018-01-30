@@ -42,23 +42,34 @@ const MARKET_ROW_COLUMNS = [
 	getFinancialYear(CURRENT_YEAR + 5)
 ];
 
+MARKET_ROW_COLUMNS.forEach((e) => {
+	const tmp = {
+		name: e.name,
+		start: new Date(e.start),
+		end: new Date(e.end)
+	};
+	console.log(tmp);
+});
+
 function getCurrentDate() {
 	// name property is used as a comparable identifier in RuleSet
 	return {
 		name: 'current',
-		start: CURRENT_DATE_TS,
-		end: CURRENT_DATE_TS + 86400000 // (usually) next day at 00:00:00:000
+		// timestamps for 'start' are inclusive, 'end' are exclusive
+		start: CURRENT_DATE_TS, // current date at 00:00:00:000
+		end: CURRENT_DATE_TS + 86400000 // next day at 00:00:00:000
 	};
 }
 
 function getFinancialYear(year) {
+	// timestamps for 'start' are inclusive, 'end' are exclusive
 	const startDate = new Date(year, 3, 1, 0, 0, 0, 0); // April 1st
 	const startDateTS = startDate.getTime();
 	const endDate = new Date(year + 1, 3, 1, 0, 0, 0, 0); // April 1st of next year
 	const endDateTS = endDate.getTime();
 	// name property is used as a comparable identifier in RuleSet
 	return {
-		name: (startDate.getFullYear() % 100) + '/' + (endDate.getFullYear() % 100),
+		name: (startDate.getFullYear() - 2000) + '/' + (endDate.getFullYear() - 2000),
 		start: startDateTS,
 		end: endDateTS
 	};

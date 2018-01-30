@@ -116,10 +116,10 @@ const adoptingApps = {
 			const nTotal = totalRow[i].apps.length;
 			/* formula:
 			index  0: current -> (       nReady + nNative) * 100 / total
-			index  1: fy0     -> (nTbd + nReady + nNative) * 100 / total
-			index >1: fy1...n -> (       nReady + nNative) * 100 / total
+			index  1: fy0     -> (       nReady + nNative) * 100 / total
+			index >1: fy1...n -> (nTbd + nReady + nNative) * 100 / total
 			 */
-			const percentage = nTotal === 0 ? 0 : ((i === IDX_FY0 ? nTbd : 0) + nReady + nNative) * 100 / nTotal;
+			const percentage = nTotal === 0 ? 0 : ((i > IDX_FY0 ? nTbd : 0) + nReady + nNative) * 100 / nTotal;
 			result[i === IDX_CURRENT ? 'current' : 'fy' + (i - 1)] = Math.round(percentage * 10) / 10;
 		});
 		return result;
@@ -136,7 +136,7 @@ function _isOverlapping(first, second) {
 	if (!first || !second) {
 		return false;
 	}
-	// equality does not mean overlapping!
+	// timestamps for 'start' are inclusive, 'end' are exclusive
 	if (first.end <= second.start || first.start >= second.end) {
 		return false;
 	}
@@ -145,19 +145,19 @@ function _isOverlapping(first, second) {
 
 /*
  * Check a project's name whether or not it passes a 'fiscal year search' regular expression
- * @returns null or the market row's index of the identified fiscal year
- * null ... no match
- *    1 ... current fiscal year
- *    6 ... 5 years later
+ * @returns -1 or the market row's index of the identified fiscal year
+ * -1 ... no match
+ *  1 ... current fiscal year
+ *  6 ... 5 years later
  */
 function _getFinancialYearIndexFromProject(project, cloudRE, marketRow) {
 	if (!cloudRE.test(project.name)) {
-		return;
+		return -1;
 	}
 	// get financial year
 	const m = financialYearRE.exec(project.name);
 	if (!m) {
-		return;
+		return -1;
 	}
 	return marketRow.findIndex((e) => {
 		return e.name === m[1];
@@ -178,23 +178,21 @@ function _addFromProjects(index, application, cloudRE, marketRow) {
 	if (!subIndex) {
 		return;
 	}
-
 	// subindex holds all the projects related to the given application
-	subIndex.nodes.forEach((prj) => {
+	subIndex.nodes.forEach((rel) => {
 		// access project object
-		const project = index.byID[prj.id];
-		const fyIndex = _getFinancialYearIndexFromProject(project, cloudRE, marketRow); // null or number
-		if (!fyIndex) {
+		const project = index.byID[rel.id];
+		const fyIndex = _getFinancialYearIndexFromProject(project, cloudRE, marketRow);
+		if (fyIndex < 0) {
 			return;
 		}
-		marketRow.forEach((fiscalYear, i) => {
-			if (i < fyIndex) {
-				return; // 'current' or before relevant fiscalYear -> add nothing
-			}
+		// add application for 'this' fiscal year and everyone after 'this'
+		for (let i = fyIndex; i < marketRow.length; i++) {
+			const fiscalYear = marketRow[i];
 			if (!_includesID(fiscalYear.apps, application.id)) {
 				fiscalYear.apps.push(application);
 			}
-		});
+		}
 	});
 }
 
