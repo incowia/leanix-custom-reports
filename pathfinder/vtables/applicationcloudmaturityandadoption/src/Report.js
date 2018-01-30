@@ -42,15 +42,6 @@ const MARKET_ROW_COLUMNS = [
 	getFinancialYear(CURRENT_YEAR + 5)
 ];
 
-MARKET_ROW_COLUMNS.forEach((e) => {
-	const tmp = {
-		name: e.name,
-		start: new Date(e.start),
-		end: new Date(e.end)
-	};
-	console.log(tmp);
-});
-
 function getCurrentDate() {
 	// name property is used as a comparable identifier in RuleSet
 	return {

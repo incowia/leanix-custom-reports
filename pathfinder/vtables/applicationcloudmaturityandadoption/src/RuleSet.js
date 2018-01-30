@@ -186,7 +186,7 @@ function _addFromProjects(index, application, cloudRE, marketRow) {
 		if (fyIndex < 0) {
 			return;
 		}
-		// add application for 'this' fiscal year and everyone after 'this'
+		// add application for 'this' fiscal year and every fiscal year after 'this'
 		for (let i = fyIndex; i < marketRow.length; i++) {
 			const fiscalYear = marketRow[i];
 			if (!_includesID(fiscalYear.apps, application.id)) {
