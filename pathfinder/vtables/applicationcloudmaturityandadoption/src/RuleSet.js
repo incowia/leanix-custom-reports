@@ -29,7 +29,6 @@ const singleRules = [{ // RULE_PHYSICAL_APPS
 		},
 		compute: (index, application, productionPhase, marketRow, config) => {
 			marketRow.forEach((fiscalYear) => {
-				// add if application is 'productive' in respective fiscal year
 				if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
 					fiscalYear.apps.push(application);
 				}
@@ -94,7 +93,6 @@ const singleRules = [{ // RULE_PHYSICAL_APPS
 		},
 		compute: (index, application, productionPhase, marketRow, config) => {
 			marketRow.forEach((fiscalYear) => {
-				// add if application is 'productive' in respective fiscal year
 				if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
 					fiscalYear.apps.push(application);
 				}
@@ -133,6 +131,7 @@ function _includesID(apps, id) {
 		return e.id === id;
 	});
 }
+
 function _isOverlapping(first, second) {
 	if (!first || !second) {
 		return false;
@@ -201,7 +200,6 @@ function _addFromCloudMaturity(index, application, productionPhase, marketRow, c
 	const cloudMaturityTag = index.getFirstTagFromGroup(application, 'Cloud Maturity');
 	if (cloudMaturityTag && cloudMaturityTag.name === cloudMaturityTagName) {
 		marketRow.forEach((fiscalYear) => {
-			// add if application is 'productive' in respective fiscal year
 			if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
 				fiscalYear.apps.push(application);
 			}

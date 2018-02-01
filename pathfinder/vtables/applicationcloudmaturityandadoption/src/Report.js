@@ -20,7 +20,7 @@ const RULE_OPTIONS = Utilities.createOptionsObj([RuleSet.adoptingApps].concat(Ru
 const CURRENT_DATE = new Date();
 CURRENT_DATE.setHours(0, 0, 0, 0);
 const CURRENT_MONTH = CURRENT_DATE.getMonth();
-const CURRENT_YEAR = CURRENT_MONTH >= 3 ? CURRENT_DATE.getFullYear() : CURRENT_DATE.getFullYear() - 1; // 3 ... April
+const CURRENT_YEAR = CURRENT_MONTH >= 3 ? CURRENT_DATE.getFullYear() : CURRENT_DATE.getFullYear() - 1; // 3 === April
 const CURRENT_DATE_TS = CURRENT_DATE.getTime();
 const DIFF_NEXT_DAY = 86400000; // (usually) next day - same time
 // indexes of the marketRow columns
@@ -58,7 +58,7 @@ function getFinancialYear(year) {
 	// name property is used as a comparable identifier in RuleSet ('17/18', '18/19', ...)
 	// timestamps for 'start' are inclusive, 'end' are exclusive
 	return {
-		name: (year % 100) + '/' + ((year + 1) % 100),
+		name: (year - 2000) + '/' + ((year + 1) - 2000),
 		start: startTS,
 		end: startTS + DIFF_NEXT_DAY
 	};

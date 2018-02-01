@@ -66,7 +66,7 @@ class Table extends Component {
 	}
 
 	render() {
-		const financialYear = this.props.currentFYear % 100; // two-digits fiscal year
+		const financialYear = this.props.currentFYear - 2000; // two-digits fiscal year
 		return (
 			<BootstrapTable data={this.props.data} keyField='id'
 				 striped hover exportCSV condensed
