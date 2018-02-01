@@ -22,7 +22,7 @@ CURRENT_DATE.setHours(0, 0, 0, 0);
 const CURRENT_MONTH = CURRENT_DATE.getMonth();
 const CURRENT_YEAR = CURRENT_MONTH >= 3 ? CURRENT_DATE.getFullYear() : CURRENT_DATE.getFullYear() - 1; // 3 ... April
 const CURRENT_DATE_TS = CURRENT_DATE.getTime();
-
+const DIFF_NEXT_DAY = 86400000; // (usually) next day - same time
 // indexes of the marketRow columns
 const IDX_CURRENT = 0;
 const IDX_FY0 = 1;
@@ -44,25 +44,23 @@ const MARKET_ROW_COLUMNS = [
 
 function getCurrentDate() {
 	// name property is used as a comparable identifier in RuleSet
+	// timestamps for 'start' are inclusive, 'end' are exclusive
 	return {
 		name: 'current',
-		// timestamps for 'start' are inclusive, 'end' are exclusive
-		start: CURRENT_DATE_TS, // current date at 00:00:00:000
-		end: CURRENT_DATE_TS + 86400000 // next day at 00:00:00:000
+		start: CURRENT_DATE_TS, // current date at 00:00:00.000
+		end: CURRENT_DATE_TS + DIFF_NEXT_DAY
 	};
 }
 
 function getFinancialYear(year) {
+	const lastDayOfFiscalYearDate = new Date(year, 2, 31, 0, 0, 0, 0); // March 31st 00:00:00.000
+	const startTS = lastDayOfFiscalYearDate.getTime();
+	// name property is used as a comparable identifier in RuleSet ('17/18', '18/19', ...)
 	// timestamps for 'start' are inclusive, 'end' are exclusive
-	const startDate = new Date(year, 3, 1, 0, 0, 0, 0); // April 1st
-	const startDateTS = startDate.getTime();
-	const endDate = new Date(year + 1, 3, 1, 0, 0, 0, 0); // April 1st of next year
-	const endDateTS = endDate.getTime();
-	// name property is used as a comparable identifier in RuleSet
 	return {
-		name: (startDate.getFullYear() - 2000) + '/' + (endDate.getFullYear() - 2000),
-		start: startDateTS,
-		end: endDateTS
+		name: (year % 100) + '/' + ((year + 1) % 100),
+		start: startTS,
+		end: startTS + DIFF_NEXT_DAY
 	};
 }
 

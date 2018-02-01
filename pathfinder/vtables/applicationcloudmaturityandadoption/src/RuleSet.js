@@ -29,6 +29,7 @@ const singleRules = [{ // RULE_PHYSICAL_APPS
 		},
 		compute: (index, application, productionPhase, marketRow, config) => {
 			marketRow.forEach((fiscalYear) => {
+				// add if application is 'productive' in respective fiscal year
 				if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
 					fiscalYear.apps.push(application);
 				}
@@ -93,6 +94,7 @@ const singleRules = [{ // RULE_PHYSICAL_APPS
 		},
 		compute: (index, application, productionPhase, marketRow, config) => {
 			marketRow.forEach((fiscalYear) => {
+				// add if application is 'productive' in respective fiscal year
 				if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
 					fiscalYear.apps.push(application);
 				}
@@ -131,7 +133,6 @@ function _includesID(apps, id) {
 		return e.id === id;
 	});
 }
-
 function _isOverlapping(first, second) {
 	if (!first || !second) {
 		return false;
@@ -179,9 +180,9 @@ function _addFromProjects(index, application, cloudRE, marketRow) {
 		return;
 	}
 	// subindex holds all the projects related to the given application
-	subIndex.nodes.forEach((rel) => {
+	subIndex.nodes.forEach((prj) => {
 		// access project object
-		const project = index.byID[rel.id];
+		const project = index.byID[prj.id];
 		const fyIndex = _getFinancialYearIndexFromProject(project, cloudRE, marketRow);
 		if (fyIndex < 0) {
 			return;
@@ -200,6 +201,7 @@ function _addFromCloudMaturity(index, application, productionPhase, marketRow, c
 	const cloudMaturityTag = index.getFirstTagFromGroup(application, 'Cloud Maturity');
 	if (cloudMaturityTag && cloudMaturityTag.name === cloudMaturityTagName) {
 		marketRow.forEach((fiscalYear) => {
+			// add if application is 'productive' in respective fiscal year
 			if (_isOverlapping(fiscalYear, productionPhase) && !_includesID(fiscalYear.apps, application.id)) {
 				fiscalYear.apps.push(application);
 			}
