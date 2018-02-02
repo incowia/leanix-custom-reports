@@ -179,9 +179,9 @@ function _addFromProjects(index, application, cloudRE, marketRow) {
 		return;
 	}
 	// subindex holds all the projects related to the given application
-	subIndex.nodes.forEach((prj) => {
+	subIndex.nodes.forEach((rel) => {
 		// access project object
-		const project = index.byID[prj.id];
+		const project = index.byID[rel.id];
 		const fyIndex = _getFinancialYearIndexFromProject(project, cloudRE, marketRow);
 		if (fyIndex < 0) {
 			return;
