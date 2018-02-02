@@ -230,7 +230,7 @@ class Report extends Component {
 					cobras.push(bc);
 				});
 			}
-			const cotsSoftware = [];
+			let cotsSoftware = []; // will be filtered later
 			const remedies = [];
 			const backends = [];
 			const frontends = [];
@@ -244,13 +244,16 @@ class Report extends Component {
 					}
 					switch (itc.category) {
 						case 'software':
-							if (itc.name.endsWith('Software Product') || e2.relationAttr.resourceType !== 'Primary') {
+							if (e2.relationAttr.resourceType !== 'Primary') {
 								break;
 							}
 							const provider = this._getProvider(index, itc);
 							cotsSoftware.push({
 								id: itc.id,
 								name: itc.displayName,
+								// 'Software Products' must be excluded later, but the
+								// vendor must still be determined
+								isSoftwareProduct: itc.name.endsWith('Software Product'),
 								providerId: provider ? provider.id : undefined,
 								provider: provider ? provider.name : undefined
 							});
@@ -292,6 +295,10 @@ class Report extends Component {
 				});
 			}
 			const cotsVendors = this._getCotsVendors(cotsSoftware);
+			// now filter 'cotsSoftware' to exclude 'Software Products'
+			cotsSoftware = cotsSoftware.filter((e) => {
+				return !e.isSoftwareProduct;
+			});
 			const siProvidersSet = {};
 			const subIndexProviders = e.relApplicationToProvider;
 			if (subIndexProviders) {
