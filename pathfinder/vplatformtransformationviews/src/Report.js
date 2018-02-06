@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import CommonQueries from './common/CommonGraphQLQueries';
 import DataIndex from './common/DataIndex';
+import SelectField from './SelectField';
 import Utilities from './common/Utilities';
 
 const LOADING_INIT = 0;
@@ -45,7 +46,14 @@ class Report extends Component {
 
 	_createConfig() {
 		return {
-			allowEditing: false
+			allowEditing: false,
+			export: {
+				autoScale: true,
+				exportElementSelector: '#export',
+				format: 'a1',
+				inputType: 'HTML',
+				orientation: 'landscape'
+			},
 		};
 	}
 
@@ -77,6 +85,7 @@ class Report extends Component {
 
 	_handleData(index) {
 		const tableData = [];
+		tableData.push(1);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: LOADING_SUCCESSFUL,
@@ -110,7 +119,32 @@ class Report extends Component {
 
 	_renderSuccessful() {
 		return (
-			<div>
+			<div className='container-fluid' id='export'>
+				<div className='row'>
+					<div className='col-lg-2'>
+						<SelectField id={'market'} label={'Market'} options={''}/>
+					</div>
+					<div className='col-lg-10'>
+						TEXT
+					</div>
+				</div>
+				<div className='row'>
+					<div className='col-lg-2'>
+						<div className='panel panel-default'>
+							<div className='panel-heading'>Panel heading</div>
+							<div className='panel-body'>
+								<p>Some default panel content here.</p>
+							</div>
+							<div className='list-group'>
+								<button type='button' className='list-group-item'>Cras justo odio</button>
+								<button type='button' className='list-group-item'>Dapibus ac facilisis in</button>
+							</div>
+						</div>
+					</div>
+					<div className='col-lg-10'>
+						<h4 className='text-center'>VIEW AREA</h4>
+					</div>
+				</div>
 			</div>
 		);
 	}
