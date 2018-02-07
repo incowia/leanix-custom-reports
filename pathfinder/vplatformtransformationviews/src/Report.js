@@ -40,6 +40,7 @@ class Report extends Component {
 			lx.executeGraphQL(this._createQuery()).then((data) => {
 				index.put(data);
 				this._handleData(index);
+				console.log(index);
 			}).catch(this._handleError);
 		}).catch(this._handleError);
 	}
@@ -59,20 +60,12 @@ class Report extends Component {
 
 	_createQuery() {
 		return `{applications: allFactSheets(
-					sort: { mode: BY_FIELD, key: "displayName", order: asc },
-					filter: { facetFilters: [
-						{ facetKey: "FactSheetTypes", keys: ["Application"] },
-						{ facetKey: "withinTop80PercentOfTCO", keys: ["yes"] }
-					]}
-				) {
-					edges { node {
-						id name tags { name }
-						... on Application {
-							lifecycle { phases { phase startDate } }
-							relApplicationToProject { edges { node { factSheet{ id } } } }
-						}
-					}}
-				}}`;
+					filter: {facetFilters: [{facetKey: "FactSheetTypes", keys: ["Application"]}]}
+					)
+					{
+						edges {node{id name}}
+					}
+				}`;
 	}
 
 	_handleError(err) {
