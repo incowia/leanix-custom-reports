@@ -15,12 +15,15 @@ class Report extends Component {
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
 		this._handleError = this._handleError.bind(this);
-		this._renderSuccessful = this._renderSuccessful.bind(this)
+		this._handleClickViewArea = this._handleClickViewArea.bind(this);
+		this._renderSuccessful = this._renderSuccessful.bind(this);
+		this._renderViewList = this._renderViewList.bind(this);
+		this._renderHeading = this._renderHeading.bind(this);
 		this.state = {
 			loadingState: LOADING_INIT,
 			setup: null,
 			data: [],
-			view: 1
+			showView: 0
 		};
 	}
 
@@ -60,13 +63,15 @@ class Report extends Component {
 	}
 
 	_createQuery() {
-		return `{applications: allFactSheets(
-					filter: {facetFilters: [{facetKey: "FactSheetTypes", keys: ["Application"]}]}
-					)
-					{
-						edges {node{id name}}
-					}
-				}`;
+		return `{userGroups: allFactSheets(
+					sort: { mode: BY_FIELD, key: "displayName", order: asc },
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["UserGroup"]},
+						{facetKey: "hierarchyLevel", keys: ["1"]}
+					]}
+				) {
+					edges { node { id displayName } }
+				}}`;
 	}
 
 	_handleError(err) {
@@ -87,9 +92,9 @@ class Report extends Component {
 		});
 	}
 
-	_viewArea(view) {
+	_handleClickViewArea(evt) {
 		this.setState(
-			{view: view}
+			{showView: parseInt(evt.target.name, 10)}
 		)
 	};
 
@@ -122,33 +127,18 @@ class Report extends Component {
 			<div className='container-fluid'>
 				<div className='row'>
 					<div className='col-lg-2'>
-						<SelectField id={'market'} label={'Market'} options={''}/>
+						<SelectField useSmallerFontSize id='market' label='Market' options={''} />
 					</div>
 					<div className='col-lg-10'>
-						Choose a market for which one you want to see more details.
+						<p>Choose a market for which one you want to see more details.</p>
 					</div>
 				</div>
 				<div className='row'>
 					<div className='col-lg-2'>
-						<div className='panel panel-default'>
-							<div className='panel-heading'>Views</div>
-							<div className='panel-body'>
-								<p>Choose a view down below by clicking on it. The chosen one can be exorted directly.</p>
-							</div>
-							<div className='panel-heading'>Platform transformation</div>
-							<div className='list-group'>
-								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,1)}>CSM adoption</button>
-								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,2)}>Simplification and Obsolescence</button>
-								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,3)}>Narrative</button>
-								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,4)}>Project Roadmap</button>
-							</div>
-						</div>
+						{this._renderViewList()}
 					</div>
-					<div className='col-lg-10' id='viewarea'>
-						<h4>{this.state.view === 1 && "Platform transformation view for Market #1"}</h4>
-						<h4>{this.state.view === 2 && "CSM adoption view for Market x"}</h4>
-						<h4>{this.state.view === 3 && "Simplification and Obsolescence view for Market x"}</h4>
-						<h4>{this.state.view === 4 && "EA Roadmap for Market #1"}</h4>
+					<div className='col-lg-10'>
+						{this._renderHeading()}
 						<div id='export'>
 							//TODO View
 						</div>
@@ -156,6 +146,41 @@ class Report extends Component {
 				</div>
 			</div>
 		);
+	}
+
+	_renderViewList() {
+		return (
+			<div className='panel panel-default'>
+				<div className='panel-heading'>Views</div>
+				<div className='panel-body'>
+					<p>Choose a view down below by clicking on it. The chosen one can be exorted directly.</p>
+				</div>
+				<div className='list-group'>
+					<button type='button' name='0' className='list-group-item' onClick={this._handleClickViewArea}>Platform transformation</button>
+					<button type='button' name='1' className='list-group-item' onClick={this._handleClickViewArea}>CSM adoption</button>
+					<button type='button' name='2' className='list-group-item' onClick={this._handleClickViewArea}>Simplification & Obsolescence</button>
+					<button type='button' name='3' className='list-group-item' onClick={this._handleClickViewArea}>Narrative</button>
+					<button type='button' name='4' className='list-group-item' onClick={this._handleClickViewArea}>Project Roadmap</button>
+				</div>
+			</div>
+		);
+	}
+
+	_renderHeading() {
+		switch (this.state.showView) {
+			case 0:
+				return (<h3>Platform transformation view for Market #1</h3>);
+			case 1:
+				return (<h3>CSM adoption view for Market x</h3>);
+			case 2:
+				return (<h3>Simplification & Obsolescence view for Market x</h3>);
+			case 3:
+				return (<h3>Narrative view for Market #1</h3>);
+			case 4:
+				return (<h3>Project roadmap view for Market #1</h3>);
+			default:
+				throw new Error('Unknown showView state: ' + this.state.showView);
+		}
 	}
 }
 

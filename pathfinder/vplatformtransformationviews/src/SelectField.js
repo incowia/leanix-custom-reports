@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import Select from 'react-select';
 
 class SelectField extends Component {
-	// TODO anpassen an aktuelle react-select version (https://github.com/JedWatson/react-select)
+
 	constructor(props) {
 		super(props);
 		this._onChange = this._onChange.bind(this);
