@@ -15,11 +15,12 @@ class Report extends Component {
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
 		this._handleError = this._handleError.bind(this);
-		this._renderSuccessful = this._renderSuccessful.bind(this);
+		this._renderSuccessful = this._renderSuccessful.bind(this)
 		this.state = {
 			loadingState: LOADING_INIT,
 			setup: null,
-			data: []
+			data: [],
+			view: 1
 		};
 	}
 
@@ -86,6 +87,12 @@ class Report extends Component {
 		});
 	}
 
+	_viewArea(view) {
+		this.setState(
+			{view: view}
+		)
+	};
+
 	render() {
 		switch (this.state.loadingState) {
 			case LOADING_INIT:
@@ -112,30 +119,39 @@ class Report extends Component {
 
 	_renderSuccessful() {
 		return (
-			<div className='container-fluid' id='export'>
+			<div className='container-fluid'>
 				<div className='row'>
 					<div className='col-lg-2'>
 						<SelectField id={'market'} label={'Market'} options={''}/>
 					</div>
 					<div className='col-lg-10'>
-						TEXT
+						Choose a market for which one you want to see more details.
 					</div>
 				</div>
 				<div className='row'>
 					<div className='col-lg-2'>
 						<div className='panel panel-default'>
-							<div className='panel-heading'>Panel heading</div>
+							<div className='panel-heading'>Views</div>
 							<div className='panel-body'>
-								<p>Some default panel content here.</p>
+								<p>Choose a view down below by clicking on it. The chosen one can be exorted directly.</p>
 							</div>
+							<div className='panel-heading'>Platform transformation</div>
 							<div className='list-group'>
-								<button type='button' className='list-group-item'>Cras justo odio</button>
-								<button type='button' className='list-group-item'>Dapibus ac facilisis in</button>
+								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,1)}>CSM adoption</button>
+								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,2)}>Simplification and Obsolescence</button>
+								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,3)}>Narrative</button>
+								<button type='button' className='list-group-item' onClick={this._viewArea.bind(this,4)}>Project Roadmap</button>
 							</div>
 						</div>
 					</div>
-					<div className='col-lg-10'>
-						<h4 className='text-center'>VIEW AREA</h4>
+					<div className='col-lg-10' id='viewarea'>
+						<h4>{this.state.view === 1 && "Platform transformation view for Market #1"}</h4>
+						<h4>{this.state.view === 2 && "CSM adoption view for Market x"}</h4>
+						<h4>{this.state.view === 3 && "Simplification and Obsolescence view for Market x"}</h4>
+						<h4>{this.state.view === 4 && "EA Roadmap for Market #1"}</h4>
+						<div id='export'>
+							//TODO View
+						</div>
 					</div>
 				</div>
 			</div>
