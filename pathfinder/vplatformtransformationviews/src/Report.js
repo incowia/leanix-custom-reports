@@ -16,6 +16,7 @@ class Report extends Component {
 		this._handleData = this._handleData.bind(this);
 		this._handleError = this._handleError.bind(this);
 		this._handleClickViewArea = this._handleClickViewArea.bind(this);
+		this._handleViewSelect = this._handleViewSelect.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderViewList = this._renderViewList.bind(this);
 		this._renderHeading = this._renderHeading.bind(this);
@@ -83,13 +84,17 @@ class Report extends Component {
 	}
 
 	_handleData(index) {
-		const tableData = [];
-		tableData.push(1);
+		const selectFieldData = this._listMarket(index.userGroups.nodes);
+		selectFieldData.push(1);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: LOADING_SUCCESSFUL,
-			data: tableData
+			data: selectFieldData
 		});
+	}
+
+	_listMarket(nodes) {
+		nodes.forEach((e) => {});
 	}
 
 	_handleClickViewArea(evt) {
@@ -97,6 +102,8 @@ class Report extends Component {
 			{showView: parseInt(evt.target.name, 10)}
 		)
 	};
+
+	_handleViewSelect(evt) {};
 
 	render() {
 		switch (this.state.loadingState) {
@@ -127,7 +134,7 @@ class Report extends Component {
 			<div className='container-fluid'>
 				<div className='row'>
 					<div className='col-lg-2'>
-						<SelectField useSmallerFontSize id='market' label='Market' options={''} />
+						<SelectField useSmallerFontSize id='market' label='Market' options={''} value={} onChange={this._handleViewSelect}/>
 					</div>
 					<div className='col-lg-10'>
 						<p>Choose a market for which one you want to see more details.</p>
