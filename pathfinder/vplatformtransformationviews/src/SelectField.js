@@ -9,8 +9,8 @@ class SelectField extends Component {
 		this._onChange = this._onChange.bind(this);
 	}
 
-	_onChange(val) {
-		this.props.onChange(val);
+	_onChange(option) {
+		this.props.onChange(option);
 	}
 
 	render() {
