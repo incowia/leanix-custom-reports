@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import CommonQueries from './common/CommonGraphQLQueries';
 import DataIndex from './common/DataIndex';
 import SelectField from './SelectField';
-import Platformtransformation from './TemplateView';
+import TemplateView from './TemplateView';
 import Utilities from './common/Utilities';
 
 const LOADING_INIT = 0;
@@ -116,12 +116,9 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
-		console.log(index);
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
 		const bcsLvl1 = this._getFilteredBCs(index.businessCapabilitiesLvl1.nodes, platformId, 'Platform');
 		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform')
-		console.log(bcsLvl1);
-		console.log(bcsLvl2);
 		this.state.data.push(1);
 		lx.hideSpinner();
 		this.setState({
@@ -263,19 +260,18 @@ class Report extends Component {
 	_renderViewArea() {
 		switch (this.state.showView) {
 			case 0:
-				return <Platformtransformation/>;
+				return <TemplateView/>;
 			case 1:
-				return <Platformtransformation/>;
+				return <TemplateView/>;
 			case 2:
-				return <Platformtransformation/>;
+				return <TemplateView/>;
 			case 3:
-				return <Platformtransformation/>;
+				return <TemplateView/>;
 			case 4:
-				return <Platformtransformation/>;
+				return <TemplateView/>;
 			default:
 				throw new Error('Unknown showView state: ' + this.state.showView);
 		}
 	}
 }
-
 export default Report;
