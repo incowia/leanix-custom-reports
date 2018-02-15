@@ -204,6 +204,7 @@ class Report extends Component {
 						 onChange={this._handleViewSelect}/>
 					</div>
 					<div className='col-lg-10'>
+						<br/>
 						<p>Choose a market for which one you want to see more details.</p>
 					</div>
 				</div>

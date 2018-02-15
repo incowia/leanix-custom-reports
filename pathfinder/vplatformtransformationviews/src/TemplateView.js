@@ -9,20 +9,32 @@ class TemplateView extends Component {
 		};
 	}
 
-	render() {
-		return (
-			<div>
-				<div className="col-xs-2">
-					<div className="panel panel-default">
-						<div className="panel-body">
-								Basic panel example
-						</div>
-					</div>
+	_renderPanel(panelName) {
+		return(
+			<div className="panel panel-default">
+				<div className="panel-body" style={{textAlign: 'center'}}>
+					{panelName}
 				</div>
-				<div className="col-xs-6">
-					<div className="panel panel-default">
-						<div className="panel-body">
-							Basic panel example
+			</div>
+		);
+	}
+
+	_renderGrid() {
+		return (
+			<div className="container-fluid">
+				<div className="col-xs-2">
+					<br/><br/><br/>
+					{this._renderPanel('Business Management')}
+				</div>
+				<div className="col-xs-8">
+					<div className="row">
+						{this._renderPanel('Channels')}
+					</div>
+					<div className="row">
+						<div className="panel panel-default">
+							<div className="panel-body">
+								Transformation
+							</div>
 						</div>
 					</div>
 				</div>
@@ -35,6 +47,10 @@ class TemplateView extends Component {
 				</div>
 			</div>
 		);
+	}
+
+	render() {
+		return this._renderGrid();
 	}
 }
 export default TemplateView;
