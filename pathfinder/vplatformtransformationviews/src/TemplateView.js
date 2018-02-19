@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
 class TemplateView extends Component {
 
@@ -31,9 +32,19 @@ class TemplateView extends Component {
 						{this._renderPanel('Channels')}
 					</div>
 					<div className="row">
+						{this._renderPanel('Transformation')}
+					</div>
+					<div className="row">
 						<div className="panel panel-default">
-							<div className="panel-body">
-								Transformation
+							<div className="panel-body" style={{textAlign: 'center'}}>
+								Customer Management
+								<table className="table">
+									<tr>
+										<td>{this._renderPanel('Contact Centre Operations')}</td>
+										<td>{this._renderPanel('Retail Operations & Logistics')}</td>
+										<td>{this._renderPanel('CRM, Billing and Commercial Order Management')}</td>
+									</tr>
+								</table>
 							</div>
 						</div>
 					</div>
@@ -53,4 +64,40 @@ class TemplateView extends Component {
 		return this._renderGrid();
 	}
 }
+
+TemplateView.propTypes = {
+	sideArea: PropTypes.shape({
+		id: PropTypes.string.isRequired,
+		name: PropTypes.string.isRequired,
+		items: PropTypes.arrayOf(
+			PropTypes.shape({
+				id: PropTypes.string.isRequired,
+				name: PropTypes.string.isRequired
+			}).isRequired
+		).isRequired
+	}).isRequired,
+	mainArea: PropTypes.arrayOf(
+		PropTypes.shape({
+			id: PropTypes.string.isRequired,
+			name: PropTypes.string.isRequired,
+			items: PropTypes.arrayOf(
+				PropTypes.shape({
+					id: PropTypes.string.isRequired,
+					name: PropTypes.string.isRequired
+				}).isRequired
+			).isRequired
+		}).isRequired
+	).isRequired,
+	mainIntermediateArea: PropTypes.shape({
+		id: PropTypes.string.isRequired,
+		name: PropTypes.string.isRequired
+	}).isRequired,
+	legend: PropTypes.shape({
+		color: PropTypes.string.isRequired,
+		text: PropTypes.string.isRequired
+	}).isRequired,
+	colorScheme: PropTypes.object.isRequired,
+	additionalContent: PropTypes.func
+};
+
 export default TemplateView;

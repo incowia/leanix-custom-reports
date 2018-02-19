@@ -9,6 +9,126 @@ const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
 const LOADING_ERROR = 2;
 
+// mocks
+const sideArea = {
+	// Lvl 1 Platform BC (Factsheet object)
+	id: '...',
+	name: 'Business Management',
+	// show max. 3 children in one row
+	items: [
+		// Lvl 2 Platform BC (child, Factsheet object)
+		{
+			id: '...',
+			name: 'Business & Collaboration'
+		}, {
+			id: '...',
+			name: 'Security'
+		}, {
+			id: '...',
+			name: 'HR / Supply Chain / Finance'
+		}, {
+			id: '...',
+			name: 'Analytics & Intelligence'
+		}
+	]
+};
+const mainArea = [
+	// contains Lvl 1 Platform BCs with nested children (Lvl 2)
+	// order Lvl 1: Channel layer, Customer Management, Service Management, Resource Management
+	// order Lvl 2: as it is (from query)
+	// if there are at least 2 children, then show Lvl 1, else just show that one child
+	{
+		// Lvl 1 Platform BC (Factsheet object)
+		id: '...',
+		name: 'Channel layer',
+		items: [{
+			// Lvl 2 Platform BC (child, Factsheet object)
+			id: '...',
+			name: 'Channels'
+		}
+		]
+	}, {
+		id: '...',
+		name: 'Customer Management',
+		items: [{
+			id: '...',
+			name: 'Contact Centre Operations'
+		}, {
+			id: '...',
+			name: 'Retail Operations & Logistics'
+		}, {
+			id: '...',
+			name: 'CRM, Billing and Commercial Order Management'
+		}
+		]
+	}, {
+		id: '...',
+		name: 'Service Management',
+		items: [{
+			id: '...',
+			name: 'Service Assurance'
+		}, {
+			id: '...',
+			name: 'Charging & Policy Management'
+		}, {
+			id: '...',
+			name: 'Service Orchestration'
+		}
+		]
+	}, {
+		id: '...',
+		name: 'Resource Management',
+		items: [{
+			id: '...',
+			name: 'Resource Fault & Performance'
+		}, {
+			id: '...',
+			name: 'Resource Inventory'
+		}, {
+			id: '...',
+			name: 'Resource Activation & Configuration'
+		}
+		]
+	}
+];
+const integration = {
+	// Factsheet object
+	id: '...',
+	name: 'Integration'
+};
+const viewOneLegend = [
+	// also valid for view 2
+	// can be made a static constant
+	{
+		color: 'green',
+
+		text: 'Target Platform already in place'
+	}, {
+		color: 'yellow',
+		text: 'Plan to Adopt platform from another market'
+	}, {
+		color: 'orange',
+		text: 'Step-wise evolution to target'
+	}, {
+		color: 'red',
+		text: 'Plan to build new target capability'
+	}, {
+		color: 'gray',
+		text: 'Plan to wrap existing legacy'
+	}, {
+		color: 'white',
+		text: 'Plan to remove capability'
+	}, {
+		color: 'blue',
+		text: 'Plan is not clear'
+	}, {
+		color: 'pink',
+		text: 'No information available'
+	}
+];
+const viewOneColorScheme = {}; // will be specified later
+const viewOneAdditionalContent = undefined; // not relevant for view 1
+
 class Report extends Component {
 
 	constructor(props) {
@@ -261,7 +381,13 @@ class Report extends Component {
 	_renderViewArea() {
 		switch (this.state.showView) {
 			case 0:
-				return <TemplateView/>;
+				return <TemplateView
+					sideArea={sideArea}
+					mainArea={mainArea}
+					mainIntermediateArea={integration}
+					legend={viewOneLegend}
+					colorScheme={viewOneColorScheme}
+					additionalContent={viewOneAdditionalContent} />;
 			case 1:
 				return <TemplateView/>;
 			case 2:
