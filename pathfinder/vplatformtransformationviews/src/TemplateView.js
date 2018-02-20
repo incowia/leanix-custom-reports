@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 // TODO: writingMode und transform:rotate müssen für den IE angepasst werden.
 // TODO: css-Anweisungen in eine Klasse verlagern
 // TODO: gedrehte Schrift springt bei größeren Bildschirmen aus dem Panel
+// TODO: Die harten Umbrüche müssen ersetzt werden.
 
 class TemplateView extends Component {
 
@@ -27,24 +28,17 @@ class TemplateView extends Component {
 
 	_renderView() {
 		return (
-			<div className="container-fluid">
-				<div className="col-xs-2">
-					<br/><br/><br/>
-					<div className="panel panel-default">
-						<div className="panel-body" style={{transform: 'rotate(270deg)'}}>
-							Business Management
-							{this._renderPanel('hilfe')}
+			<div className="container">
+				<div className="row">
+					<div className="col-md-2">
+						<div className="well well-sm">{this.props.sideArea.name}
+
+							<div className="well well-sm">Schluss für heute</div>
 						</div>
 					</div>
-				</div>
-				<div className="col-xs-8">
-					<div className="row">
+					<div className="col-md-8">
 						{this._renderPanel('Channels')}
-					</div>
-					<div className="row">
 						{this._renderPanel('Integration')}
-					</div>
-					<div className="row">
 						<div className="panel panel-default">
 							<div className="panel-body">
 								<table className="table">
@@ -59,11 +53,7 @@ class TemplateView extends Component {
 								</table>
 							</div>
 						</div>
-					</div>
-					<div className="row">
 						{this._renderPanel('Integration')}
-					</div>
-					<div className="row">
 						<div className="panel panel-default">
 							<div className="panel-body" style={{textAlign: 'center'}}>
 								<table className="table">
@@ -78,11 +68,7 @@ class TemplateView extends Component {
 								</table>
 							</div>
 						</div>
-					</div>
-					<div className="row">
 						{this._renderPanel('Integration')}
-					</div>
-					<div className="row">
 						<div className="panel panel-default">
 							<div className="panel-body" style={{textAlign: 'center'}}>
 								<table className="table">
@@ -98,11 +84,11 @@ class TemplateView extends Component {
 							</div>
 						</div>
 					</div>
-				</div>
-				<div className="col-xs-2">
-					<div className="panel panel-default">
-						<div className="panel-body">
-							Key
+					<div className="col-md-2">
+						<div className="panel panel-default">
+							<div className="panel-body">
+								Key
+							</div>
 						</div>
 					</div>
 				</div>
