@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
-import moment from 'moment';
 
 const FIRST_RECORD = 0;
-
 const IDX_XRANGE_START = 0;
 const IDX_XRANGE_END = 1;
 
@@ -18,31 +16,20 @@ const IDX_PAYLOAD = 5;
 const MARGIN_TOP_WITH_TITLE = 70; // top margin includes title and legend
 const MARGIN_RIGHT = 40; // right margin should provide space for last horz. axis title
 const MARGIN_BOTTOM = 10;
-const MARGIN_LEFT = 150; // left margin should provide space for y axis titles
+const MARGIN_LEFT = 120; // left margin should provide space for y axis titles
+
+// default chart configuration, if no config has been delivered
+const CHARTCONFIG_DEFAULT = {
+	title: null,
+	timeSpan: null,
+	consecutive: false,
+	gridlineX: true,
+	gridlineY: true,
+	infoLabel: 'Information'
+};
 
 const DATE_RE = new RegExp(/^\d{4}-\d{2}-\d{2}$/);
 const DATETIME_RE = new RegExp(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-const TRANSLATIONS = {
-	'en': {
-		FROM: 'from',
-		TO: 'to',
-		M: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-		MM: ['01','02','03','04','05','06','07','08','09','10','11','12'],
-		MMM: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-		MMMM: ['January','February','March','April','May','June','July','August','September','October','November','December'],
-		FORMATTED: 'YYYY/MM/DD'
-	},
-	'de': {
-		FROM: 'von',
-		TO: 'bis',
-		M: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-		MM: ['01','02','03','04','05','06','07','08','09','10','11','12'],
-		MMM: ['Jan','Feb','Mar','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
-		MMMM: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
-		FORMATTED: 'DD.MM.YYYY'
-	}
-};
 
 class Roadmap extends Component {
 
@@ -52,8 +39,7 @@ class Roadmap extends Component {
 
 		this.componentId = 'roadmap';
 		this.component = null;
-
-		this.trans = TRANSLATIONS['en'];
+		this.config = CHARTCONFIG_DEFAULT;
 
 		this.margin = {
 			top: MARGIN_TOP_WITH_TITLE,
@@ -63,48 +49,32 @@ class Roadmap extends Component {
 		};
 
 		// height of horizontal data bars
-		this.barHeight = 24;
-
+		this.barHeight = 20;
 		// spacing between horizontal data bars
 		this.lineSpacing = 4;
-
 		this.lineHeight = this.barHeight + this.lineSpacing;
 
 		// vertical space for heading
 		this.paddingTopHeading = -50;
-
 		// vertical overhang of vertical grid lines on bottom
 		this.paddingBottom = 10;
-
 		// space for y axis titles
 		this.paddingLeft = -MARGIN_LEFT;
 
+		// x-axis gridline will overflow the current chart width by this length (on both sides)
+		this.gridLinePadding = 20;
+
 		this.width = 940 - MARGIN_LEFT - MARGIN_RIGHT;
-
-		// title of chart is drawn or not (default: yes)
-		this.drawTitle = true;
-
-		// year ticks to be emphasized or not (default: yes)
-		this.emphasizeYearTicks = 1;
-
-		// define chart pagination
-		// max. no. of datasets that is displayed, 0: all (default: all)
-		//this.maxDisplayDatasets = 0;
-
-		// dataset that is displayed first in the current
-		// display, chart will show datasets "curDisplayFirstDataset" to
-		// "curDisplayFirstDataset+maxDisplayDatasets"
-		//this.curDisplayFirstDataset = 0;
 
 		// range of dates that will be shown
 		// if from-date (1st element) or to-date (2nd element) is zero,
 		// it will be determined according to your data (default: automatically)
 		this.displayDateRange = [0, 0];
 
-		// global div for tooltip
-		this.tooltipDiv = null;
-
 		this.isDateOnlyFormat = null;
+
+		this.tooltipDiv = null;
+		this.svg = null;
 
 		this._drawChart = this._drawChart.bind(this);
 		this._mouseOvered = this._mouseOvered.bind(this);
@@ -113,45 +83,42 @@ class Roadmap extends Component {
 
 	componentDidMount() {
 		// global div for tooltip
-		this.tooltipDiv = d3.select('body').append('div')
-			.attr('class', 'tooltip')
-			.style('opacity', 0.0);
+		this.tooltipDiv = d3.select('#' + this.componentId)
+			.append('div')
+				.attr('id', this.componentId + '_tooltip')
+				.attr('class', 'tooltip')
+				.style('opacity', 0.0);
+		// create SVG element
+		this.svg = d3.select('#' + this.componentId)
+			.append('svg')
+				.attr('id', `${this.componentId}_svg`);
 	}
 
-	_labelClicked(d) {
-		if (d.url != null) {
-			// TODO: anpassen an leanix
-			//lx.openLink(url, '_blank');
-			return window.open(d.url);
-		}
-		return null;
-	}
-
-	_mouseOvered(d, i) {
-		const event = d3.event;
-		const target = event.target || event.srcElement;
-		const svgElement = document.getElementById(`${this.componentId}_svg`);
+	_mouseOvered(d) {
+		const target = d3.event.target;
+		const svg = document.getElementById(`${this.componentId}_svg`);
 		const targetX = +target.attributes['x'].value;
 		const targetY = +target.attributes['y'].value;
 
-		// check parents for row number (1st parent hold row number)
+		// check parents for row number (1st parent holds row number)
 		let rowNum = null;
 		let pn = target.parentNode;
-		while (!rowNum && pn && pn !== svgElement) {
+		while (!rowNum && pn && pn !== svg) {
 			rowNum = pn.attributes['row'].value;
 			pn = pn.parentNode;
 		}
 		// tooltip positionieren!
-		rowNum = 0 + (rowNum ? 1 * rowNum : 0);
+		rowNum = 1 + (rowNum ? 1 * rowNum : 0);
 		const tooltip = {
-				left: this.margin.left + targetX + 12,
-				top:  this.margin.top - this.paddingTopHeading + rowNum * this.lineHeight + this.barHeight / 2,
-			}
+				left: this.margin.left + targetX + 24,
+				top:  this.margin.top - this.paddingTopHeading + (rowNum + 0.5) * this.lineHeight
+		};
+
+		tooltip.left = tooltip.left > this.width - 100 ? tooltip.left - 100 : tooltip.left;
 		this.tooltipDiv
 			.html(this._renderTooltip(d))
-			.style('left', tooltip.left + 'px')
 			.style('top', tooltip.top + 'px')
-			.style('height', tooltip.height + 'px')
+			.style('left', tooltip.left + 'px')
 			.transition()
 				.duration(500)
 				.style('opacity', 1.0);
@@ -163,7 +130,6 @@ class Roadmap extends Component {
 			.style('opacity', 0.0);
 	}
 
-	// rework ticks and grid for better visual structure
 	_isYear(t) {
 		return +t ===  + (new Date(t.getFullYear(), 0, 1, 0, 0, 0));
 	}
@@ -172,18 +138,17 @@ class Roadmap extends Component {
 		return +t ===  + (new Date(t.getFullYear(), t.getMonth(), 1, 0, 0, 0));
 	}
 
-	_getDate(d, format) {
-		d = d || new Date();
-		if (format === null || format === undefined) {
-			format = 'MM';
-		}
-		const H = d.getHours();
-		const M = d.getMinutes();
-		const S = d.getSeconds();
+	_getDate(date) {
+		date = date || new Date();
+		const d = date.getDate();
+		const m = date.getMonth() + 1;
+		const H = date.getHours();
+		const M = date.getMinutes();
+		const S = date.getSeconds();
 		return {
-				d: d.getDate(),
-				m: this.trans[format][d.getMonth()],
-				y: d.getFullYear(),
+				y: date.getFullYear(),
+				m: (m < 10 ? '0' + m : m),
+				d: (d < 10 ? '0' + d : d),
 				H: (H < 10 ? '0' + H : H),
 				M: (M < 10 ? '0' + M : M),
 				S: (S < 10 ? '0' + S : S)
@@ -191,38 +156,39 @@ class Roadmap extends Component {
 	}
 
 	_drawChart(selection) {
+
+		// extract chart configuration
+		if (this.props.config) {
+			Object.keys(this.props.config).forEach((k) => {
+				const v = this.props.config[k];
+				this.config[k] = v === null || v === undefined ? CHARTCONFIG_DEFAULT[k] : v;
+			});
+		}
+
+		// adjust chart width to parent element width
+		this.width = this.component.parentElement.clientWidth - this.margin.left - this.margin.right;
+
+		// adjust margin-top depending on title
+		const drawTitle = this.config.title && this.config.title.length > 0;
+		this.margin.top = (drawTitle ? MARGIN_TOP_WITH_TITLE : 20);
+
+		if (this.config.timeSpan && this.config.timeSpan.length > 1) {
+			this.displayDateRange = [Date.parse(this.config.timeSpan[IDX_XRANGE_START]), Date.parse(this.config.timeSpan[IDX_XRANGE_END])];
+		} else {
+			this.displayDateRange = [0,0];
+		}
+
 		let minDate;
 		let maxDate;
 		selection.each((dataset) => {
-			// check which subset of datasets have to be displayed
-			/*
-			let maxPages = 0; // used if paging is on
-			let startSet;
-			let endSet;
-			if (this.maxDisplayDatasets !== 0) {
-				startSet = this.curDisplayFirstDataset;
-				if (this.curDisplayFirstDataset + this.maxDisplayDatasets > dataset.length) {
-					endSet = dataset.length;
-				} else {
-					endSet = this.curDisplayFirstDataset + this.maxDisplayDatasets;
-				}
-				maxPages = Math.ceil(dataset.length / this.maxDisplayDatasets);
-			} else {
-				startSet = 0;
-				endSet = dataset.length;
-			}
-			const noOfDatasets = endSet - startSet;
-			*/
 			const noOfDatasets = dataset.length;
-
-			//const height = this.barHeight * noOfDatasets + this.lineSpacing * noOfDatasets - 1;
-			const height = this.lineHeight * noOfDatasets - 1;
+			const height = this.lineHeight * noOfDatasets;
 
 			// parse data text strings to JavaScript date stamps
 			if (this.isDateOnlyFormat === null) {
 				this.isDateOnlyFormat = true;
 			}
-			const me = this;
+
 			dataset.forEach((d) => {
 				d.data.forEach((d1) => {
 					//if (!(d1[IDX_FROMDATE] instanceof Date)) {
@@ -240,7 +206,7 @@ class Roadmap extends Component {
 								'\'YYYY-MM-DD HH:MM:SS\'.');
 						}
 
-						if (this.consecutive) {
+						if (this.config.consecutive) {
 							// start of next = end of before
 							d1[IDX_TODATE] = d3.timeSecond.offset(d1[IDX_FROMDATE], d.interval_s);
 						} else {
@@ -255,7 +221,8 @@ class Roadmap extends Component {
 							}
 						}
 					}
-					if (!this.timeSpan) {
+
+					if (!this.config.timeSpan) {
 						if (!minDate) {
 							minDate = d1[IDX_FROMDATE];
 							maxDate = d1[IDX_TODATE];
@@ -271,19 +238,20 @@ class Roadmap extends Component {
 				});
 			});
 
-			if (!this.timeSpan) {
-				this.timeSpan = [];
+			// no timespan given - thus take minmum and maximum date of dataset
+			if (!this.config.timeSpan) {
+				this.config.timeSpan = [];
 				let d = this._getDate(new Date(minDate))
-				this.timeSpan.push(`${d.y}-${d.m}-${d.d}`);
+				this.config.timeSpan.push(`${d.y}-${d.m}-${d.d}`);
 				d = this._getDate(new Date(maxDate))
-				this.timeSpan.push(`${d.y}-${d.m}-${d.d}`);
+				this.config.timeSpan.push(`${d.y}-${d.m}-${d.d}`);
 			}
 
 			// cluster data by dates to form time blocks
 			dataset.forEach((series, index) => {
 				const tmpData = [];
 				const filteredData = series.data.filter((d) => {
-					return d.origFromDate < this.timeSpan[IDX_XRANGE_END] && d.origToDate >= this.timeSpan[IDX_XRANGE_START];
+					return d.origFromDate < this.config.timeSpan[IDX_XRANGE_END] && d.origToDate >= this.config.timeSpan[IDX_XRANGE_START];
 				});
 				const dataLength = filteredData.length;
 				filteredData.forEach((d, i) => {
@@ -292,7 +260,7 @@ class Roadmap extends Component {
 					} else if (i < dataLength) {
 						if (d[IDX_FROMDATE] === tmpData[tmpData.length - 1][IDX_FROMDATE]) {
 							// the value has not changed since the last date
-							if (this.consecutive) {
+							if (this.config.consecutive) {
 								tmpData[tmpData.length - 1][IDX_TODATE] = d[IDX_TODATE];
 							} else {
 								if (tmpData[tmpData.length - 1][IDX_TODATE] === d[IDX_FROMDATE]) { // last.TO === next.FROM
@@ -303,7 +271,7 @@ class Roadmap extends Component {
 							}
 						} else {
 							// the value has changed since the last date
-							if (this.consecutive) {
+							if (this.config.consecutive) {
 								// extend last block until new block starts
 								tmpData[tmpData.length - 1][IDX_TODATE] = d[IDX_FROMDATE];
 							}
@@ -339,93 +307,87 @@ class Roadmap extends Component {
 
 			// define scales
 			const xScale = d3.scaleTime()
-				.domain([startDate - 24 * 60 * 60 * 1000, endDate])
+				.domain([startDate - 24 * 60 * 60 * 1000, endDate]) // -1 day to fix the yyyy-01-01 x-axis-problem (timezones)
 				.range([0, this.width])
 				.clamp(true);
 
 			// define axes
 			const xAxis = d3.axisTop().scale(xScale);
 
-			// create SVG element
-			this.svg = d3.select('#' + this.componentId).append('svg')
-				.attr('id', `${this.componentId}_svg`)
+			// adjust SVG element to given sizes
+			this.svg = d3.select('#' + this.componentId + '_svg')
 				.attr('width', this.width + this.margin.left + this.margin.right)
 				.attr('height', height + this.margin.top + this.margin.bottom)
 				.append('g')
 					.attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
 
-			// create basic element groups
+			this.svg.append('rect')
+				.attr('width', this.svg.attr('width'))
+				.attr('height', this.svg.attr('height'))
+				.style('fill', '#ffa')
+				.style('stroke', '#f00')
+				.style('stroke-width', '3px');
+
+			// create basic element groups (axes and data)
 			this.svg.append('g').attr('id', 'g_axis');
 			this.svg.append('g').attr('id', 'g_data');
 
-			// create y axis labels
+			// y axis
 			const labels = this.svg.select('#g_axis').selectAll('text')
 				//.data(dataset.slice(startSet, endSet))
 				.data(dataset.slice(0, noOfDatasets))
 				.enter();
 
-			// text labels
+			// y axis labels
 			labels.append('text')
 				.attr('x', this.paddingLeft)
 				.attr('y', this.lineSpacing + this.barHeight / 2)
-				.text(function (d) {
-						return d.measure;
-				})
-				.attr('transform', ((d, i) => {
-					return 'translate(0,' + (me.lineHeight * i) + ')';
-				}))
-				.attr('class', ((d) => {
-					let returnCSSClass = 'ytitle';
-					if (d.url != null) {
-						returnCSSClass = returnCSSClass + ' link';
-					}
-					return returnCSSClass;
-				}))
-				.on('click', this._labelClicked);
+				.attr('class', 'ytitle')
+				.text(function (d) { return d.measure; })
+				.attr('transform', ((d, i) => { return 'translate(0,' + (this.lineHeight * i) + ')'; }));
 
-			// create vertical grid
-			if (noOfDatasets && this.props.gridlineY) {
-				this.svg.select('#g_axis').selectAll('line.vert_grid')
+			// vertical grid lines
+			if (noOfDatasets && this.config.gridlineY) {
+				this.svg.select('#g_axis').selectAll('line.vertical_grid')
 					.data(xScale.ticks())
 					.enter()
 						.append('line')
-							.attr('class', 'vert_grid')
+							.attr('class', 'vertical_grid')
 							.attr('x1', (d => { return xScale(d); }))
 							.attr('x2', (d => { return xScale(d); }))
 							.attr('y1', 0)
-							//.attr('y2', this.barHeight * noOfDatasets + this.lineSpacing * noOfDatasets - 1 + this.paddingBottom);
-							.attr('y2', this.lineHeight * noOfDatasets - 1 + this.paddingBottom);
+							.attr('y2', this.lineHeight * noOfDatasets + this.paddingBottom);
 			}
-			// create horizontal grid
-			if (this.props.gridlineX) {
-				this.svg.select('#g_axis').selectAll('line.horz_grid')
+			// horizontal grid lines
+			if (this.config.gridlineX) {
+				this.svg.select('#g_axis').selectAll('line.horizontal_grid')
 					.data(dataset)
 					.enter()
 						.append('line')
-							.attr('class', 'horz_grid')
-							.attr('x1', 0)
-							.attr('x2', this.width)
-							.attr('y1', ((d, i) => { return ((me.lineSpacing + me.barHeight) * i) + me.lineSpacing + me.barHeight / 2; }))
-							.attr('y2', ((d, i) => { return ((me.lineSpacing + me.barHeight) * i) + me.lineSpacing + me.barHeight / 2; }));
+							.attr('class', 'horizontal_grid')
+							.attr('x1', -this.gridLinePadding)
+							.attr('x2', this.gridLinePadding + this.width)
+							.attr('y1', ((d, i) => { return this.lineHeight * (i + 0.5); }))
+							.attr('y2', ((d, i) => { return this.lineHeight * (i + 0.5); }));
 			}
 
-			// create x axis
+			// x axis
 			if (noOfDatasets) {
 				this.svg.select('#g_axis').append('g')
-					.attr('class', 'axis')
+					.attr('class', 'ticks')
 					.call(xAxis);
 			}
 
-			// make y groups for different data series
+			// make y-axis groups for different data series
 			const chartRow = this.svg.select('#g_data').selectAll('.dataset')
 				.data(dataset.slice(0, noOfDatasets))
 				.enter()
 					.append('g')
-						.attr('transform', ((d, i) => { return 'translate(0,' + (me.lineHeight * i) + ')'; }))
+						.attr('transform', ((d, i) => { return 'translate(0,' + (this.lineHeight * i) + ')'; }))
 						.attr('class', 'dataset')
 						.attr('row', ((d, i) => { return i; }));
 
-			// add data series
+			// add data series (bars)
 			chartRow.selectAll('rect')
 				.data((d) => { return d.disp_data; })
 				.enter()
@@ -441,7 +403,7 @@ class Roadmap extends Component {
 						.on('mouseover', this._mouseOvered)
 						.on('mouseout', this._mouseOuted);
 
-			// Bar Labels
+			// add bar labels
 			chartRow.selectAll('text.label')
 				.data((d) => { return d.disp_data; })
 				.enter()
@@ -474,7 +436,7 @@ class Roadmap extends Component {
 						.on('mouseover', this._mouseOvered)
 						.on('mouseout', this._mouseOuted);
 
-			// Bar Labels
+			// add bar info
 			chartRow.selectAll('text.info')
 				.data((d) => { return d.disp_data; })
 				.enter()
@@ -485,11 +447,10 @@ class Roadmap extends Component {
 						.attr('height', this.barHeight)
 						.attr('class', 'info')
 						.text((d) => {
-							let info = d[IDX_INFO];
-							if (!info || xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE]) < 100) {
+							if (!d[IDX_INFO] || xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE]) < 100) {
 								return null;
 							}
-							return info;
+							return d[IDX_INFO];
 						})
 						.attr('dominant-baseline', 'baseline')
 						.attr('text-anchor', 'end')
@@ -505,120 +466,53 @@ class Roadmap extends Component {
 			const isYearTick = xTicks.map(this._isYear);
 			const isMonthTick = xTicks.map(this._isMonth);
 
-			// year emphasis
-			// ensure year emphasis is only active if years are the biggest clustering unit
-			if (this.emphasizeYearTicks
-				 && !(isYearTick.every((d) => { return d === true; }))
-				 && isMonthTick.every((d) => { return d === true; })) {
+			// style the time axis (x-axis) - year emphasis is only active if years are the biggest clustering unit
+			if (!(isYearTick.every((d) => { return d === true; })) && isMonthTick.every((d) => { return d === true; })) {
 				d3.selectAll('g.tick').each(function (d, i) {
-					if (isYearTick[i]) {
-						d3.select(this)
-							.attr('class', 'x_tick year');
-					} else {
-						d3.select(this).attr('class', 'x_tick');
-					}
+					d3.select(this).attr('class', ('x_tick' + (isYearTick[i] ? ' year' : '')));
 				});
-				d3.selectAll('.vert_grid').each(function (d, i) {
-					if (isYearTick[i]) {
-						d3.select(this).attr('class', 'vert_grid_emph');
-					}
+				d3.selectAll('.vertical_grid').each(function (d, i) {
+					d3.select(this).attr('class', ('vertical_grid' + (isYearTick[i] ? ' year' : '')));
 				});
 			}
 		});
 
-		if (this.drawTitle) {
-			this._drawChartHeader();
+		if (!drawTitle) {
+			return;
 		}
 
-	}
-
-	_drawChartHeader() {
-		// create title
+		// create chart title
 		const header = this.svg.append('g').attr('id', 'g_title');
 		header.append('text')
 			.attr('x', this.paddingLeft)
 			.attr('y', this.paddingTopHeading)
 			.attr('class', 'heading')
-			.text(this.props.title);
-
-		// create subtitle
-		// determine start and end dates among all nested datasets
-		let startDate = this.displayDateRange[IDX_XRANGE_START];
-		let endDate = this.displayDateRange[IDX_XRANGE_END];
-		const dFrom = this._getDate(new Date(startDate), 'MMMM');
-		const dTo = this._getDate(new Date(endDate), 'MMMM');
-		let subtitleText = '';
-		if (this.isDateOnlyFormat) {
-			subtitleText = `${this.trans.FROM} ${dFrom.m} ${dFrom.y} ${this.trans.TO} ${dTo.m} ${dTo.y}`;
-		} else {
-			switch (this.props.lang) {
-				case 'de':
-					subtitleText = `${this.trans.FROM} ${dFrom.d} ${dFrom.m} ${dFrom.y} ${dFrom.H}:${dFrom.M}:${dFrom.S} ${this.trans.TO} ${dTo.d}. ${dTo.m} ${dTo.y} ${dTo.H}:${dTo.M}:${dTo.S}`;
-					break;
-				default:
-					subtitleText = `${this.trans.FROM} ${dFrom.m} ${dFrom.d}, ${dFrom.y} ${dFrom.H}:${dFrom.M}:${dFrom.S} ${this.trans.TO} ${dTo.m} ${dTo.d}, ${dTo.y} ${dTo.H}:${dTo.M}:${dTo.S}`;
-			}
-		}
-
-		header.append('text')
-			.attr('x', this.paddingLeft)
-			.attr('y', this.paddingTopHeading + 17)
-			.attr('class', 'subheading')
-			.text(subtitleText);
-
-		// create legend
-		/*
-		const legend = header.append('g')
-			.attr('id', 'g_legend')
-			.attr('transform', 'translate(0,-12)');
-
-		legend.append('rect')
-			.attr('x', this.width + this.margin.right - 150)
-			.attr('y', this.paddingTopHeading)
-			.attr('height', 15)
-			.attr('width', 15)
-			.attr('class', 'rect_has_data');
-
-		legend.append('text')
-			.attr('x', this.width + this.margin.right - 150 + 20)
-			.attr('y', this.paddingTopHeading + 8.5)
-			.attr('class', 'legend')
-			.text('Data available');
-
-		legend.append('rect')
-			.attr('x', this.width + this.margin.right - 150)
-			.attr('y', this.paddingTopHeading + 17)
-			.attr('height', 15)
-			.attr('width', 15)
-			.attr('class', 'rect_has_no_data');
-
-		legend.append('text')
-			.attr('x', this.width + this.margin.right - 150 + 20)
-			.attr('y', this.paddingTopHeading + 8.5 + 15 + 2)
-			.attr('class', 'legend')
-			.text('No data available');
-		*/
+			.text(this.config.title);
 	}
 
 	_renderTooltip(d) {
-		// display category name and stuff like that
+		// display y-axis label and all the other stuff
 		let output = '';
 		output += `<div class='title'>`;
+			// label
 			output += `<span class='label'>${d[IDX_LABEL] || 'n.a.'}</span>`;
-			if (this.consecutive) {
+			// timespan
+			if (this.config.consecutive) {
 				if (d.origFromDate !== null) {
-					output += ` (<span class='date'>${moment(Date.parse(d.origFromDate)).format(this.trans.FORMATTED)}</span>)`;
+					output += ` (<span class='date'>${d.origFromDate}</span>)`;
 				}
 			} else {
 				if (d.origFromDate !== null && d.origToDate !== null) {
-					output += ` (${this.trans.FROM} `;
-					output += `<span class='date'>${moment(Date.parse(d.origFromDate)).format(this.trans.FORMATTED)}</span>`;
-					output += ` ${this.trans.TO} `;
-					output += `<span class='date'>${moment(Date.parse(d.origToDate)).format(this.trans.FORMATTED)}</span>)</div>`;
+					output += ` (from `;
+					output += `<span class='date'>${d.origFromDate}</span>`;
+					output += ` to `;
+					output += `<span class='date'>${d.origToDate}</span>)</div>`;
 				}
 			}
 		output += '</div>';
-		output += `<div class='info'><span class='key'>${this.labelInfo}:</span> ${(d[IDX_INFO]) || 'n.a.'}</div>`;
+		// info
+		output += `<div class='info'><span class='key'>${this.config.infoLabel}:</span> ${(d[IDX_INFO]) || 'n.a.'}</div>`;
+		// payload - if any
 		if (d[IDX_PAYLOAD]) {
 			output += `<div class='payload'>`;
 			Object.keys(d[IDX_PAYLOAD]).forEach((k) => {
@@ -630,33 +524,15 @@ class Roadmap extends Component {
 	}
 
 	render() {
-		this.componentId = this.props.id;
+		// TODO: the chart will NOT shown on 1st render (componentDidMount not yet fired)!
 		this.component = this.component || document.getElementById(this.componentId);
 		if (!this.component) {
-			console.error('no component!');
+			console.error('ERR: No roadmap component found!');
 			return (<div id={this.componentId}/>);
 		}
 
-		// adjust chart width to parent element width
-		this.width = this.component.parentElement.clientWidth - this.margin.left - this.margin.right;
-		this.drawTitle = this.props.title && this.props.title.length > 0;
-		this.margin.top = (this.drawTitle ? MARGIN_TOP_WITH_TITLE : 20);
-
-		this.trans = TRANSLATIONS[this.props.lang || 'en'];
-		this.consecutive = this.props.consecutive === true;
-		this.labelInfo = this.props.tooltipConfig && this.props.tooltipConfig.labelInfo ? this.props.tooltipConfig.labelInfo :  'Information';
-
-		this.timeSpan = this.props.timeSpan;
-		if (this.timeSpan && this.timeSpan.length > 1) {
-			this.displayDateRange = [Date.parse(this.timeSpan[IDX_XRANGE_START]), Date.parse(this.timeSpan[IDX_XRANGE_END])];
-		} else {
-			this.displayDateRange = [0,0];
-			this.timeSpan = null;
-		}
-
-		d3.select('#' + this.componentId).selectAll('*').remove();
-
-		// Todo: make the chart responsive!
+		// redraw chart
+		d3.select('#' + this.componentId + '_svg').selectAll('*').remove();
 		d3.select('#' + this.componentId).datum(this.props.data).call(this._drawChart);
 		return (
 			<div id={this.componentId}/>
@@ -665,13 +541,9 @@ class Roadmap extends Component {
 }
 
 Roadmap.propTypes = {
-	id: PropTypes.string.isRequired,
-	title: PropTypes.string,
 	data: PropTypes.arrayOf(
 		PropTypes.shape({
 			measure: PropTypes.string,
-			url: PropTypes.string,
-			html: PropTypes.string,
 			data: PropTypes.arrayOf(
 				PropTypes.arrayOf(
 					PropTypes.oneOfType([
@@ -682,14 +554,14 @@ Roadmap.propTypes = {
 			)
 		}).isRequired
 	),
-	timeSpan: PropTypes.arrayOf(PropTypes.string.isRequired, PropTypes.string.isRequired),
-	consecutive: PropTypes.bool,
-	lang: PropTypes.string,
-	gridlineX: PropTypes.bool,
-	gridlineY: PropTypes.bool,
 	categories: PropTypes.shape(),
-	tooltipConfig: PropTypes.shape({
-		labelInfo: PropTypes.string
+	config: PropTypes.shape({
+		title: PropTypes.string,
+		timeSpan: PropTypes.arrayOf(PropTypes.string.isRequired, PropTypes.string.isRequired),
+		consecutive: PropTypes.bool,
+		gridlineX: PropTypes.bool,
+		gridlineY: PropTypes.bool,
+		infoLabel: PropTypes.string
 	})
 };
 

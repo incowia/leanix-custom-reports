@@ -20,7 +20,6 @@ const CATEGORIES_ROADMAP = { // category names and their colors defined here
 const MOCKED_DATA_ROADMAP = [
 	{
         measure: "Category 0",
-        url: "www.example.com",
         data: [
 			// Category, FromDate, ToDate, Label, Number, Info, Payload
             ['cat0', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
@@ -45,12 +44,12 @@ const MOCKED_DATA_ROADMAP = [
 	{
         measure: 'ABS',
         data: [
-            ['cat0', "2015-12-01", "2016-02-15"],
+            ['cat0', "2015-12-01", "2016-02-15", null, 55],
             ['cat1', "2016-02-28", "2016-04-15"],
-            ['cat2', "2016-06-30", "2016-07-15"],
+            ['cat2', "2016-06-30", "2016-07-15", null, 222],
             ['cat0', "2016-09-15", "2016-10-25"],
-            ['cat2', "2016-12-01", "2017-03-17"],
-            ['cat1', "2017-03-31", "2017-04-15"],
+            ['cat2', "2016-12-01", "2017-03-17", '', 34],
+            ['cat1', "2017-03-31", "2017-04-15", '', 1],
             ['cat2', "2017-06-30", "2017-07-15"],
             ['cat0', "2017-09-30", "2017-10-15"]
         ]
@@ -59,19 +58,18 @@ const MOCKED_DATA_ROADMAP = [
         measure: null,
         data: [
             ['cat0', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
-            ['cat1', "2016-02-14", "2016-05-15"],
-            ['cat1', "2017-03-31", "2017-04-15"],
-            ['cat2', "2017-06-30", "2017-07-15"],
-            ['cat0', "2017-09-30", "2017-10-15"]
+            ['cat1', "2016-02-14", "2016-05-15", '', 7],
+            ['cat1', "2017-03-31", "2017-04-15", '', 34],
+            ['cat2', "2017-06-30", "2017-07-15", '', 142],
+            ['cat0', "2017-09-30", "2017-10-15", null, 76]
         ]
     },
 	{
         measure: "Category 1",
-        url: "http://www.google.com",
         data: [
             ['cat1', "2015-01-01", "2015-06-01", 'Ansh dhdh jj', 177],
             ['cat1', "2016-01-01", "2016-03-15", 'aksk akak'],
-            ['cat2', "2017-01-01", "2017-10-10", 'jkddiuiwe dijdi'],
+            ['cat2', "2017-01-01", "2017-10-10", 'jkddiuiwe dijdi', 1025],
             ['cat1', "2018-01-01", "2018-02-20", 'AA']
         ]
     }
@@ -509,17 +507,17 @@ class Report extends Component {
 			case 3:
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
+				const chartConfig = {
+					timeSpan: ['2015-01-01', '2018-01-01'],
+					gridlineX: true,
+					gridlineY: false,
+					infoLabel: 'CSM'
+				};
 				return (
-					<Roadmap id='roadmap'
+					<Roadmap
 						data={MOCKED_DATA_ROADMAP}
-						timeSpan={[
-							'2015-01-01',
-							'2016-01-01'
-						]}
-						gridlineX={true}
-						xxxgridlineY={true}
 						categories={CATEGORIES_ROADMAP}
-						tooltipConfig={{labelInfo: 'CSM'}}
+						config={chartConfig}
 					/>);
 			default:
 				throw new Error('Unknown showView state: ' + this.state.showView);

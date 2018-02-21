@@ -1,38 +1,70 @@
-html {
-	margin: 0;
-	font-family: arial;
-}
-
-.bar, text {
+#g_data .bar, #g_data  text {
 	cursor: help;
 }
 
-.dataset text {
-	font-family: arial;
+#g_data .dataset text {
 	fill: #fff;
 	font-weight: normal;
 	font-size: 0.8em;
 }
 
-text.info {
+#g_data text.info {
 	font-weight: bold;
-	border: 1px solid red;
 }
+
+#g_axis .ytitle {
+    dominant-baseline: middle;
+    font-size: 12px;
+	font-weight: bold;
+}
+
+#g_axis text {
+    fill: #777;
+}
+
+#g_axis .vertical_grid,
+#g_axis .horizontal_grid {
+    stroke: #ddd;
+    stroke-width: 1px;
+}
+
+#g_axis .ticks path,
+#g_axis .ticks line {
+    display: none;
+}
+
+#g_axis .ticks text {
+	fill: #555;
+	font-size: 10px;
+}
+
+#g_axis .ticks .year {
+    font-weight: bold;
+	font-size: 12px;
+}
+
+#g_title .heading {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#g_title .subheading {
+    font-size: 12px;
+    fill: #777;
+}
+
 .tooltip * {
 	margin: 2px;
 }
 
 .tooltip {
     position: absolute;
+    display: box;
+    width: auto;
     text-align: left;
-    font-family: Arial, sans-serif;
-    font-size: small;
+	font-family: arial;
 	color: #000;
 	margin: 0;
-    padding: 2;
-    width: auto;
-    padding-top: 0;
-    display: box;
 	background-color: #ffa;
 	border: thin solid #aaa;
 	border-radius: 6px;
@@ -41,11 +73,11 @@ text.info {
 }
 
 .tooltip .title {
-	background-color: #665;
-	border-radius: 6px 6px 0 0;
 	color: #fff;
 	margin: 0;
 	padding: 4px 2px;
+	background-color: #665;
+	border-radius: 6px 6px 0 0;
 }
 
 .tooltip .label, .tooltip .date, .tooltip .key {
@@ -64,74 +96,4 @@ text.info {
 }
 .tooltip .payload div:nth-child(odd) {
 	background-color: #fff;
-}
-
-.axis .year {
-    font-weight: bold;
-}
-
-.ytitle {
-    /* y axis labels */
-    dominant-baseline: middle;
-    font-family: "Muli", "Helvetica", Arial, sans-serif;
-    -moz-osx-font-smoothing: grayscale;
-    font-size: 12px;
-}
-
-.ytitle.link {
-    /* y axis label with link */
-    cursor: pointer;
-    fill: #07C;
-}
-
-.axis path,
-.axis line {
-    display: none;
-}
-
-.axis text {
-    font-size: 12px;
-    font-family: "Muli", "Helvetica", Arial, sans-serif;
-    -moz-osx-font-smoothing: grayscale;
-    fill: #777;
-}
-
-.vert_grid {
-    fill: none;
-    stroke: #dddddd;
-    stroke-width: 1px;
-}
-
-.vert_grid_emph {
-    fill: none;
-    stroke: #dddddd;
-    stroke-width: 2px;
-}
-
-.horz_grid {
-    fill: none;
-    stroke: #dddddd;
-    stroke-width: 1px;
-}
-
-.heading {
-    font-size: 16px;
-    font-family: "Muli", "Helvetica", Arial, sans-serif;
-    -moz-osx-font-smoothing: grayscale;
-    font-weight: bold;
-}
-
-.subheading {
-    font-size: 12px;
-    font-family: "Muli", "Helvetica", Arial, sans-serif;
-    -moz-osx-font-smoothing: grayscale;
-    fill: #777;
-}
-
-.legend {
-    dominant-baseline: middle;
-    font-size: 12px;
-    font-family: "Muli", "Helvetica", Arial, sans-serif;
-    -moz-osx-font-smoothing: grayscale;
-    fill: #777;
 }
