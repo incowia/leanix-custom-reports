@@ -82,13 +82,13 @@ class Roadmap extends Component {
 	}
 
 	componentDidMount() {
-		// global div for tooltip
+		// div for tooltip
 		this.tooltipDiv = d3.select('#' + this.componentId)
 			.append('div')
 				.attr('id', this.componentId + '_tooltip')
 				.attr('class', 'tooltip')
 				.style('opacity', 0.0);
-		// create SVG element
+		// SVG element
 		this.svg = d3.select('#' + this.componentId)
 			.append('svg')
 				.attr('id', `${this.componentId}_svg`);
@@ -114,7 +114,7 @@ class Roadmap extends Component {
 				top:  this.margin.top - this.paddingTopHeading + (rowNum + 0.5) * this.lineHeight
 		};
 
-		tooltip.left = tooltip.left > this.width - 100 ? tooltip.left - 100 : tooltip.left;
+		tooltip.left = tooltip.left > this.width - 100 ? this.width - 100 : tooltip.left;
 		this.tooltipDiv
 			.html(this._renderTooltip(d))
 			.style('top', tooltip.top + 'px')
@@ -191,10 +191,9 @@ class Roadmap extends Component {
 
 			dataset.forEach((d) => {
 				d.data.forEach((d1) => {
-					//if (!(d1[IDX_FROMDATE] instanceof Date)) {
 					if (!d1.origFromDate) {
-						d1.origFromDate = d1[IDX_FROMDATE]; //d1.origFromDate || d1[IDX_FROMDATE];
-						d1.origToDate = d1[IDX_TODATE]; //d1.origToDate || d1[IDX_TODATE];
+						d1.origFromDate = d1[IDX_FROMDATE];
+						d1.origToDate = d1[IDX_TODATE];
 
 						if (DATE_RE.test(d1[IDX_FROMDATE])) { // date only data
 							d1[IDX_FROMDATE] = Date.parse(d1[IDX_FROMDATE]);
@@ -238,7 +237,7 @@ class Roadmap extends Component {
 				});
 			});
 
-			// no timespan given - thus take minmum and maximum date of dataset
+			// no timespan given - thus take minimum and maximum date of dataset
 			if (!this.config.timeSpan) {
 				this.config.timeSpan = [];
 				let d = this._getDate(new Date(minDate))
@@ -320,13 +319,6 @@ class Roadmap extends Component {
 				.attr('height', height + this.margin.top + this.margin.bottom)
 				.append('g')
 					.attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-
-			this.svg.append('rect')
-				.attr('width', this.svg.attr('width'))
-				.attr('height', this.svg.attr('height'))
-				.style('fill', '#ffa')
-				.style('stroke', '#f00')
-				.style('stroke-width', '3px');
 
 			// create basic element groups (axes and data)
 			this.svg.append('g').attr('id', 'g_axis');
@@ -477,17 +469,15 @@ class Roadmap extends Component {
 			}
 		});
 
-		if (!drawTitle) {
-			return;
+		if (drawTitle) {
+			// create chart title
+			const header = this.svg.append('g').attr('id', 'g_title');
+			header.append('text')
+				.attr('x', this.paddingLeft)
+				.attr('y', this.paddingTopHeading)
+				.attr('class', 'heading')
+				.text(this.config.title);
 		}
-
-		// create chart title
-		const header = this.svg.append('g').attr('id', 'g_title');
-		header.append('text')
-			.attr('x', this.paddingLeft)
-			.attr('y', this.paddingTopHeading)
-			.attr('class', 'heading')
-			.text(this.config.title);
 	}
 
 	_renderTooltip(d) {
