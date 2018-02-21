@@ -4,10 +4,124 @@ import DataIndex from './common/DataIndex';
 import SelectField from './SelectField';
 import TemplateView from './TemplateView';
 import Utilities from './common/Utilities';
+import NarrativeView from './NarrativeView';
+import Roadmap from './Roadmap';
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
 const LOADING_ERROR = 2;
+
+const CATEGORIES_ROADMAP = { // category names and their colors defined here
+	cat0: { barColor: "#377eb8", textColor: '#fff' },
+	cat1: { barColor: "#ff7f00", textColor: '#000' },
+	cat2: { barColor: "purple" },
+	cat3: { barColor: "green" }
+};
+const MOCKED_DATA_ROADMAP = [
+	{
+        measure: "Category 0",
+        url: "www.example.com",
+        data: [
+			// Category, FromDate, ToDate, Label, Number, Info, Payload
+            ['cat0', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
+            ['cat1', "2015-06-30", "2015-07-15", 'Label 2', 77],
+            ['cat3', "2015-09-30", "2015-10-15", 'Label 3'],
+            ['cat1', "2015-12-31", "2016-01-15"],
+            ['cat2', "2016-01-17", "2016-01-22"],
+            ['cat0', "2016-03-31", "2016-04-15"],
+            ['cat0', "2016-06-30", "2016-07-15"],
+            ['cat1', "2016-09-15", "2016-10-25"],
+            ['cat1', "2016-12-31", "2017-01-15"],
+            ['cat2', "2017-03-31", "2017-04-15"],
+            ['cat0', "2017-06-30", "2017-07-15"],
+            ['cat2', "2017-09-30", "2017-10-15"],
+            ['cat1', "2017-12-31", "2018-01-15"],
+            ['cat2', "2018-03-31", "2018-04-15"],
+            ['cat0', "2018-06-30", "2018-07-15"],
+            ['cat0', "2018-09-30", "2018-10-15"],
+            ['cat1', "2018-10-16", "2019-05-15"]
+        ]
+    },
+	{
+        measure: 'ABS',
+        data: [
+            ['cat0', "2015-12-01", "2016-02-15"],
+            ['cat1', "2016-02-28", "2016-04-15"],
+            ['cat2', "2016-06-30", "2016-07-15"],
+            ['cat0', "2016-09-15", "2016-10-25"],
+            ['cat2', "2016-12-01", "2017-03-17"],
+            ['cat1', "2017-03-31", "2017-04-15"],
+            ['cat2', "2017-06-30", "2017-07-15"],
+            ['cat0', "2017-09-30", "2017-10-15"]
+        ]
+    },
+	{
+        measure: null,
+        data: [
+            ['cat0', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
+            ['cat1', "2016-02-14", "2016-05-15"],
+            ['cat1', "2017-03-31", "2017-04-15"],
+            ['cat2', "2017-06-30", "2017-07-15"],
+            ['cat0', "2017-09-30", "2017-10-15"]
+        ]
+    },
+	{
+        measure: "Category 1",
+        url: "http://www.google.com",
+        data: [
+            ['cat1', "2015-01-01", "2015-06-01", 'Ansh dhdh jj', 177],
+            ['cat1', "2016-01-01", "2016-03-15", 'aksk akak'],
+            ['cat2', "2017-01-01", "2017-10-10", 'jkddiuiwe dijdi'],
+            ['cat1', "2018-01-01", "2018-02-20", 'AA']
+        ]
+    }
+];
+
+const MOCKED_DATA_NARRATIVE = [
+    {
+        platform: '   ',
+        plans: ['xxx', 'yyy', 'zzz']
+    },
+    {
+        platform: "0 No List items",
+        plans: ["", "   "]
+    },
+    {
+        platform: "1 Democritum Conclusionemque",
+        plans: [
+            "1 Lorem ipsum dolor sit amet, at sit dicta zril. ... corrumpit te!",
+            "",
+            "2 Id eam debitis explicari? Eius voluptatibus at  ... per cibo urbanitas?",
+            "3 Id duo nobis possim hendrerit? Iusto verterem cu vim, ridens ... quis ipsum cotidieque te pro?"
+        ]
+    },
+    {
+        platform: "2 Omnes volutpat ex mel",
+        plans: [
+            "Ea atqui fastidii scribentur vis, homero conclusionemque sea an. Cum ad  ... eum. Expetenda percipitur ex nam.",
+            "Vix cu iudico pertinax persecuti, an ius simul accusamus. Id movet  ... populo concludaturque.",
+            "Sit ad soleat doctus. No esse fabulas argumentum ius, vocent antiopam  ... veniam audiam eu."
+        ]
+    },
+    {
+        platform: "3 Usu mundi viderer ne",
+        plans: [
+            "Id duo erat sadipscing, vero iudicabit his no, sed ad  ... appetere recusabo vis?"
+        ]
+    },
+    {
+        platform: "4 Empty list: Per ea errem democritum conclusionemque",
+        plans: []
+    },
+    {
+        platform: "5 Tale consul numquam mei cu",
+        plans: [
+            "Tale consul numquam mei cu, in enim exerci graece vim, nam ad  ... diceret indoctum recteque.",
+            "Ut nam voluptua electram? Ut vel vidisse verterem omittantur? Eum cibo  ... odio option vim.",
+            "Per ea errem democritum conclusionemque, ex eos possim audire iuvaret. Discere officiis philosophia  ... mel augue posidonium."
+        ]
+    }
+];
 
 // mocks
 const sideArea = {
@@ -393,9 +507,20 @@ class Report extends Component {
 			case 2:
 				return <TemplateView/>;
 			case 3:
-				return <TemplateView/>;
+				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
-				return <TemplateView/>;
+				return (
+					<Roadmap id='roadmap'
+						data={MOCKED_DATA_ROADMAP}
+						timeSpan={[
+							'2015-01-01',
+							'2016-01-01'
+						]}
+						gridlineX={true}
+						xxxgridlineY={true}
+						categories={CATEGORIES_ROADMAP}
+						tooltipConfig={{labelInfo: 'CSM'}}
+					/>);
 			default:
 				throw new Error('Unknown showView state: ' + this.state.showView);
 		}

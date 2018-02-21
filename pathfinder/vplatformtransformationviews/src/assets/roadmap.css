@@ -1,0 +1,137 @@
+html {
+	margin: 0;
+	font-family: arial;
+}
+
+.bar, text {
+	cursor: help;
+}
+
+.dataset text {
+	font-family: arial;
+	fill: #fff;
+	font-weight: normal;
+	font-size: 0.8em;
+}
+
+text.info {
+	font-weight: bold;
+	border: 1px solid red;
+}
+.tooltip * {
+	margin: 2px;
+}
+
+.tooltip {
+    position: absolute;
+    text-align: left;
+    font-family: Arial, sans-serif;
+    font-size: small;
+	color: #000;
+	margin: 0;
+    padding: 2;
+    width: auto;
+    padding-top: 0;
+    display: box;
+	background-color: #ffa;
+	border: thin solid #aaa;
+	border-radius: 6px;
+	box-shadow: 5px 5px 5px #000;
+    pointer-events: none;
+}
+
+.tooltip .title {
+	background-color: #665;
+	border-radius: 6px 6px 0 0;
+	color: #fff;
+	margin: 0;
+	padding: 4px 2px;
+}
+
+.tooltip .label, .tooltip .date, .tooltip .key {
+	font-weight: bold;
+}
+.tooltip .payload {
+	border-top: thin solid #777;
+	border-bottom: thin solid #777;
+}
+.tooltip .payload * {
+	margin: 0;
+	padding: 0.1em;
+}
+.tooltip .payload div:nth-child(even) {
+	background-color: #ddd;
+}
+.tooltip .payload div:nth-child(odd) {
+	background-color: #fff;
+}
+
+.axis .year {
+    font-weight: bold;
+}
+
+.ytitle {
+    /* y axis labels */
+    dominant-baseline: middle;
+    font-family: "Muli", "Helvetica", Arial, sans-serif;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 12px;
+}
+
+.ytitle.link {
+    /* y axis label with link */
+    cursor: pointer;
+    fill: #07C;
+}
+
+.axis path,
+.axis line {
+    display: none;
+}
+
+.axis text {
+    font-size: 12px;
+    font-family: "Muli", "Helvetica", Arial, sans-serif;
+    -moz-osx-font-smoothing: grayscale;
+    fill: #777;
+}
+
+.vert_grid {
+    fill: none;
+    stroke: #dddddd;
+    stroke-width: 1px;
+}
+
+.vert_grid_emph {
+    fill: none;
+    stroke: #dddddd;
+    stroke-width: 2px;
+}
+
+.horz_grid {
+    fill: none;
+    stroke: #dddddd;
+    stroke-width: 1px;
+}
+
+.heading {
+    font-size: 16px;
+    font-family: "Muli", "Helvetica", Arial, sans-serif;
+    -moz-osx-font-smoothing: grayscale;
+    font-weight: bold;
+}
+
+.subheading {
+    font-size: 12px;
+    font-family: "Muli", "Helvetica", Arial, sans-serif;
+    -moz-osx-font-smoothing: grayscale;
+    fill: #777;
+}
+
+.legend {
+    dominant-baseline: middle;
+    font-size: 12px;
+    font-family: "Muli", "Helvetica", Arial, sans-serif;
+    -moz-osx-font-smoothing: grayscale;
+    fill: #777;
+}
