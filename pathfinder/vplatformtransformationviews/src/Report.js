@@ -6,6 +6,9 @@ import TemplateView from './TemplateView';
 import Utilities from './common/Utilities';
 import NarrativeView from './NarrativeView';
 import Roadmap from './Roadmap';
+import ColorParser from './ColorParser';
+// TODO remove later
+ColorParser.getColors();
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
