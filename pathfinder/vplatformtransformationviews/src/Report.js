@@ -124,22 +124,22 @@ const MOCKED_DATA_NARRATIVE = [
 // mocks
 const sideArea = {
 	// Lvl 1 Platform BC (Factsheet object)
-	id: '...',
+	id: '1',
 	name: 'Business Management',
 	// show max. 3 children in one row
 	items: [
 		// Lvl 2 Platform BC (child, Factsheet object)
 		{
-			id: '...',
+			id: '2',
 			name: 'Business & Collaboration'
 		}, {
-			id: '...',
+			id: '3',
 			name: 'Security'
 		}, {
-			id: '...',
+			id: '4',
 			name: 'HR / Supply Chain / Finance'
 		}, {
-			id: '...',
+			id: '5',
 			name: 'Analytics & Intelligence'
 		}
 	]
@@ -151,53 +151,53 @@ const mainArea = [
 	// if there are at least 2 children, then show Lvl 1, else just show that one child
 	{
 		// Lvl 1 Platform BC (Factsheet object)
-		id: '...',
+		id: '6',
 		name: 'Channel layer',
 		items: [{
 			// Lvl 2 Platform BC (child, Factsheet object)
-			id: '...',
+			id: '7',
 			name: 'Channels'
 		}
 		]
 	}, {
-		id: '...',
+		id: '8',
 		name: 'Customer Management',
 		items: [{
-			id: '...',
+			id: '9',
 			name: 'Contact Centre Operations'
 		}, {
-			id: '...',
+			id: '10',
 			name: 'Retail Operations & Logistics'
 		}, {
-			id: '...',
+			id: '11',
 			name: 'CRM, Billing and Commercial Order Management'
 		}
 		]
 	}, {
-		id: '...',
+		id: '12',
 		name: 'Service Management',
 		items: [{
-			id: '...',
+			id: '13',
 			name: 'Service Assurance'
 		}, {
-			id: '...',
+			id: '14',
 			name: 'Charging & Policy Management'
 		}, {
-			id: '...',
+			id: '15',
 			name: 'Service Orchestration'
 		}
 		]
 	}, {
-		id: '...',
+		id: '16',
 		name: 'Resource Management',
 		items: [{
-			id: '...',
+			id: '17',
 			name: 'Resource Fault & Performance'
 		}, {
-			id: '...',
+			id: '18',
 			name: 'Resource Inventory'
 		}, {
-			id: '...',
+			id: '19',
 			name: 'Resource Activation & Configuration'
 		}
 		]
@@ -205,7 +205,7 @@ const mainArea = [
 ];
 const integration = {
 	// Factsheet object
-	id: '...',
+	id: '20',
 	name: 'Integration'
 };
 const viewOneLegend = [
@@ -350,7 +350,7 @@ class Report extends Component {
 	_handleData(index, platformId) {
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
 		const bcsLvl1 = this._getFilteredBCs(index.businessCapabilitiesLvl1.nodes, platformId, 'Platform');
-		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform')
+		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
 		this.state.data.push(1);
 		lx.hideSpinner();
 		this.setState({
