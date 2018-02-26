@@ -53,11 +53,11 @@
     fill: #777;
 }
 
-.tooltip * {
+#roadmap_tooltip * {
 	margin: 2px;
 }
 
-.tooltip {
+#roadmap_tooltip {
     position: absolute;
     display: box;
     width: auto;
@@ -72,28 +72,31 @@
     pointer-events: none;
 }
 
-.tooltip .title {
-	color: #fff;
+#roadmap_tooltip .title {
 	margin: 0;
 	padding: 4px 2px;
+	color: #fff;
 	background-color: #665;
 	border-radius: 6px 6px 0 0;
-}
-
-.tooltip .label, .tooltip .date, .tooltip .key {
 	font-weight: bold;
 }
-.tooltip .payload {
+
+#roadmap_tooltip .name,
+#roadmap_tooltip .date {
+	display: inline-block;
+}
+
+#roadmap_tooltip .payload {
 	border-top: thin solid #777;
 	border-bottom: thin solid #777;
 }
-.tooltip .payload * {
+#roadmap_tooltip .payload * {
 	margin: 0;
 	padding: 0.1em;
 }
-.tooltip .payload div:nth-child(even) {
+#roadmap_tooltip .payload div:nth-child(even) {
 	background-color: #ddd;
 }
-.tooltip .payload div:nth-child(odd) {
+#roadmap_tooltip .payload div:nth-child(odd) {
 	background-color: #fff;
 }

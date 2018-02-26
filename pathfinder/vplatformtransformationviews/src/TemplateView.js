@@ -84,12 +84,15 @@ class TemplateView extends Component {
 		const divStyle = {
 			backgroundColor : color,
 			display: 'inline-block',
-			height: '20px',
-			width: '20px'
+			height: '16px',
+			width: '24px',
+			margin: '0.2em',
+			verticalAlign: 'bottom'
 		};
 		return(
-			<div>{label}
-				<div style={divStyle}></div>
+			<div>
+				<div style={divStyle}/>
+				{label}
 			</div>
 		);
 	}

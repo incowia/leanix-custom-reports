@@ -18,28 +18,31 @@ const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	cat0: { barColor: "#377eb8", textColor: '#fff' },
 	cat1: { barColor: "#ff7f00", textColor: '#000' },
 	cat2: { barColor: "purple" },
-	cat3: { barColor: "green" }
+	cat3: { barColor: "green" },
+	cat4: { barColor: "#777", textColor: '#ffa' }
 };
 const MOCKED_DATA_ROADMAP = [
 	{
-        measure: "Category 0",
+        measure: "Category 0 sakjdfsd sdfjsdiof sdfjsd",
         data: [
 			// Category, FromDate, ToDate, Label, Number, Info, Payload
             ['cat0', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
             ['cat1', "2015-06-30", "2015-07-15", 'Label 2', 77],
             ['cat3', "2015-09-30", "2015-10-15", 'Label 3'],
-            ['cat1', "2015-12-31", "2016-01-15"],
-            ['cat2', "2016-01-17", "2016-01-22"],
+            ['cat1', "2015-12-31", "2016-01-12"],
+            ['cat2', "2016-01-17", "2016-02-22", 'L4', 26214,
+				{a: 'sfsdf sdfjsd', b: 'sfsdpf sfjsd djfsd', c: 12345, d: 15.6464, e: 1000*60*60*24, g: null, h:'saksdofksd sdfjksdpof jfpsdf sdjfposdfjs sdsdfkosd sdjfdf fjfdof'}
+			],
             ['cat0', "2016-03-31", "2016-04-15"],
             ['cat0', "2016-06-30", "2016-07-15"],
             ['cat1', "2016-09-15", "2016-10-25"],
-            ['cat1', "2016-12-31", "2017-01-15"],
+            ['cat4', "2016-12-31", "2017-01-15"],
             ['cat2', "2017-03-31", "2017-04-15"],
             ['cat0', "2017-06-30", "2017-07-15"],
             ['cat2', "2017-09-30", "2017-10-15"],
             ['cat1', "2017-12-31", "2018-01-15"],
             ['cat2', "2018-03-31", "2018-04-15"],
-            ['cat0', "2018-06-30", "2018-07-15"],
+            ['cat4', "2018-06-30", "2018-07-15"],
             ['cat0', "2018-09-30", "2018-10-15"],
             ['cat1', "2018-10-16", "2019-05-15"]
         ]
@@ -47,30 +50,30 @@ const MOCKED_DATA_ROADMAP = [
 	{
         measure: 'ABS',
         data: [
-            ['cat0', "2015-12-01", "2016-02-15", null, 55],
+            ['cat0', "2015-12-01", "2016-02-15", 'Test', 55],
             ['cat1', "2016-02-28", "2016-04-15"],
             ['cat2', "2016-06-30", "2016-07-15", null, 222],
             ['cat0', "2016-09-15", "2016-10-25"],
             ['cat2', "2016-12-01", "2017-03-17", '', 34],
             ['cat1', "2017-03-31", "2017-04-15", '', 1],
             ['cat2', "2017-06-30", "2017-07-15"],
-            ['cat0', "2017-09-30", "2017-10-15"]
+            ['cat4', "2017-09-30", "2017-10-15"]
         ]
     },
 	{
         measure: null,
         data: [
             ['cat0', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
-            ['cat1', "2016-02-14", "2016-05-15", '', 7],
-            ['cat1', "2017-03-31", "2017-04-15", '', 34],
-            ['cat2', "2017-06-30", "2017-07-15", '', 142],
-            ['cat0', "2017-09-30", "2017-10-15", null, 76]
+            ['cat1', "2016-02-02", "2016-05-15", 'abcdefg', 7],
+            ['cat2', "2017-03-31", "2017-04-15", '', 34],
+            ['cat3', "2017-06-30", "2017-07-15", '', 142],
+            ['cat4', "2017-09-30", "2017-10-15", null, 76]
         ]
     },
 	{
         measure: "Category 1",
         data: [
-            ['cat1', "2015-01-01", "2015-06-01", 'Ansh dhdh jj', 177],
+            ['cat4', "2015-01-01", "2015-06-01", 'Ansh dhdh jj', 177],
             ['cat1', "2016-01-01", "2016-03-15", 'aksk akak'],
             ['cat2', "2017-01-01", "2017-10-10", 'jkddiuiwe dijdi', 1025],
             ['cat1', "2018-01-01", "2018-02-20", 'AA']
@@ -511,7 +514,7 @@ class Report extends Component {
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
 				const chartConfig = {
-					timeSpan: ['2015-01-01', '2018-01-01'],
+					timeSpan: ['2015-03-01', '2018-01-01'],
 					gridlineX: true,
 					gridlineY: false,
 					infoLabel: 'CSM'
