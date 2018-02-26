@@ -73,7 +73,7 @@ class TemplateView extends Component {
 		);
 	}
 
-	_colorizeLegendBox () {
+	_renderLegendBoxs () {
 		return(
 			this.props.legend.map((e) => {
 				return this._renderLegendBox(e.text, e.color);
@@ -84,12 +84,14 @@ class TemplateView extends Component {
 		const divStyle = {
 			backgroundColor : color,
 			display: 'inline-block',
-			height: '20px',
-			width: '20px'
+			height: '30px',
+			width: '30px',
+			border: '1px solid black'
 		};
 		return(
-			<div>{label}
+			<div>
 				<div style={divStyle}></div>
+				<span style={{margin: '1em'}}>{label}</span>
 			</div>
 		);
 	}
@@ -97,7 +99,7 @@ class TemplateView extends Component {
 	_renderLegend() {
 		return(
 			<div>Key
-				{this._colorizeLegendBox()}
+				{this._renderLegendBoxs()}
 			</div>
 		);
 	}
