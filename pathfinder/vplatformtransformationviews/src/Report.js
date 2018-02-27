@@ -7,8 +7,6 @@ import Utilities from './common/Utilities';
 import NarrativeView from './NarrativeView';
 import Roadmap from './Roadmap';
 import ColorParser from './ColorParser';
-// TODO remove later
-ColorParser.getColors();
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
@@ -306,10 +304,10 @@ class Report extends Component {
 
 	_createQuery(platformId) {
 		let platformIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
-		let tagNameDef = 'tags { name }'; // initial assume to get it
+		let platformTagNameDef = 'tags { name }'; // initial assume to get it
 		if (platformId) {
 			platformIdFilter = `, {facetKey: "BC Type", keys: ["${platformId}"]}`;
-			tagNameDef = '';
+			platformTagNameDef = '';
 		}
 		return `{userGroups: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
@@ -318,7 +316,12 @@ class Report extends Component {
 						{facetKey: "hierarchyLevel", keys: ["1"]}
 					]}
 				) {
-					edges { node { id name displayName } }
+					edges { node {
+						id name tags { name }
+						... on UserGroup {
+							relToRequires { edges { node { description factSheet { id } } } }
+						}
+					}}
 				}
 				businessCapabilitiesLvl1: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
@@ -328,7 +331,7 @@ class Report extends Component {
 						${platformIdFilter}
 					]}
 				) {
-					edges { node { id name displayName ${tagNameDef} } }
+					edges { node { id name ${platformTagNameDef} } }
 				}
 				businessCapabilitiesLvl2: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
@@ -338,7 +341,7 @@ class Report extends Component {
 						${platformIdFilter}
 					]}
 				) {
-					edges { node { id name displayName ${tagNameDef} } }
+					edges { node { id name ${platformTagNameDef} } }
 				}}`;
 	}
 
@@ -351,6 +354,8 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
+		console.log(index);
+		console.log(ColorParser.parse(index));
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
 		const bcsLvl1 = this._getFilteredBCs(index.businessCapabilitiesLvl1.nodes, platformId, 'Platform');
 		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');

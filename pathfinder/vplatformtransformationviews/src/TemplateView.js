@@ -88,7 +88,8 @@ class TemplateView extends Component {
 			width: '20px'
 		};
 		return(
-			<div>{label}
+			<div key={label}>
+				{label}
 				<div style={divStyle}></div>
 			</div>
 		);
@@ -96,7 +97,8 @@ class TemplateView extends Component {
 
 	_renderLegend() {
 		return(
-			<div>Key
+			<div>
+				Keys
 				{this._colorizeLegendBox()}
 			</div>
 		);
