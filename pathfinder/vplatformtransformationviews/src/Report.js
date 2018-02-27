@@ -168,27 +168,25 @@ const MOCKED_DATA_NARRATIVE_DEV = [
 
 // mocks
 const sideArea = {
-	// Lvl 1 Platform BC (Factsheet object)
 	id: '1',
 	name: 'Business Management',
-	// show max. 3 children in one row
 	items: [
-		// Lvl 2 Platform BC (child, Factsheet object)
 		{
 			id: '2',
 			name: 'Business & Collaboration'
 		}, {
-			id: '3',
-			name: 'Security'
+		id: '3',
+		name: 'Security'
 		}, {
 			id: '4',
-			name: 'HR / Supply Chain / Finance'
+ 			name: 'HR / Supply Chain / Finance'
 		}, {
 			id: '5',
-			name: 'Analytics & Intelligence'
+ 			name: 'Analytics & Intelligence'
 		}
-	]
-};
+ 	]
+ };
+
 const mainArea = [
 	// contains Lvl 1 Platform BCs with nested children (Lvl 2)
 	// order Lvl 1: Channel layer, Customer Management, Service Management, Resource Management
@@ -367,7 +365,7 @@ class Report extends Component {
 						}
 					}}
 				}
-				businessCapabilitiesLvl1and2: allFactSheets(
+				businessCapabilitiesLvl2: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
@@ -379,30 +377,6 @@ class Report extends Component {
 						id name ${platformTagNameDef}
 						...on BusinessCapability { relToChild{edges{node{factSheet{id displayName type tags {name}}}}}}
 					}}
-				}
-				businessCapabilitiesLvl1: allFactSheets(
-					sort: { mode: BY_FIELD, key: "displayName", order: asc },
-					filter: {facetFilters: [
-						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
-						{facetKey: "hierarchyLevel", keys: ["1"]}
-						${platformIdFilter}
-					]}
-				) {
-					edges { node { id name ${platformTagNameDef} } }
-				}
-				businessCapabilitiesLvl2: allFactSheets(
-					sort: { mode: BY_FIELD, key: "displayName", order: asc },
-					filter: {facetFilters: [
-						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
-						{facetKey: "hierarchyLevel", keys: ["2"]}
-						${platformIdFilter}
-					]}
-				) {
-					edges { node { id name ${platformTagNameDef}
-					... on BusinessCapability {
-							relToParent{ edges {node { factSheet {id name} } } } }
-						}
-					} }
 				}}`;
 	}
 
@@ -415,23 +389,37 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
-		console.log(ColorParser.parse(index));
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
-
-		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl1and2.nodes, platformId, 'Platform');
-		const bcsLvl1 = this._getFilteredBCs(index.businessCapabilitiesLvl1.nodes, platformId, 'Platform');
-		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
+		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
+		const sideAreaData = this._handleDataSideArea(bcsLvl1u2);
+		// entfernen
+		console.log(ColorParser.parse(index));
 		console.log(bcsLvl1u2);
-		console.log(bcsLvl1);
-		console.log(bcsLvl2);
 		this.state.data.push(1);
+		// ende
 		lx.hideSpinner();
 		this.setState({
 			loadingState: LOADING_SUCCESSFUL,
 			selectFieldData: selectFieldData,
 			// access 'userGroups'
-			selectedMarket: index.byID[selectFieldData[0].value]
+			selectedMarket: index.byID[selectFieldData[0].value],
+			sideArea: sideAreaData
 		});
+	}
+
+	_handleDataSideArea (bcs) {
+		const sideAreaData= {};
+		const items = {};
+		bcs.map((bcs) =>
+			{
+				if(bcs.name === 'Business Management') {
+					sideAreaData.id = bcs.id;
+					sideAreaData.name = bcs.name;
+					bcs.relToChild.nodes.forEach((e) => {})
+				}
+			}
+		);
+		return sideAreaData;
 	}
 
 	_getFilteredBCs(nodes, tagId, tagName) {
