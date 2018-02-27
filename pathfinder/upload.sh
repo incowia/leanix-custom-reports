@@ -18,7 +18,9 @@ echo -e "          : .___, :  \033[0;32m... Time for some coffee! \033[0m"
 echo -e "           \`-----'  "
 
 # List of custom reports to be uploaded
+upload_report architecturestack
 upload_report burndown
+upload_report vplatformtransformationviews
 cd vtables
 upload_report applicationcloudmaturityandadoption
 upload_report applicationdataqualitycompleteness

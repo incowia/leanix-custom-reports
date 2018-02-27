@@ -2,3 +2,6 @@ dist
 node_modules
 lxr.json
 bundle.tgz
+.idea
+*.log
+package-lock.json

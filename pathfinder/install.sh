@@ -18,7 +18,10 @@ echo -e "          : .___, :  \033[0;32m... Time for some coffee! \033[0m"
 echo -e "           \`-----'  "
 
 # List of custom reports to be built
+install_report architecturestack
 install_report burndown
+install_report vburndown
+install_report vplatformtransformationviews
 cd vtables
 install_report applicationcloudmaturityandadoption
 install_report applicationdataqualitycompleteness

@@ -73,34 +73,35 @@ class TemplateView extends Component {
 		);
 	}
 
-	_colorizeLegendBox () {
-		return(
+	_renderLegendBoxes () {
+		return (
 			this.props.legend.map((e) => {
 				return this._renderLegendBox(e.text, e.color);
-		}));
+			})
+		);
 	}
 
 	_renderLegendBox(label, color) {
 		const divStyle = {
 			backgroundColor : color,
 			display: 'inline-block',
-			height: '16px',
-			width: '24px',
-			margin: '0.2em',
-			verticalAlign: 'bottom'
+			height: '30px',
+			width: '30px',
+			border: '1px solid black'
 		};
-		return(
-			<div>
-				<div style={divStyle}/>
-				{label}
+		return (
+			<div key={label}>
+				<div style={divStyle}></div>
+				<span style={{margin: '1em'}}>{label}</span>
 			</div>
 		);
 	}
 
 	_renderLegend() {
-		return(
-			<div>Key
-				{this._colorizeLegendBox()}
+		return (
+			<div>
+				Keys
+				{this._renderLegendBoxes()}
 			</div>
 		);
 	}
