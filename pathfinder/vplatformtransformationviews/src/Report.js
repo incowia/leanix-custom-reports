@@ -367,6 +367,19 @@ class Report extends Component {
 						}
 					}}
 				}
+				businessCapabilitiesLvl1and2: allFactSheets(
+					sort: { mode: BY_FIELD, key: "displayName", order: asc },
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
+						{facetKey: "hierarchyLevel", keys: ["1"]}
+						${platformIdFilter}
+					]}
+				) {
+					edges{node{
+						id name ${platformTagNameDef}
+						...on BusinessCapability { relToChild{edges{node{factSheet{id displayName type tags {name}}}}}}
+					}}
+				}
 				businessCapabilitiesLvl1: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
 					filter: {facetFilters: [
@@ -404,8 +417,11 @@ class Report extends Component {
 	_handleData(index, platformId) {
 		console.log(ColorParser.parse(index));
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
+
+		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl1and2.nodes, platformId, 'Platform');
 		const bcsLvl1 = this._getFilteredBCs(index.businessCapabilitiesLvl1.nodes, platformId, 'Platform');
 		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
+		console.log(bcsLvl1u2);
 		console.log(bcsLvl1);
 		console.log(bcsLvl2);
 		this.state.data.push(1);
