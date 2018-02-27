@@ -7,13 +7,24 @@ class Roadmap extends Component {
 
 	constructor(props) {
 		super(props);
-		this.state = {};
+		this.state = {
+			width: null,
+			height: null
+		};
 
 		this.componentId = 'roadmap';
 		this.chartInstance = null;
+
+		this._updateDimensions = this._updateDimensions.bind(this);
+	}
+
+	componentWillMount() {
+		this._updateDimensions();
 	}
 
 	componentDidMount() {
+		window.addEventListener("resize", this._updateDimensions);
+
 		if (this.chartInstance) {
 			return;
 		}
@@ -29,11 +40,21 @@ class Roadmap extends Component {
 	}
 
 	componentWillUnmount() {
+		window.removeEventListener("resize", this._updateDimensions);
 		if (this.chartInstance) {
 			this.chartInstance.destroy();
 			this.chartInstance = undefined;
 		}
 	}
+
+	_updateDimensions() {
+		const w = window;
+        const d = document.documentElement;
+        const b = d.getElementsByTagName('body')[0];
+        const width = w.innerWidth || d.clientWidth || b.clientWidth;
+        const height = w.innerHeight|| d.clientHeight|| b.clientHeight;
+        this.setState({width: width, height: height});
+    }
 
 	render() {
 		if (this.chartInstance) {
