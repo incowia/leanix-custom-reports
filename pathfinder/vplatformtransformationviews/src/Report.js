@@ -349,7 +349,11 @@ class Report extends Component {
 						${platformIdFilter}
 					]}
 				) {
-					edges { node { id name ${platformTagNameDef} } }
+					edges { node { id name ${platformTagNameDef} 
+					... on BusinessCapability {
+							relToParent{ edges {node { factSheet {id name} } } } }
+						}
+					} }
 				}}`;
 	}
 
@@ -525,7 +529,7 @@ class Report extends Component {
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
 				const chartConfig = {
-					timeSpan: ['2015-01-01', '2018-01-01'],
+					timeSpan: ['2015-01-31', '2018-01-01'],
 					gridlinesXaxis: false,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
