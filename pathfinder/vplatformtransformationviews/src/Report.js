@@ -357,11 +357,12 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
-		console.log(index);
 		console.log(ColorParser.parse(index));
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
 		const bcsLvl1 = this._getFilteredBCs(index.businessCapabilitiesLvl1.nodes, platformId, 'Platform');
 		const bcsLvl2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
+		console.log(bcsLvl1);
+		console.log(bcsLvl2);
 		this.state.data.push(1);
 		lx.hideSpinner();
 		this.setState({
