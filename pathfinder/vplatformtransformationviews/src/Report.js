@@ -585,7 +585,7 @@ class Report extends Component {
 					gridlinesXaxis: false,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					barHeight: 32,
+					barHeight: 30,
 					labelYwidth: 160
 				};
 				return (

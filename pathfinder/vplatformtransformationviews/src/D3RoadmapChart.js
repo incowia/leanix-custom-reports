@@ -12,11 +12,10 @@ const IDX_LABEL = 3;
 const IDX_INFO = 4;
 const IDX_LOAD = 5;
 
-const MARGIN_TOP_WITHOUT_TITLE = 20; // 20 px for x-axis labels
-const MARGIN_TOP_WITH_TITLE = MARGIN_TOP_WITHOUT_TITLE + 30; // add another 30px for title (a single line)
-const MARGIN_RIGHT = 40; // right margin should provide space for last horz. axis title
+const MARGIN_TOP = 20; // 20 px for x-axis labels
+const MARGIN_RIGHT = 40; // right margin should provide space for last horz. axis label
 const MARGIN_BOTTOM = 10;
-const MARGIN_LEFT = 120; // left margin should provide space for y axis titles
+const MARGIN_LEFT = 120; // left margin should provide space for y axis labels
 
 const BOTTOM_SPACE = 10; // vertical overhang of vertical grid lines on bottom
 const XGRIDLINE_OVERFLOW = 30; // x-axis gridline will overflow the current chart width by this length (on both sides)
@@ -25,7 +24,6 @@ const DEFAULT_BARHEIGHT = 24;
 const DEFAULT_LABELYWIDTH = MARGIN_LEFT; // space fo y-axis labels
 
 const CHARTCONFIG_DEFAULT = {
-	title: null,
 	timeSpan: null,
 	consecutive: false,
 	gridlinesXaxis: true,
@@ -67,10 +65,10 @@ class D3RoadmapChart {
 			pn = pn.parentNode;
 		}
 		// tooltip positionieren!
-		rowNum = 1 + (rowNum ? 1 * rowNum : 0);
+		rowNum = +(rowNum ? rowNum : 1);
 		const tooltip = {
-				left: this.margin.left + targetX + 12,
-				top:  this.margin.top - this.titleSpace + (rowNum + 0.25) * this.lineHeight
+				left: this.margin.left + targetX + 24,
+				top: rowNum * this.lineHeight + this.margin.top + 100, // TODO: better positioning!
 		};
 
 		tooltip.left = tooltip.left > this.width - 100 ? this.width - 100 : tooltip.left;
@@ -87,18 +85,14 @@ class D3RoadmapChart {
 
 	_drawChart() {
 		this._adjustChart();
-		this._drawTitle();
 		this._drawAxes();
 		this._drawData()
 	}
 
 	_adjustChart() {
-		// adjust margin-top depending on title
-		this.renderTitle = this.config.title && this.config.title.length > 0;
-
 		this.margin = {
-			top: (this.renderTitle ? MARGIN_TOP_WITH_TITLE : MARGIN_TOP_WITHOUT_TITLE),
 			left: this.config.labelYwidth || DEFAULT_LABELYWIDTH,
+			top: MARGIN_TOP,
 			bottom: MARGIN_BOTTOM,
 			right: MARGIN_RIGHT
 		};
@@ -118,11 +112,9 @@ class D3RoadmapChart {
 
 		this.isDateOnlyFormat = null; // used date/time format (yyyy-mm-dd or yyyy-mm-dd HH:MM:SS)
 
-		this.barHeight = this.config.barHeight; // height and vertical space of horizontal data bars
-		this.barSpace = this.barHeight / 4;
+		this.barHeight = this.config.barHeight; // height of horizontal data bars
+		this.barSpace = this.barHeight / 4; // vertical space between bars
 		this.lineHeight = this.barHeight + this.barSpace;
-
-		this.titleSpace = MARGIN_TOP_WITHOUT_TITLE - MARGIN_TOP_WITH_TITLE; // negative value!
 		this.bottomSpace = BOTTOM_SPACE;
 
 		this._adjustTimeLine();
@@ -133,7 +125,6 @@ class D3RoadmapChart {
 			.attr('height', this.height + this.margin.top + this.margin.bottom)
 			.append('g')
 				.attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-
 	}
 
 	_adjustTimeLine() {
@@ -460,18 +451,6 @@ class D3RoadmapChart {
 					})
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);
-	}
-
-	_drawTitle() {
-		if (this.renderTitle) {
-			// create chart title
-			const header = this.svg.append('g').attr('id', 'g_title');
-			header.append('text')
-				.attr('x', -this.margin.left)
-				.attr('y', this.titleSpace)
-				.attr('class', 'heading')
-				.text(this.config.title);
-		}
 	}
 
 	_renderTooltip(d) {
