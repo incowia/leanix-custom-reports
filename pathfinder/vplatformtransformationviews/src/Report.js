@@ -23,9 +23,9 @@ const MOCKED_DATA_ROADMAP = [
 	{
         measure: "Category 0 sakjdfsd sdfjsdiof sdfjsd",
         data: [
-			// Category, FromDate, ToDate, Label, Number, Info, Payload
+			// Category, FromDate, ToDate, Label, Info, Load
             ['cat0', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
-            ['cat1', "2015-06-30", "2015-07-15", 'Label 2', 77],
+            ['cat1', "2015-06-30", "2015-07-15", 'Label 2', 999],
             ['cat3', "2015-09-30", "2015-10-15", 'Label 3'],
             ['cat1', "2015-12-31", "2016-01-12"],
             ['cat2', "2016-01-17", "2016-02-22", 'L4', 26214,
@@ -66,6 +66,11 @@ const MOCKED_DATA_ROADMAP = [
             ['cat2', "2017-03-31", "2017-04-15", '', 34],
             ['cat3', "2017-06-30", "2017-07-15", '', 142],
             ['cat4', "2017-09-30", "2017-10-15", null, 76]
+        ]
+    },
+	{
+        data: [
+            ['cat4', "2012-09-30", "2022-10-15", 'Under- and Overflow', 7777]
         ]
     },
 	{
@@ -520,10 +525,12 @@ class Report extends Component {
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
 				const chartConfig = {
-					timeSpan: ['2015-03-01', '2018-01-01'],
-					gridlineX: true,
-					gridlineY: false,
-					infoLabel: 'CSM'
+					timeSpan: ['2015-01-01', '2018-01-01'],
+					gridlinesXaxis: false,
+					gridlinesYaxis: true,
+					infoLabel: 'CSM',
+					barHeight: 32,
+					labelYwidth: 160
 				};
 				return (
 					<Roadmap
