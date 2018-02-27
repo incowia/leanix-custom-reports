@@ -13,7 +13,7 @@ const IDX_INFO = 4;
 const IDX_LOAD = 5;
 
 const MARGIN_TOP_WITHOUT_TITLE = 20; // 20 px for x-axis labels
-const MARGIN_TOP_WITH_TITLE = 70; // add another 50px for title
+const MARGIN_TOP_WITH_TITLE = MARGIN_TOP_WITHOUT_TITLE + 30; // add another 30px for title (a single line)
 const MARGIN_RIGHT = 40; // right margin should provide space for last horz. axis title
 const MARGIN_BOTTOM = 10;
 const MARGIN_LEFT = 120; // left margin should provide space for y axis titles
@@ -85,6 +85,13 @@ class D3RoadmapChart {
 		this.tooltipDiv.transition().duration(500).style('opacity', 0.0);
 	}
 
+	_drawChart() {
+		this._adjustChart();
+		this._drawTitle();
+		this._drawAxes();
+		this._drawData()
+	}
+
 	_adjustChart() {
 		// adjust margin-top depending on title
 		this.renderTitle = this.config.title && this.config.title.length > 0;
@@ -118,7 +125,15 @@ class D3RoadmapChart {
 		this.titleSpace = MARGIN_TOP_WITHOUT_TITLE - MARGIN_TOP_WITH_TITLE; // negative value!
 		this.bottomSpace = BOTTOM_SPACE;
 
-		//this.xGridlineOverflow = XGRIDLINE_OVERFLOW;
+		this._adjustTimeLine();
+
+		// adjust SVG element to given sizes
+		this.svg = d3.select('#' + this.svgId)
+			.attr('width', this.width + this.margin.left + this.margin.right)
+			.attr('height', this.height + this.margin.top + this.margin.bottom)
+			.append('g')
+				.attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+
 	}
 
 	_adjustTimeLine() {
@@ -245,55 +260,18 @@ class D3RoadmapChart {
 		this.displayDateRange = [startDate, endDate];
 	}
 
-	_isYear(t) {
-		return +t ===  + (new Date(t.getFullYear(), 0, 1, 0, 0, 0));
-	}
-
-	_isMonth(t) {
-		return +t ===  + (new Date(t.getFullYear(), t.getMonth(), 1, 0, 0, 0));
-	}
-
-	_getDate(date) {
-		date = date || new Date();
-		const d = date.getDate();
-		const m = date.getMonth() + 1;
-		const H = date.getHours();
-		const M = date.getMinutes();
-		const S = date.getSeconds();
-		return {
-				y: date.getFullYear(),
-				m: (m < 10 ? '0' + m : m),
-				d: (d < 10 ? '0' + d : d),
-				H: (H < 10 ? '0' + H : H),
-				M: (M < 10 ? '0' + M : M),
-				S: (S < 10 ? '0' + S : S)
-		};
-	}
-
-	_drawChart() {
-		this._adjustChart();
-		this._adjustTimeLine();
-
+	_drawAxes() {
 		// define scales and axes
-		const xScale = d3.scaleTime()
+		this.xScale = d3.scaleTime()
 			.domain([
 				this.displayDateRange[IDX_XRANGE_START] - ONEDAY, // -1 day to fix the yyyy-01-01 x-axis-timezone bug
 				this.displayDateRange[IDX_XRANGE_END]
 			])
 			.range([0, this.width])
 			.clamp(true);
-		const xAxis = d3.axisTop().scale(xScale);
+		const xAxis = d3.axisTop().scale(this.xScale);
 
-		// adjust SVG element to given sizes
-		this.svg = d3.select('#' + this.svgId)
-			.attr('width', this.width + this.margin.left + this.margin.right)
-			.attr('height', this.height + this.margin.top + this.margin.bottom)
-			.append('g')
-				.attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-
-		// create basic element groups (axes and data)
 		const axes = this.svg.append('g').attr('id', 'axes');
-		const data = this.svg.append('g').attr('id', 'data');
 		axes.append('g').attr('class', 'xAxis');
 		axes.append('g').attr('class', 'yAxis');
 
@@ -328,12 +306,12 @@ class D3RoadmapChart {
 		// vertical grid lines (on x-axis)
 		if (this.data.length > 0 && this.config.gridlinesXaxis) {
 			this.svg.select('#axes .xAxis').selectAll('line.grid_xAxis')
-				.data(xScale.ticks())
+				.data(this.xScale.ticks())
 				.enter()
 					.append('line')
 						.attr('class', 'grid grid_xAxis')
-						.attr('x1', (d => { return xScale(d); }))
-						.attr('x2', (d => { return xScale(d); }))
+						.attr('x1', (d => { return this.xScale(d); }))
+						.attr('x2', (d => { return this.xScale(d); }))
 						.attr('y1', 0)
 						.attr('y2', this.lineHeight * this.data.length + this.bottomSpace);
 		}
@@ -356,6 +334,24 @@ class D3RoadmapChart {
 			this.svg.select('#axes .xAxis').append('g').attr('class', 'ticks xTicks').call(xAxis);
 		}
 
+		const xTicks = this.xScale.ticks();
+		const isYearTick = xTicks.map(this._isYear);
+		const isMonthTick = xTicks.map(this._isMonth);
+
+		// style the time axis (x-axis) - year emphasis is only active if years are the biggest clustering unit
+		if (!(isYearTick.every((d) => { return d === true; })) && isMonthTick.every((d) => { return d === true; })) {
+			d3.selectAll('.tick').each(function (d, i) {
+				d3.select(this).attr('class', ('tick' + (isYearTick[i] ? ' year' : '')));
+			});
+			d3.selectAll('.grid_xAxis').each(function (d, i) {
+				d3.select(this).attr('class', ('grid grid_xAxis' + (isYearTick[i] ? ' year' : '')));
+			});
+		}
+	}
+
+	_drawData() {
+		this.svg.append('g').attr('id', 'data');
+
 		// make y-axis bar groups for different data series
 		let chartRow = this.svg.select('#data').selectAll('.serie')
 			.data(this.data.slice(0, this.data.length))
@@ -371,26 +367,26 @@ class D3RoadmapChart {
 			.enter()
 				.append('g')
 				.attr('class', 'bar')
-				.attr('x', (d => { return xScale(d[IDX_FROMDATE]); }));
+				.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }));
 		// add data series (bar polygons)
 		chartRow.selectAll('.serie g.bar polygon')
 			.data((d) => { return d.disp_data; })
 			.enter()
 				.append('polygon')
-					.attr('x', (d => { return xScale(d[IDX_FROMDATE]); }))
+					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', this.barSpace)
-					.attr('w', (d => { return (xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE])); }))
+					.attr('w', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])); }))
 					.attr('h', this.barHeight)
 					.attr('points', (d) => {
 						const isUnderflow = d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START];
 						const isOverflow = d[IDX_TODATE]    > this.displayDateRange[IDX_XRANGE_END];
-						const x1 = xScale(d[IDX_FROMDATE]) - (isUnderflow ? XGRIDLINE_OVERFLOW : 0);
+						const x1 = this.xScale(d[IDX_FROMDATE]) - (isUnderflow ? XGRIDLINE_OVERFLOW : 0);
 						const y1 = this.barSpace;
-						const x2 = xScale(d[IDX_TODATE]);
+						const x2 = this.xScale(d[IDX_TODATE]);
 						const y2 = y1;
 						const x3 = x2 + (isOverflow ? XGRIDLINE_OVERFLOW : 0);
 						const y3 = y2 + this.barHeight;
-						const x4 = xScale(d[IDX_FROMDATE]);
+						const x4 = this.xScale(d[IDX_FROMDATE]);
 						const y4 = y3;
 						return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
 					})
@@ -409,9 +405,9 @@ class D3RoadmapChart {
 			.data((d) => { return d.disp_data; })
 			.enter()
 				.append('text')
-					.attr('x', (d => { return xScale(d[IDX_FROMDATE]); }))
+					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', 0)
-					.attr('width', (d => { return (xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE])); }))
+					.attr('width', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])); }))
 					.attr('height', this.barHeight)
 					.attr('class', 'label')
 					.text((d) => {
@@ -419,7 +415,7 @@ class D3RoadmapChart {
 						if (!label) {
 							return null;
 						}
-						let width = xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE]);
+						let width = this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]);
 						const maxChars = width / 12;
 						const len = d[IDX_LABEL].length;
 						if (maxChars >= len) {
@@ -444,41 +440,29 @@ class D3RoadmapChart {
 			.data((d) => { return d.disp_data; })
 			.enter()
 				.append('text')
-					.attr('x', (d => { return xScale(d[IDX_FROMDATE]); }))
+					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', 0)
 					.attr('width', 30)
 					.attr('height', this.barHeight)
 					.attr('class', 'info')
 					.text((d) => {
-						if (!d[IDX_INFO] || xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE]) < 100) {
+						if (!d[IDX_INFO] || this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) < 100) {
 							return null;
 						}
 						return d[IDX_INFO];
 					})
 					.attr('dominant-baseline', 'top')
 					.attr('text-anchor', 'end')
-					.attr('dx', (d => { return (xScale(d[IDX_TODATE]) - xScale(d[IDX_FROMDATE])) - 4; }))
+					.attr('dx', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])) - 4; }))
 					.attr('dy', this.barHeight / 2 + 4)
 					.style('fill', (d) => {
 						return this.categories[d[IDX_CATEGORY]].textColor;
 					})
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);
+	}
 
-		const xTicks = xScale.ticks();
-		const isYearTick = xTicks.map(this._isYear);
-		const isMonthTick = xTicks.map(this._isMonth);
-
-		// style the time axis (x-axis) - year emphasis is only active if years are the biggest clustering unit
-		if (!(isYearTick.every((d) => { return d === true; })) && isMonthTick.every((d) => { return d === true; })) {
-			d3.selectAll('.tick').each(function (d, i) {
-				d3.select(this).attr('class', ('tick' + (isYearTick[i] ? ' year' : '')));
-			});
-			d3.selectAll('.grid_xAxis').each(function (d, i) {
-				d3.select(this).attr('class', ('grid grid_xAxis' + (isYearTick[i] ? ' year' : '')));
-			});
-		}
-
+	_drawTitle() {
 		if (this.renderTitle) {
 			// create chart title
 			const header = this.svg.append('g').attr('id', 'g_title');
@@ -521,6 +505,31 @@ class D3RoadmapChart {
 				div.append('span').attr('class', 'value').text(d[IDX_LOAD][k]);
 			});
 		}
+	}
+
+	_isYear(t) {
+		return +t ===  + (new Date(t.getFullYear(), 0, 1, 0, 0, 0));
+	}
+
+	_isMonth(t) {
+		return +t ===  + (new Date(t.getFullYear(), t.getMonth(), 1, 0, 0, 0));
+	}
+
+	_getDate(date) {
+		date = date || new Date();
+		const d = date.getDate();
+		const m = date.getMonth() + 1;
+		const H = date.getHours();
+		const M = date.getMinutes();
+		const S = date.getSeconds();
+		return {
+				y: date.getFullYear(),
+				m: (m < 10 ? '0' + m : m),
+				d: (d < 10 ? '0' + d : d),
+				H: (H < 10 ? '0' + H : H),
+				M: (M < 10 ? '0' + M : M),
+				S: (S < 10 ? '0' + S : S)
+		};
 	}
 
 	display(data, categories, config) {

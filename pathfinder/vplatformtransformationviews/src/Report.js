@@ -62,7 +62,7 @@ const MOCKED_DATA_ROADMAP = [
         measure: null,
         data: [
             ['cat0', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
-            ['cat1', "2016-02-02", "2016-05-15", 'abcdefg', 7],
+            ['cat1', "2016-01-13", "2016-05-15", 'abcdefg', 7],
             ['cat2', "2017-03-31", "2017-04-15", '', 34],
             ['cat3', "2017-06-30", "2017-07-15", '', 142],
             ['cat4', "2017-09-30", "2017-10-15", null, 76]
@@ -85,6 +85,42 @@ const MOCKED_DATA_ROADMAP = [
 ];
 
 const MOCKED_DATA_NARRATIVE = [
+    {
+        platform: 'Channels',
+        plans: [
+			'First release of My Vodafone Transformation launched, supported by the new CSM compliant Micro Services architecture',
+			'Plan to transition My Vodafone developments to TSSC by FY 18/19',
+			'Started transformation to deliver new solutions for corporate site, eCare & eShop and decommission legacy based on Oracle CMS & ATG',
+			'New applications will be cloud ready and will be hosted on Converged Infrastructure in Dublin'
+		]
+    },
+    {
+        platform: "Contact-Centre Operations",
+        plans: [
+			"Target systems in place based Genesis contact centre and Siebel CTI",
+			"No transformations in the pipeline, only incremental enhancements"
+		]
+    },
+    {
+        platform: "Retail Ops & Logistics",
+        plans: [
+			"Retail operations and logistics are handled by a customised local solution and plan is still not clear for the future evolution",
+			"Siebel Partners portal is used in retail stores for customer information, service provisioning, TT etc",
+			"Rollout of a new etupup solution within partners portal",
+			"Ongoing VOdafone of Retail program to deliver new capabilities as per roadmap"
+		]
+    },
+    {
+        platform: "CRM, Billing & COM",
+        plans: [
+			"Target platform in place based on Oracle stack - Siebel/AIA Fusiion Middlewar/BRM.",
+			"Siebel will be enhanced through implementation of the Open UI",
+			"Improve CRM resilience through splitting infrastructure in two different building in Dublin DC",
+			"Both Soebel and BRM are part of the IT resilience prgram to improve the solution's resilience"
+		]
+    }
+];
+const MOCKED_DATA_NARRATIVE_DEV = [
     {
         platform: '   ',
         plans: ['xxx', 'yyy', 'zzz']
@@ -349,7 +385,7 @@ class Report extends Component {
 						${platformIdFilter}
 					]}
 				) {
-					edges { node { id name ${platformTagNameDef} 
+					edges { node { id name ${platformTagNameDef}
 					... on BusinessCapability {
 							relToParent{ edges {node { factSheet {id name} } } } }
 						}
