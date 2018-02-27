@@ -64,8 +64,8 @@ Roadmap.propTypes = {
 		title: PropTypes.string,
 		timeSpan: PropTypes.arrayOf(PropTypes.string.isRequired, PropTypes.string.isRequired),
 		consecutive: PropTypes.bool,
-		gridlineX: PropTypes.bool,
-		gridlineY: PropTypes.bool,
+		gridlinesXaxis: PropTypes.bool,
+		gridlinesYaxis: PropTypes.bool,
 		infoLabel: PropTypes.string
 	})
 };

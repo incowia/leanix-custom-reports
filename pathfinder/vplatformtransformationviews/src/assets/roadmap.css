@@ -1,48 +1,3 @@
-#g_data .bar, #g_data  text {
-	cursor: help;
-}
-
-#g_data .dataset text {
-	fill: #fff;
-	font-weight: normal;
-	font-size: 0.8em;
-}
-
-#g_data text.info {
-	font-weight: bold;
-}
-
-#g_axis .ytitle {
-    dominant-baseline: middle;
-    font-size: 12px;
-	font-weight: bold;
-}
-
-#g_axis text {
-    fill: #777;
-}
-
-#g_axis .vertical_grid,
-#g_axis .horizontal_grid {
-    stroke: #ddd;
-    stroke-width: 1px;
-}
-
-#g_axis .ticks path,
-#g_axis .ticks line {
-    display: none;
-}
-
-#g_axis .ticks text {
-	fill: #555;
-	font-size: 10px;
-}
-
-#g_axis .ticks .year {
-    font-weight: bold;
-	font-size: 12px;
-}
-
 #g_title .heading {
     font-size: 16px;
     font-weight: bold;
@@ -51,6 +6,53 @@
 #g_title .subheading {
     font-size: 12px;
     fill: #777;
+}
+
+#axes .ytitle {
+    dominant-baseline: middle;
+    font-size: 12px;
+	font-weight: bold;
+}
+
+#axes text {
+    fill: #777;
+}
+
+#axes .ticks path,
+#axes .ticks line {
+    display: none;
+}
+
+#axes line.grid {
+    stroke: #ddd;
+    stroke-width: 1px;
+}
+#axes line.year {
+    stroke-width: 2px;
+}
+
+#axes .tick text {
+	fill: #555;
+	font-size: 10px;
+}
+
+#axes .year text {
+    font-weight: bold;
+	font-size: 12px;
+}
+
+#data .bar, #g_data  text {
+	cursor: help;
+}
+
+#data .serie text {
+	fill: #fff;
+	font-weight: normal;
+	font-size: 0.8em;
+}
+
+#data .serie text.info {
+	font-weight: bold;
 }
 
 #roadmap_tooltip * {
@@ -73,30 +75,42 @@
 }
 
 #roadmap_tooltip .title {
+	display: table;
+	width: 100%;
 	margin: 0;
-	padding: 4px 2px;
+	padding: 2px;
 	color: #fff;
 	background-color: #665;
 	border-radius: 6px 6px 0 0;
 	font-weight: bold;
 }
-
-#roadmap_tooltip .name,
-#roadmap_tooltip .date {
-	display: inline-block;
+#roadmap_tooltip .title * {
+	display: table-cell;
+	padding: 2px;
+}
+#roadmap_tooltip .title .date {
+	text-align: right;
+	width: 15em;
 }
 
-#roadmap_tooltip .payload {
+#roadmap_tooltip .key {
+	font-weight: bold;
+}
+#roadmap_tooltip .key::after {
+	content: ':';
+}
+
+#roadmap_tooltip .load {
 	border-top: thin solid #777;
 	border-bottom: thin solid #777;
 }
-#roadmap_tooltip .payload * {
+#roadmap_tooltip .load * {
 	margin: 0;
 	padding: 0.1em;
 }
-#roadmap_tooltip .payload div:nth-child(even) {
+#roadmap_tooltip .load div:nth-child(even) {
 	background-color: #ddd;
 }
-#roadmap_tooltip .payload div:nth-child(odd) {
+#roadmap_tooltip .load div:nth-child(odd) {
 	background-color: #fff;
 }
