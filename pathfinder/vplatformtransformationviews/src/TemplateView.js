@@ -8,6 +8,8 @@ class TemplateView extends Component {
 		super(props);
 		this._renderMainArea = this._renderMainArea.bind(this);
 		this._renderBlocks = this._renderBlocks.bind(this);
+		this._renderLegend = this._renderLegend.bind(this);
+		this._renderLegendBoxs = this._renderLegendBoxs.bind(this);
 	}
 
 	render() {
@@ -73,7 +75,7 @@ class TemplateView extends Component {
 		);
 	}
 
-	_renderLegendBoxes () {
+	_renderLegendBoxs() {
 		return (
 			this.props.legend.map((e) => {
 				return this._renderLegendBox(e.text, e.color);
@@ -92,7 +94,7 @@ class TemplateView extends Component {
 		return (
 			<div key={label}>
 				<div style={divStyle}></div>
-				<span style={{margin: '1em'}}>{label}</span>
+				<span style={{margin: '5px'}}>{label}</span>
 			</div>
 		);
 	}
@@ -101,7 +103,7 @@ class TemplateView extends Component {
 		return (
 			<div>
 				Keys
-				{this._renderLegendBoxes()}
+				{this._renderLegendBoxs()}
 			</div>
 		);
 	}
