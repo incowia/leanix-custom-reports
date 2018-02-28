@@ -4,6 +4,8 @@ const FIRST_RECORD = 0;
 const IDX_XRANGE_START = 0;
 const IDX_XRANGE_END = 1;
 const ONEDAY = 24 * 60 * 60 * 1000;
+const QUARTER_THRESHOLD = 518 * ONEDAY; // empirically determined
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const IDX_CATEGORY = 0;
 const IDX_FROMDATE = 1;
@@ -65,10 +67,10 @@ class D3RoadmapChart {
 			pn = pn.parentNode;
 		}
 		// tooltip positionieren!
-		rowNum = +(rowNum ? rowNum : 1);
+		rowNum = +(rowNum ? rowNum : 0);
 		const tooltip = {
-				left: this.margin.left + targetX + 24,
-				top: rowNum * this.lineHeight + this.margin.top + 100, // TODO: better positioning!
+				left: this.margin.left + targetX + 16,
+				top: (rowNum + 1) * this.lineHeight + this.margin.top + this.offsetTop + 4
 		};
 
 		tooltip.left = tooltip.left > this.width - 100 ? this.width - 100 : tooltip.left;
@@ -100,6 +102,7 @@ class D3RoadmapChart {
 		// the chart's netto width
 		this.component = this.component || document.getElementById(this.componentId);
 		this.width = this.component.parentElement.clientWidth - this.margin.left - this.margin.right;
+		this.offsetTop = this.component.offsetTop; // need for tooltip positioning
 
 		// range of dates that will be shown
 		// if from-date (1st element) or to-date (2nd element) is zero,
@@ -122,7 +125,8 @@ class D3RoadmapChart {
 		// adjust SVG element to given sizes
 		this.svg = d3.select('#' + this.svgId)
 			.attr('width', this.width + this.margin.left + this.margin.right)
-			.attr('height', this.height + this.margin.top + this.margin.bottom)
+			.attr('height', this.height + this.margin.top + this.margin.bottom);
+		this.svg = this.svg
 			.append('g')
 				.attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
 	}
@@ -262,13 +266,36 @@ class D3RoadmapChart {
 			.clamp(true);
 		const xAxis = d3.axisTop().scale(this.xScale);
 
+		// Quartal tick labels if period is longer than QUARTER_THRESHOLD
+		if (this.displayDateRange[IDX_XRANGE_END] - this.displayDateRange[IDX_XRANGE_START] > QUARTER_THRESHOLD) {
+			xAxis.tickFormat((t) => {
+				// get the timestamp for the date + 1 day (to cover utc timezone offsets)
+				const ts = new Date((t.getTime() + ONEDAY));
+				// return appropriate quarter for the (zero-based) month
+				switch (ts.getMonth()) {
+					case 0: return ts.getFullYear();
+					case 1: case 2: return 'Q1';
+					case 3: case 4: case 5: return 'Q2';
+					case 6: case 7: case 8: return 'Q3';
+					default: return 'Q4';
+				}
+			});
+		} else {
+			xAxis.tickFormat((t) => {
+				// formatting rule: yyyy-01-01 => yyyy | yyyy-mm-dd => mmm d
+				if (!this._isYear(t)) {
+					return `${MONTHS[t.getMonth()]} ${t.getDate()}`;
+				}
+				return t.getFullYear();
+			});
+		}
+
 		const axes = this.svg.append('g').attr('id', 'axes');
 		axes.append('g').attr('class', 'xAxis');
 		axes.append('g').attr('class', 'yAxis');
 
 		// y axis
 		const labels = this.svg.select('#axes .yAxis').selectAll('text')
-			//.data(this.data.slice(startSet, endSet))
 			.data(this.data.slice(0, this.data.length))
 			.enter();
 
@@ -331,6 +358,7 @@ class D3RoadmapChart {
 
 		// style the time axis (x-axis) - year emphasis is only active if years are the biggest clustering unit
 		if (!(isYearTick.every((d) => { return d === true; })) && isMonthTick.every((d) => { return d === true; })) {
+			// emphasize year tick labels and year grid lines
 			d3.selectAll('.tick').each(function (d, i) {
 				d3.select(this).attr('class', ('tick' + (isYearTick[i] ? ' year' : '')));
 			});

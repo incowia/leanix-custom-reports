@@ -569,11 +569,11 @@ class Report extends Component {
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
 				const chartConfig = {
-					timeSpan: ['2015-01-31', '2018-01-01'],
+					timeSpan: ['2015-01-01', '2016-01-01'],
 					gridlinesXaxis: false,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					barHeight: 30,
+					barHeight: 28,
 					labelYwidth: 160
 				};
 				return (
