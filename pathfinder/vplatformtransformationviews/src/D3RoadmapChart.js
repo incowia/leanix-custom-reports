@@ -22,7 +22,7 @@ const MARGIN_LEFT = 120; // left margin should provide space for y axis labels
 const BOTTOM_SPACE = 10; // vertical overhang of vertical grid lines on bottom
 const XGRIDLINE_OVERFLOW = 30; // x-axis gridline will overflow the current chart width by this length (on both sides)
 const DEFAULT_BARHEIGHT = 24;
-
+const BAR_STROKEWIDTH = 1;
 const DEFAULT_LABELYWIDTH = MARGIN_LEFT; // space fo y-axis labels
 
 const CHARTCONFIG_DEFAULT = {
@@ -57,7 +57,7 @@ class D3RoadmapChart {
 	_mouseOvered(d) {
 		const target = d3.event.target;
 		const svg = document.getElementById(this.svgId);
-		const targetX = +target.attributes['x'].value;
+		const targetX = +target.attributes.x.value;
 
 		// check parents for row number (1st parent holds row number)
 		let rowNum = null;
@@ -310,7 +310,7 @@ class D3RoadmapChart {
 				if (!label) {
 					return null;
 				}
-				const maxChars = me.margin.left / 10;
+				const maxChars = 12 * me.margin.left / 100; // rough rule: 12 chars per 100px
 				if (maxChars >= label.length) {
 					return label;
 				}
@@ -388,6 +388,9 @@ class D3RoadmapChart {
 				.attr('class', 'bar')
 				.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }));
 		// add data series (bar polygons)
+		const bH = this.barHeight;
+		const bH2 = bH >> 1;
+		const bH4 = bH >> 2;
 		chartRow.selectAll('.serie g.bar polygon')
 			.data((d) => { return d.disp_data; })
 			.enter()
@@ -395,7 +398,7 @@ class D3RoadmapChart {
 					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', this.barSpace)
 					.attr('w', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])); }))
-					.attr('h', this.barHeight)
+					.attr('h', bH)
 					.attr('points', (d) => {
 						const isUnderflow = d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START];
 						const isOverflow = d[IDX_TODATE]    > this.displayDateRange[IDX_XRANGE_END];
@@ -404,7 +407,7 @@ class D3RoadmapChart {
 						const x2 = this.xScale(d[IDX_TODATE]);
 						const y2 = y1;
 						const x3 = x2 + (isOverflow ? XGRIDLINE_OVERFLOW : 0);
-						const y3 = y2 + this.barHeight;
+						const y3 = y2 + bH;
 						const x4 = this.xScale(d[IDX_FROMDATE]);
 						const y4 = y3;
 						return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
@@ -417,18 +420,24 @@ class D3RoadmapChart {
 					.style('fill', (d) => {
 						return this.categories[d[IDX_CATEGORY]].barColor;
 					})
+					.style('stroke', (d) => {
+						return this.categories[d[IDX_CATEGORY]].strokeColor;
+					})
+					.style('stroke-width', (d) => {
+						return this.categories[d[IDX_CATEGORY]].strokeColor ? BAR_STROKEWIDTH : null;
+					})
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);
 		// add bar labels
-		chartRow.selectAll('.serie g.bar text.label')
+		chartRow.selectAll('.serie g.bar text.barlabel')
 			.data((d) => { return d.disp_data; })
 			.enter()
 				.append('text')
 					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', 0)
 					.attr('width', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])); }))
-					.attr('height', this.barHeight)
-					.attr('class', 'label')
+					.attr('height', bH)
+					.attr('class', 'barlabel')
 					.text((d) => {
 						let label = d[IDX_LABEL];
 						if (!label) {
@@ -447,36 +456,61 @@ class D3RoadmapChart {
 					})
 					.attr('dominant-baseline', 'baseline')
 					.attr('dx', 2)
-					.attr('dy', this.lineHeight - this.barHeight / 4)
+					.attr('dy', this.lineHeight - bH4)
 					.style('fill', (d) => {
 						return this.categories[d[IDX_CATEGORY]].textColor;
 					})
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);
 
-		// add bar info
-		chartRow.selectAll('.serie g.bar text.info')
-			.data((d) => { return d.disp_data; })
+		// add bar info ellipse
+		// Sonderbehandlung: vodafone (info in ellipse)
+		const isVodafone = this.config.style === 'vodafone';
+		if (isVodafone) {
+			chartRow.selectAll('.serie g.bar ellipse')
+				.data((d) => { return d.disp_data; })
+				.enter()
+					.append('ellipse')
+						.attr('class', (d => { return `barellipse ${d[IDX_INFO] === undefined ? '' : this.config.style}`; }))
+						.attr('cx', (d => { return this.xScale(d[IDX_FROMDATE]); }))
+						.attr('cy', 0)
+						.attr('rx', (d => {
+							return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length);
+						}))
+						.attr('ry', bH2 - 2)
+						.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
+						.attr('y', 0)
+						.attr('transform', (d => {
+							return `translate(
+								${this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length))},
+								${bH2 + bH4})`;
+						}))
+						.on('mouseover', this._mouseOvered)
+						.on('mouseout', this._mouseOuted);
+		}
+		// add bar info text
+		chartRow.selectAll('.serie g.bar text.barinfo')
+			.data(d => { return d.disp_data; })
 			.enter()
 				.append('text')
 					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', 0)
 					.attr('width', 30)
-					.attr('height', this.barHeight)
-					.attr('class', 'info')
-					.text((d) => {
+					.attr('height', bH)
+					.attr('class', `barinfo ${this.config.style}`)
+					.attr('text-anchor', isVodafone ? 'middle' : 'end')
+					.text(d => {
 						if (!d[IDX_INFO] || this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) < 100) {
 							return null;
 						}
 						return d[IDX_INFO];
 					})
-					.attr('dominant-baseline', 'top')
-					.attr('text-anchor', 'end')
-					.attr('dx', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])) - 4; }))
-					.attr('dy', this.barHeight / 2 + 4)
-					.style('fill', (d) => {
-						return this.categories[d[IDX_CATEGORY]].textColor;
-					})
+					.style('fill', (d => { return isVodafone ? null : this.categories[d[IDX_CATEGORY]].textColor; }))
+					.attr('transform', (d => {
+						return `translate(
+							${this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - (isVodafone ? (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length)) : 4)},
+							${bH2 + bH4 + (isVodafone ? 4 : 0)})`;
+					}))
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);
 	}
@@ -546,7 +580,7 @@ class D3RoadmapChart {
 		// extract chart configuration
 		this.config = CHARTCONFIG_DEFAULT;
 		if (config) {
-			Object.keys(this.config).forEach((k) => {
+			Object.keys(config).forEach((k) => {
 				const v = config[k];
 				if (v !== null && v !== undefined) {
 					this.config[k] = v;

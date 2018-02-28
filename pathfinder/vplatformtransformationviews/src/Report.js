@@ -13,15 +13,59 @@ const LOADING_SUCCESSFUL = 1;
 const LOADING_ERROR = 2;
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
-	cat0: { barColor: "#377eb8", textColor: '#fff' },
-	cat1: { barColor: "#ff7f00", textColor: '#000' },
-	cat2: { barColor: "purple" },
+	prj0: { barColor: "#46e7ff", textColor: '#fff' },
+	prj1: { barColor: "#008497", textColor: '#fff' }
+};
+const CATEGORIES_ROADMAP_DEV = { // category names and their colors defined here
+	cat0: { barColor: "#377eb8", textColor: '#fff', strokeColor: '#000' },
+	cat1: { barColor: "#ff7f00", textColor: '#000', strokeColor: '#3a3' },
+	cat2: { barColor: "purple", strokeColor: '#ff0' },
 	cat3: { barColor: "green" },
 	cat4: { barColor: "#777", textColor: '#ffa' }
 };
 const MOCKED_DATA_ROADMAP = [
 	{
-        measure: "Category 0 sakjdfsd sdfjsdiof sdfjsd",
+        measure: "Channels",
+        data: [
+            ['prj1', "2017-01-01", "2019-04-01", 'One Sales Foundation', 10]
+		]
+	},
+	{
+        data: [
+            ['prj1', "2017-01-01", "2018-04-01", 'One Login']
+		]
+	},
+	{
+        data: [
+            ['prj1', "2017-01-01", "2018-04-01", 'One Customer Document Mgmt', 1]
+		]
+	},
+	{
+        measure: "Enterprise Overlay",
+        data: [
+            ['prj1', "2016-01-01", "2020-04-01", 'Digital Enterprise']
+		]
+	},
+	{
+        measure: "Contact Centre Operations",
+        data: []
+	},
+	{
+        measure: "Retail Ops & Logistics",
+        data: []
+	},
+	{
+        measure: "CRM, Billing and COM",
+        data: [
+            ['prj0', "2017-01-01", "2018-07-01", 'Ramp-Up and RFP'],
+            ['prj1', "2018-07-01", "2022-04-01", 'Solstice', 50000]
+		]
+	},
+];
+
+const MOCKED_DATA_ROADMAP_DEV = [
+	{
+        measure: "Category 0 www sakjdfsd sdfjsdiof sdfjsdwww www ",
         data: [
 			// Category, FromDate, ToDate, Label, Info, Load
             ['cat0', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
@@ -569,12 +613,13 @@ class Report extends Component {
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
 				const chartConfig = {
-					timeSpan: ['2015-01-01', '2016-01-01'],
+					timeSpan: ['2017-01-01', '2020-01-01'],
 					gridlinesXaxis: false,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					barHeight: 28,
-					labelYwidth: 160
+					barHeight: 34,
+					labelYwidth: 240,
+					style: 'vodafone'
 				};
 				return (
 					<Roadmap
