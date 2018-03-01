@@ -58,7 +58,7 @@ const MOCKED_DATA_ROADMAP = [
         measure: "CRM, Billing and COM",
         data: [
             ['prj0', "2017-01-01", "2018-07-01", 'Ramp-Up and RFP'],
-            ['prj1', "2018-07-01", "2022-04-01", 'Solstice', 50000]
+            ['prj1', "2018-07-01", "2022-04-01", 'Solstice', 50]
 		]
 	},
 ];
@@ -610,7 +610,7 @@ class Report extends Component {
 			case 4:
 				const chartConfig = {
 					timeSpan: ['2017-01-01', '2020-01-01'],
-					gridlinesXaxis: false,
+					gridlinesXaxis: true,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
 					barHeight: 32,
