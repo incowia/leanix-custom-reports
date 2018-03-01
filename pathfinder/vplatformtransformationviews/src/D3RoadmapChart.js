@@ -24,6 +24,8 @@ const XGRIDLINE_OVERFLOW = 30; // x-axis gridline will overflow the current char
 const DEFAULT_BARHEIGHT = 24;
 const BAR_STROKEWIDTH = 1;
 const DEFAULT_LABELYWIDTH = MARGIN_LEFT; // space fo y-axis labels
+const MIN_BARWIDTH = 60; // min pixels to put content into bar
+const SPACE = 4; // space between the elements (bar space, text padding, ...)
 
 const CHARTCONFIG_DEFAULT = {
 	timeSpan: null,
@@ -31,7 +33,7 @@ const CHARTCONFIG_DEFAULT = {
 	gridlinesXaxis: true,
 	gridlinesYaxis: true,
 	infoLabel: 'Information',
-	barHeight: DEFAULT_BARHEIGHT,
+	bar: { height: DEFAULT_BARHEIGHT, border: false },
 	labelYwidth: DEFAULT_LABELYWIDTH
 };
 
@@ -70,7 +72,7 @@ class D3RoadmapChart {
 		rowNum = +(rowNum ? rowNum : 0);
 		const tooltip = {
 				left: this.margin.left + targetX + 16,
-				top: (rowNum + 1) * this.lineHeight + this.margin.top + this.offsetTop + 4
+				top: (rowNum + 1) * this.lineHeight + this.margin.top + this.offsetTop + SPACE
 		};
 
 		tooltip.left = tooltip.left > this.width - 100 ? this.width - 100 : tooltip.left;
@@ -115,7 +117,7 @@ class D3RoadmapChart {
 
 		this.isDateOnlyFormat = null; // used date/time format (yyyy-mm-dd or yyyy-mm-dd HH:MM:SS)
 
-		this.barHeight = this.config.barHeight; // height of horizontal data bars
+		this.barHeight = this.config.bar.height; // height of horizontal data bars
 		this.barSpace = this.barHeight >> 2; // vertical space between bars
 		this.lineHeight = this.barHeight + this.barSpace;
 		this.bottomSpace = BOTTOM_SPACE;
@@ -325,10 +327,10 @@ class D3RoadmapChart {
 		domains
 			.append('rect')
 				.attr('class', 'ytitle')
-				.attr('x', -this.margin.left + 3)
-				.attr('y', (d => { return this.lineHeight * domDefs[d].startRow + 4; }))
-				.attr('width', this.margin.left - XGRIDLINE_OVERFLOW - 4)
-				.attr('height', (d => { return (this.lineHeight * domDefs[d].rows - 4); }))
+				.attr('x', -this.margin.left)
+				.attr('y', (d => { return this.lineHeight * domDefs[d].startRow + SPACE; }))
+				.attr('width', this.margin.left - XGRIDLINE_OVERFLOW - SPACE)
+				.attr('height', (d => { return (this.lineHeight * domDefs[d].rows - SPACE); }))
 				.attr('rx', 4)
 				.attr('ry', 4);
 		// label
@@ -336,7 +338,8 @@ class D3RoadmapChart {
 			.append('text')
 				.attr('x', -this.margin.left)
 				.attr('y', (d => { return this.lineHeight * domDefs[d].startRow + bH2 + bH4; }))
-				.attr('dx', 8)
+				.attr('dx', SPACE)
+				.attr('dy', -SPACE)
 				.attr('class', 'ytitle')
 				.text(function (d) {
 					let label = domDefs[d].label;
@@ -455,7 +458,10 @@ class D3RoadmapChart {
 						return this.categories[d[IDX_CATEGORY]].barColor;
 					})
 					.style('stroke', (d) => {
-						return this.categories[d[IDX_CATEGORY]].strokeColor;
+						if (!this.config.bar.border) {
+							return null;
+						}
+						return this.categories[d[IDX_CATEGORY]].strokeColor || d3.rgb(this.categories[d[IDX_CATEGORY]].barColor).darker();
 					})
 					.style('stroke-width', (d) => {
 						return this.categories[d[IDX_CATEGORY]].strokeColor ? BAR_STROKEWIDTH : null;
@@ -489,7 +495,7 @@ class D3RoadmapChart {
 						return d[IDX_LABEL].slice(0, maxChars - 1) + '…';
 					})
 					.attr('dominant-baseline', 'baseline')
-					.attr('dx', 2)
+					.attr('dx', SPACE)
 					.attr('dy', this.lineHeight - bH4)
 					.style('fill', (d) => {
 						return this.categories[d[IDX_CATEGORY]].textColor;
@@ -502,12 +508,12 @@ class D3RoadmapChart {
 			.data((d) => { return d.disp_data; })
 			.enter()
 				.append('ellipse')
-					.attr('class', (d => { return 'barellipse' + (!d[IDX_INFO] ? ' empty' : '' ); }))
+					.attr('class', (d => {
+						return d[IDX_INFO] && this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) > MIN_BARWIDTH ? 'barellipse' : 'empty';
+					}))
 					.attr('cx', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('cy', 0)
-					.attr('rx', (d => {
-						return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length);
-					}))
+					.attr('rx', (d => { return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length); }))
 					.attr('ry', bH2 - 2)
 					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
 					.attr('y', 0)
@@ -523,18 +529,14 @@ class D3RoadmapChart {
 			.data(d => { return d.disp_data; })
 			.enter()
 				.append('text')
-					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]) + this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - 4; }))
+					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); })) // tooltip x pos
 					.attr('y', bH2 + bH4)
-					.attr('width', 30)
-					.attr('height', bH)
-					.attr('class', 'barinfo')
+					.attr('dx', (d => { return this.xScale(d[IDX_FROMDATE]) + this.xScale(d[IDX_TODATE]) - SPACE; })) // text x pos
+					.attr('class', (d => {
+						return d[IDX_INFO] && this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) > MIN_BARWIDTH ? 'barinfo' : 'empty';
+					}))
 					.attr('text-anchor', 'end')
-					.text(d => {
-						if (!d[IDX_INFO] || this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) < 100) {
-							return null;
-						}
-						return d[IDX_INFO];
-					})
+					.text(d => { return d[IDX_INFO]; })
 					.style('fill', (d => { return this.categories[d[IDX_CATEGORY]].textColor; }))
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);

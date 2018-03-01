@@ -25,7 +25,6 @@ line.year {
 	fill: #555;
 	font-size: 1rem;
 }
-
 .year text {
     font-weight: bold;
 	font-size: 1.2rem;
@@ -44,7 +43,7 @@ line.year {
 }
 
 .serie text.barinfo {
-	font-weight: bold;
+	xfont-weight: bold;
 }
 
 .serie .barellipse,
@@ -115,25 +114,24 @@ line.year {
 /* customized settings */
 /* cs1: vodafone */
 .cs1 .yAxis  line {
-    stroke: #f00;
+    stroke: #fdd;
     stroke-width: 1px;
 }
 
 .cs1  .domain rect {
 	opacity: 1.0;
 	fill: none;
-	stroke: #f00;
-	stroke-width: 3px;
+	stroke: #ddd;
+	stroke-width: 2px;
 }
 
 .cs1 .serie text {
-	font-weight: bold;
 	fill: #000;
 }
 
 .cs1 .serie .barellipse{
-	fill: #f00;
-	stroke: #000;
+	fill: #faa;
+	stroke: #777;
 	stroke-width: 1;
 	opacity: 1.0
 }
@@ -143,5 +141,4 @@ line.year {
 
 .cs1 .serie text.barinfo {
 	transform: translate(-10px, 5px);
-	fill: #000 !important;
 }

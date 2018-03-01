@@ -16,13 +16,6 @@ const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	prj0: { barColor: "#46e7ff", textColor: '#fff' },
 	prj1: { barColor: "#008497", textColor: '#fff' }
 };
-const CATEGORIES_ROADMAP_DEV = { // category names and their colors defined here
-	cat0: { barColor: "#377eb8", textColor: '#fff', strokeColor: '#000' },
-	cat1: { barColor: "#ff7f00", textColor: '#000', strokeColor: '#3a3' },
-	cat2: { barColor: "purple", strokeColor: '#ff0' },
-	cat3: { barColor: "green" },
-	cat4: { barColor: "#777", textColor: '#ffa' }
-};
 const MOCKED_DATA_ROADMAP = [
 	{
         measure: "Channels",
@@ -63,67 +56,74 @@ const MOCKED_DATA_ROADMAP = [
 	},
 ];
 
+const CATEGORIES_ROADMAP_DEV = { // category names and their colors defined here
+	bgPrimary: { barColor: "#377ab7", textColor: '#fff' },
+	bgSuccess: { barColor: "#dff0d8", textColor: '#000' },
+	bgInfo: { barColor: "#d9edf7", textColor: '#000' },
+	bgWarning: { barColor: "#fcf8e3", textColor: '#000' },
+	bgDanger: { barColor: "#f2dede", textColor: '#000' }
+};
 const MOCKED_DATA_ROADMAP_DEV = [
 	{
         measure: "Category 0 www sakjdfsd sdfjsdiof sdfjsdwww www ",
         data: [
 			// Category, FromDate, ToDate, Label, Info, Load
-            ['cat0', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
-            ['cat1', "2015-06-30", "2015-07-15", 'Label 2', 999],
-            ['cat3', "2015-09-30", "2015-10-15", 'Label 3'],
-            ['cat1', "2015-12-31", "2016-01-12"],
-            ['cat2', "2016-01-17", "2016-02-22", 'L4', 26214,
+            ['bgPrimary', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
+            ['bgPrimary', "2015-06-30", "2015-07-15", 'Label 2', 999],
+            ['bgPrimary', "2015-09-30", "2015-10-15", 'Label 3'],
+            ['bgPrimary', "2015-12-31", "2016-01-12"],
+            ['bgPrimary', "2016-01-17", "2016-02-22", 'L4', 26214,
 				{a: 'sfsdf sdfjsd', b: 'sfsdpf sfjsd djfsd', c: 12345, d: 15.6464, e: 1000*60*60*24, g: null, h:'saksdofksd sdfjksdpof jfpsdf sdjfposdfjs sdsdfkosd sdjfdf fjfdof'}
 			],
-            ['cat0', "2016-03-31", "2016-04-15"],
-            ['cat0', "2016-06-30", "2016-07-15"],
-            ['cat1', "2016-09-15", "2016-10-25"],
-            ['cat4', "2016-12-31", "2017-01-15"],
-            ['cat2', "2017-03-31", "2017-04-15"],
-            ['cat0', "2017-06-30", "2017-07-15"],
-            ['cat2', "2017-09-30", "2017-10-15"],
-            ['cat1', "2017-12-31", "2018-01-15"],
-            ['cat2', "2018-03-31", "2018-04-15"],
-            ['cat4', "2018-06-30", "2018-07-15"],
-            ['cat0', "2018-09-30", "2018-10-15"],
-            ['cat1', "2018-10-16", "2019-05-15"]
+            ['bgSuccess', "2016-03-31", "2016-04-15"],
+            ['bgSuccess', "2016-06-30", "2016-07-15"],
+            ['bgInfo', "2016-09-15", "2016-10-25"],
+            ['bgWarning', "2016-12-31", "2017-01-15"],
+            ['bgDanger', "2017-03-31", "2017-04-15", 'dkdkod fkdsfk'],
+            ['bgSuccess', "2017-06-30", "2017-07-15", 'sadksakd sdjmsdfj'],
+            ['bgDanger', "2017-09-30", "2017-10-15"],
+            ['bgInfo', "2017-12-31", "2018-01-15"],
+            ['bgDanger', "2018-03-31", "2018-04-15", 'asdsdjf sksdfko'],
+            ['bgWarning', "2018-06-30", "2018-07-15"],
+            ['bgSuccess', "2018-09-30", "2018-10-15"],
+            ['bgInfo', "2018-10-16", "2019-05-15", 'djksajds sfjsdio sdfjsd']
         ]
     },
 	{
         measure: 'ABS',
         data: [
-            ['cat0', "2015-12-01", "2016-02-15", 'Test', 55],
-            ['cat1', "2016-02-28", "2016-04-15"],
-            ['cat2', "2016-06-30", "2016-07-15", null, 222],
-            ['cat0', "2016-09-15", "2016-10-25"],
-            ['cat2', "2016-12-01", "2017-03-17", '', 34],
-            ['cat1', "2017-03-31", "2017-04-15", '', 1],
-            ['cat2', "2017-06-30", "2017-07-15"],
-            ['cat4', "2017-09-30", "2017-10-15"]
+            ['bgSuccess', "2015-12-01", "2016-02-15", 'Test', 55],
+            ['bgInfo', "2016-02-28", "2016-04-15"],
+            ['bgDanger', "2016-06-30", "2016-07-15", null, 222],
+            ['bgSuccess', "2016-09-15", "2016-10-25"],
+            ['bgDanger', "2016-12-01", "2017-03-17", 'xxx xx', 34],
+            ['bgInfo', "2017-03-31", "2017-04-15", '', 1],
+            ['bgDanger', "2017-06-30", "2017-07-15"],
+            ['bgWarning', "2017-09-30", "2017-10-15"]
         ]
     },
 	{
         measure: null,
         data: [
-            ['cat0', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
-            ['cat1', "2016-01-13", "2016-05-15", 'abcdefg', 7],
-            ['cat2', "2017-03-31", "2017-04-15", '', 34],
-            ['cat3', "2017-06-30", "2017-07-15", '', 142],
-            ['cat4', "2017-09-30", "2017-10-15", null, 76]
+            ['bgSuccess', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
+            ['bgInfo', "2016-01-13", "2016-05-15", 'abcdefg', 7],
+            ['bgDanger', "2017-03-31", "2017-04-15", '', 34],
+            ['bgDanger', "2017-06-30", "2017-07-15", '', 142],
+            ['bgWarning', "2017-09-30", "2017-10-15", null, 76]
         ]
     },
 	{
         data: [
-            ['cat4', "2012-09-30", "2022-10-15", 'Under- and Overflow', 7777]
+            ['bgWarning', "2012-09-30", "2022-10-15", 'Under- and Overflow', 7777]
         ]
     },
 	{
         measure: "Category 1",
         data: [
-            ['cat4', "2015-01-01", "2015-06-01", 'Ansh dhdh jj', 177],
-            ['cat1', "2016-01-01", "2016-03-15", 'aksk akak'],
-            ['cat2', "2017-01-01", "2017-10-10", 'jkddiuiwe dijdi', 1025],
-            ['cat1', "2018-01-01", "2018-02-20", 'AA']
+            ['bgWarning', "2015-01-01", "2015-06-01", 'Ansh dhdh jj', 177],
+            ['bgPrimary', "2016-01-01", "2016-03-15", 'aksk akak'],
+            ['bgDanger', "2017-01-01", "2017-10-10", 'jkddiuiwe dijdi', 1025],
+            ['bgPrimary', "2018-01-01", "2018-02-20", 'AA']
         ]
     }
 ];
@@ -613,14 +613,14 @@ class Report extends Component {
 					gridlinesXaxis: true,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					barHeight: 32,
+					bar: { height: 24, border: true },
 					labelYwidth: 260,
 					customStyle: 'cs1' // customStyle to be defined in roadmap.css
 				};
 				return (
 					<Roadmap
-						data={MOCKED_DATA_ROADMAP}
-						categories={CATEGORIES_ROADMAP}
+						data={MOCKED_DATA_ROADMAP_DEV}
+						categories={CATEGORIES_ROADMAP_DEV}
 						config={chartConfig}
 					/>);
 			default:
