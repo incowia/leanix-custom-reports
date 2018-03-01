@@ -210,27 +210,6 @@ const MOCKED_DATA_NARRATIVE_DEV = [
     }
 ];
 
-// mocks
-const sideArea = {
-	id: '1',
-	name: 'Business Management',
-	items: [
-		{
-			id: '2',
-			name: 'Business & Collaboration'
-		}, {
-		id: '3',
-		name: 'Security'
-		}, {
-			id: '4',
- 			name: 'HR / Supply Chain / Finance'
-		}, {
-			id: '5',
- 			name: 'Analytics & Intelligence'
-		}
- 	]
- };
-
 const mainArea = [
 	// contains Lvl 1 Platform BCs with nested children (Lvl 2)
 	// order Lvl 1: Channel layer, Customer Management, Service Management, Resource Management
@@ -436,9 +415,9 @@ class Report extends Component {
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
 		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
 		const sideAreaData = this._handleDataSideArea(bcsLvl1u2);
+		const mainAreaData = this._handleDataMainArea(bcsLvl1u2);
+		console.log(mainAreaData);
 		// entfernen
-		console.log(ColorParser.parse(index));
-		console.log(bcsLvl1u2);
 		this.state.data.push(1);
 		// ende
 		lx.hideSpinner();
@@ -453,17 +432,34 @@ class Report extends Component {
 
 	_handleDataSideArea (bcs) {
 		const sideAreaData= {};
-		const items = {};
+		const items = [];
 		bcs.map((bcs) =>
 			{
 				if(bcs.name === 'Business Management') {
 					sideAreaData.id = bcs.id;
 					sideAreaData.name = bcs.name;
-					bcs.relToChild.nodes.forEach((e) => {})
+					bcs.relToChild.nodes.forEach((e) => {
+						items.push({
+							id: e.id,
+							name: e.displayName
+						});
+					})
+					sideAreaData.items = items;
 				}
 			}
 		);
 		return sideAreaData;
+	}
+
+	_handleDataMainArea (bcs) {
+		const mainAreaData= [];
+		const items = [];
+		bcs.map((bcselement) =>
+			{
+
+			}
+		);
+		return mainAreaData;
 	}
 
 	_getFilteredBCs(nodes, tagId, tagName) {
@@ -599,7 +595,7 @@ class Report extends Component {
 		switch (this.state.showView) {
 			case 0:
 				return <TemplateView
-					sideArea={sideArea}
+					sideArea={this.state.sideArea}
 					mainArea={mainArea}
 					mainIntermediateArea={integration}
 					legend={viewOneLegend}
