@@ -12,6 +12,9 @@ const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
 const LOADING_ERROR = 2;
 
+const BC_BUSINESSMANAGEMENT = 'Business Management';
+const BC_INTEGRATION = 'Integration Layers';
+
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	prj0: { barColor: "#46e7ff", textColor: '#fff' },
 	prj1: { barColor: "#008497", textColor: '#fff' }
@@ -416,8 +419,8 @@ class Report extends Component {
 		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
 		const sideAreaData = this._handleDataSideArea(bcsLvl1u2);
 		const mainAreaData = this._handleDataMainArea(bcsLvl1u2);
-		console.log(mainAreaData);
 		// entfernen
+		console.log(mainAreaData);
 		this.state.data.push(1);
 		// ende
 		lx.hideSpinner();
@@ -436,7 +439,7 @@ class Report extends Component {
 		const items = [];
 		bcs.map((bcselement) =>
 			{
-				if(bcselement.name === 'Business Management') {
+				if(bcselement.name === BC_BUSINESSMANAGEMENT) {
 					sideAreaData.id = bcselement.id;
 					sideAreaData.name = bcselement.name;
 					if(bcselement.relToChild != null) {
@@ -458,19 +461,21 @@ class Report extends Component {
 		const mainAreaData= [];
 		bcs.map((bcselement) =>
 			{
-				const bc = {};
-				const items = [];
-				bc.id = bcselement.id;
-				bc.name = bcselement.name;
-				if(bcselement.relToChild != null) {
-					bcselement.relToChild.nodes.forEach((e) => {
-						items.push({
-							id: e.id,
-							name: e.displayName
-						});
-						bc.items = items;
-					})
-					mainAreaData.push(bc);
+				if(bcselement.name != BC_BUSINESSMANAGEMENT && bcselement.name != BC_INTEGRATION) {
+					const bc = {};
+					const items = [];
+					bc.id = bcselement.id;
+					bc.name = bcselement.name;
+					if(bcselement.relToChild != null) {
+						bcselement.relToChild.nodes.forEach((e) => {
+							items.push({
+								id: e.id,
+								name: e.displayName
+							});
+							bc.items = items;
+						})
+						mainAreaData.push(bc);
+					}
 				}
 			}
 		);
