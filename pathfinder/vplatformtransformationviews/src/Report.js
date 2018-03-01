@@ -426,7 +426,8 @@ class Report extends Component {
 			selectFieldData: selectFieldData,
 			// access 'userGroups'
 			selectedMarket: index.byID[selectFieldData[0].value],
-			sideArea: sideAreaData
+			sideArea: sideAreaData,
+			mainArea: mainAreaData
 		});
 	}
 
@@ -455,10 +456,10 @@ class Report extends Component {
 
 	_handleDataMainArea (bcs) {
 		const mainAreaData= [];
-		const bc = {};
-		const items = [];
 		bcs.map((bcselement) =>
 			{
+				const bc = {};
+				const items = [];
 				bc.id = bcselement.id;
 				bc.name = bcselement.name;
 				if(bcselement.relToChild != null) {
@@ -610,7 +611,7 @@ class Report extends Component {
 			case 0:
 				return <TemplateView
 					sideArea={this.state.sideArea}
-					mainArea={mainArea}
+					mainArea={this.state.mainArea}
 					mainIntermediateArea={integration}
 					legend={viewOneLegend}
 					colorScheme={viewOneColorScheme}
