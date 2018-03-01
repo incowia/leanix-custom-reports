@@ -561,7 +561,7 @@ class Report extends Component {
 			<div className='panel panel-default'>
 				<div className='panel-heading'>Views</div>
 				<div className='panel-body'>
-					<p>Choose a view down below by clicking on it. The chosen one can be exorted directly.</p>
+					<p>Choose a view down below by clicking on it. The chosen one can be exported directly.</p>
 				</div>
 				<div className='list-group'>
 					<button type='button' name='0' className='list-group-item' onClick={this._handleClickViewArea}>Platform transformation</button>
@@ -577,15 +577,15 @@ class Report extends Component {
 	_renderHeading() {
 		switch (this.state.showView) {
 			case 0:
-				return (<h3>Platform transformation view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Platform transformation view for Market {this.state.selectedMarket.name}</h2>);
 			case 1:
-				return (<h3>CSM adoption view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>CSM adoption view for Market {this.state.selectedMarket.name}</h2>);
 			case 2:
-				return (<h3>Simplification & Obsolescence view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Simplification & Obsolescence view for Market {this.state.selectedMarket.name}</h2>);
 			case 3:
-				return (<h3>Narrative view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Narrative view for Market {this.state.selectedMarket.name}</h2>);
 			case 4:
-				return (<h3>Project roadmap view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Project roadmap view for Market {this.state.selectedMarket.name}</h2>);
 			default:
 				throw new Error('Unknown showView state: ' + this.state.showView);
 		}
@@ -628,4 +628,5 @@ class Report extends Component {
 		}
 	}
 }
+
 export default Report;

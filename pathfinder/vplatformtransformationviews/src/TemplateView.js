@@ -9,20 +9,19 @@ class TemplateView extends Component {
 		this._renderMainArea = this._renderMainArea.bind(this);
 		this._renderBlocks = this._renderBlocks.bind(this);
 		this._renderLegend = this._renderLegend.bind(this);
-		this._renderLegendBoxs = this._renderLegendBoxs.bind(this);
 	}
 
 	render() {
 		return (
 			<div className="container">
 				<div className="row">
-					<div className="col-md-2">
+					<div className="col-md-3">
 						{this._renderBlocks(this.props.sideArea.id, this.props.sideArea.name, this.props.sideArea.items)}
 					</div>
-					<div className="col-md-8">
+					<div className="col-md-6">
 						{this._renderMainArea()}
 					</div>
-					<div className="col-md-2">
+					<div className="col-md-3">
 						{this._renderLegend()}
 					</div>
 				</div>
@@ -75,36 +74,40 @@ class TemplateView extends Component {
 		);
 	}
 
-	_renderLegendBoxs() {
-		return (
-			this.props.legend.map((e) => {
-				return this._renderLegendBox(e.text, e.color);
-			})
-		);
-	}
-
-	_renderLegendBox(label, color) {
-		const divStyle = {
-			backgroundColor : color,
-			display: 'inline-block',
-			height: '30px',
-			width: '30px',
-			border: '1px solid black'
-		};
-		return (
-			<div key={label}>
-				<div style={divStyle}></div>
-				<span style={{margin: '5px'}}>{label}</span>
-			</div>
-		);
-	}
-
 	_renderLegend() {
 		return (
 			<div>
-				Keys
-				{this._renderLegendBoxs()}
+				<h3>Keys</h3>
+				{this.props.legend.map((e) => {
+					return this._renderLegendItem(e);
+				})}
 			</div>
+		);
+	}
+
+	_renderLegendItem(e) {
+		let border = '';
+		if (e.color === 'white') {
+			border = '1px solid black';
+		}
+		return (
+			<p key={e.color}
+			 style={{
+			 	whiteSpace: 'nowrap'
+			 }}>
+				<span className='label'
+					style={{
+						display: 'inline-block',
+						width: '1.6em',
+						height: '1.5em',
+						verticalAlign: '-30%',
+						backgroundColor: e.color,
+						border: border
+					 }} />
+				<span style={{
+					marginLeft: '0.3em'
+				}}>{e.text}</span>
+			</p>
 		);
 	}
 }
