@@ -433,18 +433,20 @@ class Report extends Component {
 	_handleDataSideArea (bcs) {
 		const sideAreaData= {};
 		const items = [];
-		bcs.map((bcs) =>
+		bcs.map((bcselement) =>
 			{
-				if(bcs.name === 'Business Management') {
-					sideAreaData.id = bcs.id;
-					sideAreaData.name = bcs.name;
-					bcs.relToChild.nodes.forEach((e) => {
-						items.push({
-							id: e.id,
-							name: e.displayName
-						});
-					})
-					sideAreaData.items = items;
+				if(bcselement.name === 'Business Management') {
+					sideAreaData.id = bcselement.id;
+					sideAreaData.name = bcselement.name;
+					if(bcselement.relToChild != null) {
+						bcselement.relToChild.nodes.forEach((e) => {
+							items.push({
+								id: e.id,
+								name: e.displayName
+							});
+						})
+						sideAreaData.items = items;
+					}
 				}
 			}
 		);
@@ -453,10 +455,22 @@ class Report extends Component {
 
 	_handleDataMainArea (bcs) {
 		const mainAreaData= [];
+		const bc = {};
 		const items = [];
 		bcs.map((bcselement) =>
 			{
-
+				bc.id = bcselement.id;
+				bc.name = bcselement.name;
+				if(bcselement.relToChild != null) {
+					bcselement.relToChild.nodes.forEach((e) => {
+						items.push({
+							id: e.id,
+							name: e.displayName
+						});
+						bc.items = items;
+					})
+					mainAreaData.push(bc);
+				}
 			}
 		);
 		return mainAreaData;
