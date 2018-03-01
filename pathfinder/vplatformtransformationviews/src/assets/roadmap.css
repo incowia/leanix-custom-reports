@@ -34,16 +34,16 @@ line.year {
 .domain rect {
 	opacity: 0
 }
-#data .serie * {
+.serie * {
 	cursor: help;
 }
 
-#data .serie text {
+.serie text {
 	font-size: 1.5rem;
 	dominant-baseline: top;
 }
 
-#data .serie text.barinfo {
+.serie text.barinfo {
 	font-weight: bold;
 }
 
@@ -52,11 +52,11 @@ line.year {
 	opacity: 0.0;
 }
 
-#roadmap_tooltip * {
+.tooltip * {
 	margin: 2px;
 }
 
-#roadmap_tooltip {
+.tooltip {
     position: absolute;
     display: box;
     width: auto;
@@ -71,7 +71,7 @@ line.year {
     pointer-events: none;
 }
 
-#roadmap_tooltip .title {
+.tooltip .title {
 	display: table;
 	width: 100%;
 	margin: 0;
@@ -81,34 +81,34 @@ line.year {
 	border-radius: 6px 6px 0 0;
 	font-weight: bold;
 }
-#roadmap_tooltip .title * {
+.tooltip .title * {
 	display: table-cell;
 	padding: 2px;
 }
-#roadmap_tooltip .title .date {
+.tooltip .title .date {
 	text-align: right;
 	width: 15em;
 }
 
-#roadmap_tooltip .key {
+.tooltip .key {
 	font-weight: bold;
 }
-#roadmap_tooltip .key::after {
+.tooltip .key::after {
 	content: ':';
 }
 
-#roadmap_tooltip .load {
+.tooltip .load {
 	border-top: thin solid #777;
 	border-bottom: thin solid #777;
 }
-#roadmap_tooltip .load * {
+.tooltip .load * {
 	margin: 0;
 	padding: 0.1em;
 }
-#roadmap_tooltip .load div:nth-child(even) {
+.tooltip .load div:nth-child(even) {
 	background-color: #ddd;
 }
-#roadmap_tooltip .load div:nth-child(odd) {
+.tooltip .load div:nth-child(odd) {
 	background-color: #fff;
 }
 
