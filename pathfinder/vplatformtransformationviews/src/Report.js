@@ -613,9 +613,9 @@ class Report extends Component {
 					gridlinesXaxis: false,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					barHeight: 34,
-					labelYwidth: 240,
-					style: 'vodafone'
+					barHeight: 32,
+					labelYwidth: 260,
+					customStyle: 'cs1' // customStyle to be defined in roadmap.css
 				};
 				return (
 					<Roadmap

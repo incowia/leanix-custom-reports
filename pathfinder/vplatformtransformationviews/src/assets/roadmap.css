@@ -1,36 +1,39 @@
-#axes .ytitle {
+text {
+    fill: #777;
+}
+
+.ytitle {
     dominant-baseline: middle;
     font-size: 1.5rem;
 	font-weight: bold;
 }
 
-#axes text {
-    fill: #777;
-}
-
-#axes .ticks path,
-#axes .ticks line {
+.ticks path,
+.ticks line {
     display: none;
 }
 
-#axes line.grid {
+line.grid {
     stroke: #ddd;
     stroke-width: 1px;
 }
-#axes line.year {
+line.year {
     stroke-width: 2px;
 }
 
-#axes .tick text {
+.tick text {
 	fill: #555;
 	font-size: 1rem;
 }
 
-#axes .year text {
+.year text {
     font-weight: bold;
 	font-size: 1.2rem;
 }
 
+.domain rect {
+	opacity: 0
+}
 #data .serie * {
 	cursor: help;
 }
@@ -43,19 +46,10 @@
 #data .serie text.barinfo {
 	font-weight: bold;
 }
-#data .serie text.vodafone {
-	font-weight: bold;
-	fill: #000;
-}
 
-#data .serie ellipse {
+.serie .barellipse,
+.serie .empty {
 	opacity: 0.0;
-}
-#data .serie ellipse.vodafone {
-	fill: #f00;
-	stroke: #000;
-	stroke-width: 1;
-	opacity: 1.0
 }
 
 #roadmap_tooltip * {
@@ -116,4 +110,38 @@
 }
 #roadmap_tooltip .load div:nth-child(odd) {
 	background-color: #fff;
+}
+
+/* customized settings */
+/* cs1: vodafone */
+.cs1 .yAxis  line {
+    stroke: #f00;
+    stroke-width: 1px;
+}
+
+.cs1  .domain rect {
+	opacity: 1.0;
+	fill: none;
+	stroke: #f00;
+	stroke-width: 3px;
+}
+
+.cs1 .serie text {
+	font-weight: bold;
+	fill: #000;
+}
+
+.cs1 .serie .barellipse{
+	fill: #f00;
+	stroke: #000;
+	stroke-width: 1;
+	opacity: 1.0
+}
+.cs1 .serie .empty{
+	opacity: 0
+}
+
+.cs1 .serie text.barinfo {
+	transform: translate(-10px, 5px);
+	fill: #000 !important;
 }
