@@ -58,7 +58,7 @@ const MOCKED_DATA_ROADMAP = [
         measure: "CRM, Billing and COM",
         data: [
             ['prj0', "2017-01-01", "2018-07-01", 'Ramp-Up and RFP'],
-            ['prj1', "2018-07-01", "2022-04-01", 'Solstice', 50000]
+            ['prj1', "2018-07-01", "2022-04-01", 'Solstice', 50]
 		]
 	},
 ];
@@ -575,7 +575,7 @@ class Report extends Component {
 			<div className='panel panel-default'>
 				<div className='panel-heading'>Views</div>
 				<div className='panel-body'>
-					<p>Choose a view down below by clicking on it. The chosen one can be exorted directly.</p>
+					<p>Choose a view down below by clicking on it. The chosen one can be exported directly.</p>
 				</div>
 				<div className='list-group'>
 					<button type='button' name='0' className='list-group-item' onClick={this._handleClickViewArea}>Platform transformation</button>
@@ -591,15 +591,15 @@ class Report extends Component {
 	_renderHeading() {
 		switch (this.state.showView) {
 			case 0:
-				return (<h3>Platform transformation view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Platform transformation view for Market {this.state.selectedMarket.name}</h2>);
 			case 1:
-				return (<h3>CSM adoption view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>CSM adoption view for Market {this.state.selectedMarket.name}</h2>);
 			case 2:
-				return (<h3>Simplification & Obsolescence view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Simplification & Obsolescence view for Market {this.state.selectedMarket.name}</h2>);
 			case 3:
-				return (<h3>Narrative view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Narrative view for Market {this.state.selectedMarket.name}</h2>);
 			case 4:
-				return (<h3>Project roadmap view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Project roadmap view for Market {this.state.selectedMarket.name}</h2>);
 			default:
 				throw new Error('Unknown showView state: ' + this.state.showView);
 		}
@@ -624,12 +624,12 @@ class Report extends Component {
 			case 4:
 				const chartConfig = {
 					timeSpan: ['2017-01-01', '2020-01-01'],
-					gridlinesXaxis: false,
+					gridlinesXaxis: true,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					barHeight: 34,
-					labelYwidth: 240,
-					style: 'vodafone'
+					barHeight: 32,
+					labelYwidth: 260,
+					customStyle: 'cs1' // customStyle to be defined in roadmap.css
 				};
 				return (
 					<Roadmap
@@ -642,4 +642,5 @@ class Report extends Component {
 		}
 	}
 }
+
 export default Report;

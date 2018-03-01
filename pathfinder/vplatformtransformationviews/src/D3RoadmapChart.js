@@ -116,7 +116,7 @@ class D3RoadmapChart {
 		this.isDateOnlyFormat = null; // used date/time format (yyyy-mm-dd or yyyy-mm-dd HH:MM:SS)
 
 		this.barHeight = this.config.barHeight; // height of horizontal data bars
-		this.barSpace = this.barHeight / 4; // vertical space between bars
+		this.barSpace = this.barHeight >> 2; // vertical space between bars
 		this.lineHeight = this.barHeight + this.barSpace;
 		this.bottomSpace = BOTTOM_SPACE;
 
@@ -290,67 +290,101 @@ class D3RoadmapChart {
 			});
 		}
 
+		// y axis (border and labels)
 		const axes = this.svg.append('g').attr('id', 'axes');
 		axes.append('g').attr('class', 'xAxis');
 		axes.append('g').attr('class', 'yAxis');
+		const domDefs = {};
+		let lastDomain = null;
+		this.data.forEach((d, i) => {
+			let dm = d.measure;
+			if (!dm) {
+				dm = lastDomain;
+			}
+			lastDomain = dm;
+			if (!domDefs[dm]) {
+				domDefs[dm] = { label : d.measure, rows : 0, startRow: i }
+			}
+			domDefs[dm].rows++;
+		});
 
-		// y axis
-		const labels = this.svg.select('#axes .yAxis').selectAll('text')
-			.data(this.data.slice(0, this.data.length))
-			.enter();
-
+		// domains on y axis
+		const domains = this.svg.select('#axes .yAxis')
+			.selectAll('g.domain')
+				.data(Object.keys(domDefs))
+					.enter()
+						.append('g')
+							.attr('class', 'domain');
 		// y axis labels
-		const me = this;
-		labels.append('text')
-			.attr('x', -this.margin.left)
-			.attr('y', this.barSpace + this.barHeight / 2)
-			.attr('class', 'ytitle')
-			.text(function (d) {
-				let label = d.measure;
-				if (!label) {
-					return null;
-				}
-				const maxChars = 12 * me.margin.left / 100; // rough rule: 12 chars per 100px
-				if (maxChars >= label.length) {
-					return label;
-				}
-				if (maxChars < 1) {
-					return '';
-				}
-				return label.slice(0, maxChars - 1) + '…';
-			})
-			.attr('transform', ((d, i) => { return 'translate(0,' + (this.lineHeight * i) + ')'; }));
+		const labelWidth = this.margin.left;
+		const bH = this.barHeight;
+		const bH2 = bH >> 1;
+		const bH4 = bH >> 2;
+
+		// border
+		domains
+			.append('rect')
+				.attr('class', 'ytitle')
+				.attr('x', -this.margin.left + 3)
+				.attr('y', (d => { return this.lineHeight * domDefs[d].startRow + 4; }))
+				.attr('width', this.margin.left - XGRIDLINE_OVERFLOW - 4)
+				.attr('height', (d => { return (this.lineHeight * domDefs[d].rows - 4); }))
+				.attr('rx', 4)
+				.attr('ry', 4);
+		// label
+		domains
+			.append('text')
+				.attr('x', -this.margin.left)
+				.attr('y', (d => { return this.lineHeight * domDefs[d].startRow + bH2 + bH4; }))
+				.attr('dx', 8)
+				.attr('class', 'ytitle')
+				.text(function (d) {
+					let label = domDefs[d].label;
+					if (!label) {
+						return null;
+					}
+					const maxChars = labelWidth / 10; // rough rule: 10 chars per 100px
+					if (maxChars >= label.length) {
+						return label;
+					}
+					if (maxChars < 1) {
+						return '';
+					}
+					return label.slice(0, maxChars - 1) + '…';
+				});
+
+		// horizontal grid lines
+		if (this.config.gridlinesYaxis) {
+			this.svg.select('#axes .yAxis').selectAll('line.yAxis')
+				.data(this.data)
+				.enter()
+					.append('line')
+						.attr('class', 'grid yAxis')
+						.attr('x1', -XGRIDLINE_OVERFLOW)
+						.attr('x2', XGRIDLINE_OVERFLOW + this.width)
+						.attr('y1', ((d, i) => { return this.lineHeight * (i + 1) - bH2; }))
+						.attr('y2', ((d, i) => { return this.lineHeight * (i + 1) - bH2; }));
+		}
+
+		// x axis
+		if (this.data.length === 0) {
+			return;
+		}
 
 		// vertical grid lines (on x-axis)
-		if (this.data.length > 0 && this.config.gridlinesXaxis) {
-			this.svg.select('#axes .xAxis').selectAll('line.grid_xAxis')
+		if (this.config.gridlinesXaxis) {
+			this.svg.select('#axes .xAxis').selectAll('line.xAxis')
 				.data(this.xScale.ticks())
 				.enter()
 					.append('line')
-						.attr('class', 'grid grid_xAxis')
+						.attr('class', 'grid xAxis')
 						.attr('x1', (d => { return this.xScale(d); }))
 						.attr('x2', (d => { return this.xScale(d); }))
 						.attr('y1', 0)
 						.attr('y2', this.lineHeight * this.data.length + this.bottomSpace);
 		}
 
-		// horizontal grid lines (on y-axis)
-		if (this.config.gridlinesYaxis) {
-			this.svg.select('#axes .yAxis').selectAll('line.grid_yAxis')
-				.data(this.data)
-				.enter()
-					.append('line')
-						.attr('class', 'grid grid_yAxis')
-						.attr('x1', -XGRIDLINE_OVERFLOW)
-						.attr('x2', XGRIDLINE_OVERFLOW + this.width)
-						.attr('y1', ((d, i) => { return this.lineHeight * (i + 1) - this.barHeight / 2; }))
-						.attr('y2', ((d, i) => { return this.lineHeight * (i + 1) - this.barHeight / 2; }));
-		}
-
-		// x axis
-		if (this.data.length > 0) {
-			this.svg.select('#axes .xAxis').append('g').attr('class', 'ticks xTicks').call(xAxis);
-		}
+		this.svg.select('#axes .xAxis').append('g').attr('class', 'ticks xTicks').call(xAxis);
 
 		const xTicks = this.xScale.ticks();
 		const isYearTick = xTicks.map(this._isYear);
@@ -360,10 +394,10 @@ class D3RoadmapChart {
 		if (!(isYearTick.every((d) => { return d === true; })) && isMonthTick.every((d) => { return d === true; })) {
 			// emphasize year tick labels and year grid lines
 			d3.selectAll('.tick').each(function (d, i) {
-				d3.select(this).attr('class', ('tick' + (isYearTick[i] ? ' year' : '')));
+				d3.select(this).attr('class', ('tick' + (isYearTick[i] ? ' year ' : '')));
 			});
-			d3.selectAll('.grid_xAxis').each(function (d, i) {
-				d3.select(this).attr('class', ('grid grid_xAxis' + (isYearTick[i] ? ' year' : '')));
+			d3.selectAll('.grid.xAxis').each(function (d, i) {
+				d3.select(this).attr('class', ('grid xAxis' + (isYearTick[i] ? ' year ' : '')));
 			});
 		}
 	}
@@ -402,21 +436,21 @@ class D3RoadmapChart {
 					.attr('points', (d) => {
 						const isUnderflow = d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START];
 						const isOverflow = d[IDX_TODATE]    > this.displayDateRange[IDX_XRANGE_END];
-						const x1 = this.xScale(d[IDX_FROMDATE]) - (isUnderflow ? XGRIDLINE_OVERFLOW : 0);
+						const x1 = this.xScale(d[IDX_FROMDATE]) - (isUnderflow ? XGRIDLINE_OVERFLOW * 2 / 3 : 0);
 						const y1 = this.barSpace;
 						const x2 = this.xScale(d[IDX_TODATE]);
 						const y2 = y1;
-						const x3 = x2 + (isOverflow ? XGRIDLINE_OVERFLOW : 0);
+						const x3 = x2 + (isOverflow ? XGRIDLINE_OVERFLOW * 2 / 3 : 0);
 						const y3 = y2 + bH;
 						const x4 = this.xScale(d[IDX_FROMDATE]);
 						const y4 = y3;
 						return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
 					})
-					.attr('class', (d) => {
-						return 'bar'
+					.attr('class', (d => {
+						return  'bar '
 							+ (d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START] ? ' underflow' : '')
 							+ (d[IDX_TODATE]   > this.displayDateRange[IDX_XRANGE_END]   ? ' overflow'  : '');
-					})
+					}))
 					.style('fill', (d) => {
 						return this.categories[d[IDX_CATEGORY]].barColor;
 					})
@@ -464,53 +498,44 @@ class D3RoadmapChart {
 					.on('mouseout', this._mouseOuted);
 
 		// add bar info ellipse
-		// Sonderbehandlung: vodafone (info in ellipse)
-		const isVodafone = this.config.style === 'vodafone';
-		if (isVodafone) {
-			chartRow.selectAll('.serie g.bar ellipse')
-				.data((d) => { return d.disp_data; })
-				.enter()
-					.append('ellipse')
-						.attr('class', (d => { return `barellipse ${d[IDX_INFO] === undefined ? '' : this.config.style}`; }))
-						.attr('cx', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-						.attr('cy', 0)
-						.attr('rx', (d => {
-							return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length);
-						}))
-						.attr('ry', bH2 - 2)
-						.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-						.attr('y', 0)
-						.attr('transform', (d => {
-							return `translate(
-								${this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length))},
-								${bH2 + bH4})`;
-						}))
-						.on('mouseover', this._mouseOvered)
-						.on('mouseout', this._mouseOuted);
-		}
+		chartRow.selectAll('.serie g.bar ellipse')
+			.data((d) => { return d.disp_data; })
+			.enter()
+				.append('ellipse')
+					.attr('class', (d => { return 'barellipse' + (!d[IDX_INFO] ? ' empty' : '' ); }))
+					.attr('cx', (d => { return this.xScale(d[IDX_FROMDATE]); }))
+					.attr('cy', 0)
+					.attr('rx', (d => {
+						return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length);
+					}))
+					.attr('ry', bH2 - 2)
+					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
+					.attr('y', 0)
+					.attr('transform', (d => {
+						return `translate(
+							${this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length))},
+							${bH2 + bH4})`;
+					}))
+					.on('mouseover', this._mouseOvered)
+					.on('mouseout', this._mouseOuted);
 		// add bar info text
 		chartRow.selectAll('.serie g.bar text.barinfo')
 			.data(d => { return d.disp_data; })
 			.enter()
 				.append('text')
-					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-					.attr('y', 0)
+					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]) + this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - 4; }))
+					.attr('y', bH2 + bH4)
 					.attr('width', 30)
 					.attr('height', bH)
-					.attr('class', `barinfo ${this.config.style}`)
-					.attr('text-anchor', isVodafone ? 'middle' : 'end')
+					.attr('class', 'barinfo')
+					.attr('text-anchor', 'end')
 					.text(d => {
 						if (!d[IDX_INFO] || this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) < 100) {
 							return null;
 						}
 						return d[IDX_INFO];
 					})
-					.style('fill', (d => { return isVodafone ? null : this.categories[d[IDX_CATEGORY]].textColor; }))
-					.attr('transform', (d => {
-						return `translate(
-							${this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - (isVodafone ? (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length)) : 4)},
-							${bH2 + bH4 + (isVodafone ? 4 : 0)})`;
-					}))
+					.style('fill', (d => { return this.categories[d[IDX_CATEGORY]].textColor; }))
 					.on('mouseover', this._mouseOvered)
 					.on('mouseout', this._mouseOuted);
 	}
@@ -541,7 +566,7 @@ class D3RoadmapChart {
 			div = this.tooltipDiv.append('div').attr('class', 'load')
 			// load is an object and will be rendered as a key-value-list
 			Object.keys(d[IDX_LOAD]).forEach((k) => {
-				div = div.append('div').attr('class','keyvalue');
+				div = div.append('div').attr('class', 'keyvalue');
 				div.append('span').attr('class', 'key').text(k);
 				div.append('span').attr('class', 'value').text(d[IDX_LOAD][k]);
 			});
@@ -600,10 +625,11 @@ class D3RoadmapChart {
 		// SVG element
 		if (!this.svg) {
 			this.svg = d3.select('#' + this.componentId)
-				.append('svg').attr('id', this.svgId);
+				.append('svg')
+					.attr('id', this.svgId)
+					.attr('class', this.config.customStyle);
 		} else {
-			d3.select('#' + this.svgId).selectAll('*')
-				.remove();
+			d3.select('#' + this.svgId).selectAll('*').remove();
 		}
 
 		if (this.data) {

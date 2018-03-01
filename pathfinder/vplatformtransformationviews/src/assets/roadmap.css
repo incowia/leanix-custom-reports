@@ -1,68 +1,62 @@
-#axes .ytitle {
+text {
+    fill: #777;
+}
+
+.ytitle {
     dominant-baseline: middle;
     font-size: 1.5rem;
 	font-weight: bold;
 }
 
-#axes text {
-    fill: #777;
-}
-
-#axes .ticks path,
-#axes .ticks line {
+.ticks path,
+.ticks line {
     display: none;
 }
 
-#axes line.grid {
+line.grid {
     stroke: #ddd;
     stroke-width: 1px;
 }
-#axes line.year {
+line.year {
     stroke-width: 2px;
 }
 
-#axes .tick text {
+.tick text {
 	fill: #555;
 	font-size: 1rem;
 }
 
-#axes .year text {
+.year text {
     font-weight: bold;
 	font-size: 1.2rem;
 }
 
-#data .serie * {
+.domain rect {
+	opacity: 0
+}
+.serie * {
 	cursor: help;
 }
 
-#data .serie text {
+.serie text {
 	font-size: 1.5rem;
 	dominant-baseline: top;
 }
 
-#data .serie text.barinfo {
+.serie text.barinfo {
 	font-weight: bold;
-}
-#data .serie text.vodafone {
-	font-weight: bold;
-	fill: #000;
 }
 
-#data .serie ellipse {
+.serie .barellipse,
+.serie .empty {
 	opacity: 0.0;
 }
-#data .serie ellipse.vodafone {
-	fill: #f00;
-	stroke: #000;
-	stroke-width: 1;
-	opacity: 1.0
-}
 
-#roadmap_tooltip * {
+.tooltip * {
 	margin: 2px;
 }
 
-#roadmap_tooltip {
+.tooltip {
     position: absolute;
     display: box;
     width: auto;
@@ -77,7 +71,7 @@
     pointer-events: none;
 }
 
-#roadmap_tooltip .title {
+.tooltip .title {
 	display: table;
 	width: 100%;
 	margin: 0;
@@ -87,33 +81,67 @@
 	border-radius: 6px 6px 0 0;
 	font-weight: bold;
 }
-#roadmap_tooltip .title * {
+.tooltip .title * {
 	display: table-cell;
 	padding: 2px;
 }
-#roadmap_tooltip .title .date {
+.tooltip .title .date {
 	text-align: right;
 	width: 15em;
 }
 
-#roadmap_tooltip .key {
+.tooltip .key {
 	font-weight: bold;
 }
-#roadmap_tooltip .key::after {
+.tooltip .key::after {
 	content: ':';
 }
 
-#roadmap_tooltip .load {
+.tooltip .load {
 	border-top: thin solid #777;
 	border-bottom: thin solid #777;
 }
-#roadmap_tooltip .load * {
+.tooltip .load * {
 	margin: 0;
 	padding: 0.1em;
 }
-#roadmap_tooltip .load div:nth-child(even) {
+.tooltip .load div:nth-child(even) {
 	background-color: #ddd;
 }
-#roadmap_tooltip .load div:nth-child(odd) {
+.tooltip .load div:nth-child(odd) {
 	background-color: #fff;
+}
+
+/* customized settings */
+/* cs1: vodafone */
+.cs1 .yAxis  line {
+    stroke: #f00;
+    stroke-width: 1px;
+}
+
+.cs1  .domain rect {
+	opacity: 1.0;
+	fill: none;
+	stroke: #f00;
+	stroke-width: 3px;
+}
+
+.cs1 .serie text {
+	font-weight: bold;
+	fill: #000;
+}
+
+.cs1 .serie .barellipse{
+	fill: #f00;
+	stroke: #000;
+	stroke-width: 1;
+	opacity: 1.0
+}
+.cs1 .serie .empty{
+	opacity: 0
+}
+
+.cs1 .serie text.barinfo {
+	transform: translate(-10px, 5px);
+	fill: #000 !important;
 }

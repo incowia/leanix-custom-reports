@@ -86,7 +86,8 @@ Roadmap.propTypes = {
 		consecutive: PropTypes.bool,
 		gridlinesXaxis: PropTypes.bool,
 		gridlinesYaxis: PropTypes.bool,
-		infoLabel: PropTypes.string
+		infoLabel: PropTypes.string,
+		customStyle: PropTypes.string
 	})
 };
 
