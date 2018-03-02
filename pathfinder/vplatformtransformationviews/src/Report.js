@@ -6,11 +6,14 @@ import TemplateView from './TemplateView';
 import Utilities from './common/Utilities';
 import NarrativeView from './NarrativeView';
 import Roadmap from './Roadmap';
-import ColorParser from './ColorParser';
+import BlockColorDefinition from './BlockColorDefinition';
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
 const LOADING_ERROR = 2;
+
+const BC_BUSINESSMANAGEMENT = 'Business Management';
+const BC_INTEGRATION = 'Integration Layers';
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	prj0: { barColor: "#46e7ff", textColor: '#fff' },
@@ -416,8 +419,8 @@ class Report extends Component {
 		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
 		const sideAreaData = this._handleDataSideArea(bcsLvl1u2);
 		const mainAreaData = this._handleDataMainArea(bcsLvl1u2);
-		console.log(mainAreaData);
 		// entfernen
+		console.log(mainAreaData);
 		this.state.data.push(1);
 		// ende
 		lx.hideSpinner();
@@ -426,25 +429,28 @@ class Report extends Component {
 			selectFieldData: selectFieldData,
 			// access 'userGroups'
 			selectedMarket: index.byID[selectFieldData[0].value],
-			sideArea: sideAreaData
+			sideArea: sideAreaData,
+			mainArea: mainAreaData
 		});
 	}
 
 	_handleDataSideArea (bcs) {
 		const sideAreaData= {};
 		const items = [];
-		bcs.map((bcs) =>
+		bcs.map((bcselement) =>
 			{
-				if(bcs.name === 'Business Management') {
-					sideAreaData.id = bcs.id;
-					sideAreaData.name = bcs.name;
-					bcs.relToChild.nodes.forEach((e) => {
-						items.push({
-							id: e.id,
-							name: e.displayName
-						});
-					})
-					sideAreaData.items = items;
+				if(bcselement.name === BC_BUSINESSMANAGEMENT) {
+					sideAreaData.id = bcselement.id;
+					sideAreaData.name = bcselement.name;
+					if(bcselement.relToChild != null) {
+						bcselement.relToChild.nodes.forEach((e) => {
+							items.push({
+								id: e.id,
+								name: e.displayName
+							});
+						})
+						sideAreaData.items = items;
+					}
 				}
 			}
 		);
@@ -453,10 +459,24 @@ class Report extends Component {
 
 	_handleDataMainArea (bcs) {
 		const mainAreaData= [];
-		const items = [];
 		bcs.map((bcselement) =>
 			{
-
+				if(bcselement.name != BC_BUSINESSMANAGEMENT && bcselement.name != BC_INTEGRATION) {
+					const bc = {};
+					const items = [];
+					bc.id = bcselement.id;
+					bc.name = bcselement.name;
+					if(bcselement.relToChild != null) {
+						bcselement.relToChild.nodes.forEach((e) => {
+							items.push({
+								id: e.id,
+								name: e.displayName
+							});
+							bc.items = items;
+						})
+						mainAreaData.push(bc);
+					}
+				}
 			}
 		);
 		return mainAreaData;
@@ -561,7 +581,7 @@ class Report extends Component {
 			<div className='panel panel-default'>
 				<div className='panel-heading'>Views</div>
 				<div className='panel-body'>
-					<p>Choose a view down below by clicking on it. The chosen one can be exorted directly.</p>
+					<p>Choose a view down below by clicking on it. The chosen one can be exported directly.</p>
 				</div>
 				<div className='list-group'>
 					<button type='button' name='0' className='list-group-item' onClick={this._handleClickViewArea}>Platform transformation</button>
@@ -577,15 +597,15 @@ class Report extends Component {
 	_renderHeading() {
 		switch (this.state.showView) {
 			case 0:
-				return (<h3>Platform transformation view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Platform transformation view for Market {this.state.selectedMarket.name}</h2>);
 			case 1:
-				return (<h3>CSM adoption view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>CSM adoption view for Market {this.state.selectedMarket.name}</h2>);
 			case 2:
-				return (<h3>Simplification & Obsolescence view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Simplification & Obsolescence view for Market {this.state.selectedMarket.name}</h2>);
 			case 3:
-				return (<h3>Narrative view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Narrative view for Market {this.state.selectedMarket.name}</h2>);
 			case 4:
-				return (<h3>Project roadmap view for Market {this.state.selectedMarket.name}</h3>);
+				return (<h2>Project roadmap view for Market {this.state.selectedMarket.name}</h2>);
 			default:
 				throw new Error('Unknown showView state: ' + this.state.showView);
 		}
@@ -596,7 +616,7 @@ class Report extends Component {
 			case 0:
 				return <TemplateView
 					sideArea={this.state.sideArea}
-					mainArea={mainArea}
+					mainArea={this.state.mainArea}
 					mainIntermediateArea={integration}
 					legend={viewOneLegend}
 					colorScheme={viewOneColorScheme}
@@ -628,4 +648,5 @@ class Report extends Component {
 		}
 	}
 }
+
 export default Report;
