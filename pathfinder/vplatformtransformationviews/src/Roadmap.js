@@ -87,7 +87,11 @@ Roadmap.propTypes = {
 		gridlinesXaxis: PropTypes.bool,
 		gridlinesYaxis: PropTypes.bool,
 		infoLabel: PropTypes.string,
-		customStyle: PropTypes.string
+		bar: PropTypes.shape({
+			height: PropTypes.number,
+			border: PropTypes.bool
+		}),
+		labelYwidth: PropTypes.number
 	})
 };
 

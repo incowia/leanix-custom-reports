@@ -17,16 +17,20 @@ const IDX_LOAD = 5;
 const MARGIN_TOP = 20; // 20 px for x-axis labels
 const MARGIN_RIGHT = 40; // right margin should provide space for last horz. axis label
 const MARGIN_BOTTOM = 10;
-const MARGIN_LEFT = 120; // left margin should provide space for y axis labels
+const MARGIN_LEFT = 160; // left margin should provide space for y axis labels
 
 const BOTTOM_SPACE = 10; // vertical overhang of vertical grid lines on bottom
 const XGRIDLINE_OVERFLOW = 30; // x-axis gridline will overflow the current chart width by this length (on both sides)
+
 const DEFAULT_BARHEIGHT = 24;
 const BAR_STROKEWIDTH = 1;
-const DEFAULT_LABELYWIDTH = MARGIN_LEFT; // space fo y-axis labels
+const DEFAULT_BARCOLOR = '#777';
+const DEFAULT_TEXTCOLOR = '#fff';
 const MIN_BARWIDTH = 60; // min pixels to put content into bar
-const SPACE = 4; // space between the elements (bar space, text padding, ...)
 
+const DEFAULT_LABELYWIDTH = MARGIN_LEFT; // space fo y-axis labels
+const SPACE = 4; // space between the elements (bar space, text padding, ...)
+const DEFAULT_CATEGORY = '__CAT__';
 const CHARTCONFIG_DEFAULT = {
 	timeSpan: null,
 	consecutive: false,
@@ -56,7 +60,14 @@ class D3RoadmapChart {
 		this._mouseOuted = this._mouseOuted.bind(this);
 	}
 
+	_stopEventPropagation(event) {
+		if (event) {
+			event.stopPropagation();
+			event.preventDefault();
+		}
+	}
 	_mouseOvered(d) {
+		this._stopEventPropagation(d3.event);
 		const target = d3.event.target;
 		const svg = document.getElementById(this.svgId);
 		const targetX = +target.attributes.x.value;
@@ -65,9 +76,13 @@ class D3RoadmapChart {
 		let rowNum = null;
 		let pn = target.parentNode;
 		while (!rowNum && pn && pn !== svg) {
-			rowNum = pn.attributes['row'].value;
-			pn = pn.parentNode;
+			if (pn.attributes['row']) {
+				rowNum = pn.attributes['row'].value;
+			} else {
+				pn = pn.parentNode;
+			}
 		}
+
 		// tooltip positionieren!
 		rowNum = +(rowNum ? rowNum : 0);
 		const tooltip = {
@@ -84,7 +99,9 @@ class D3RoadmapChart {
 	}
 
 	_mouseOuted() {
+		this._stopEventPropagation(d3.event);
 		this.tooltipDiv.transition().duration(500).style('opacity', 0.0);
+
 	}
 
 	_drawChart() {
@@ -314,9 +331,9 @@ class D3RoadmapChart {
 		const domains = this.svg.select('#axes .yAxis')
 			.selectAll('g.domain')
 				.data(Object.keys(domDefs))
-					.enter()
-						.append('g')
-							.attr('class', 'domain');
+				.enter()
+					.append('g')
+						.attr('class', 'domain');
 		// y axis labels
 		const labelWidth = this.margin.left;
 		const bH = this.barHeight;
@@ -408,138 +425,126 @@ class D3RoadmapChart {
 	_drawData() {
 		this.svg.append('g').attr('id', 'data');
 
-		// make y-axis bar groups for different data series
-		let chartRow = this.svg.select('#data').selectAll('.serie')
+		// add rows of series and bars per serie
+		let bars = this.svg.select('#data').selectAll('.serie')
 			.data(this.data.slice(0, this.data.length))
 			.enter()
 				.append('g')
 					.attr('transform', ((d, i) => { return 'translate(0,' + (this.lineHeight * i) + ')'; }))
 					.attr('class', 'serie')
-					.attr('row', ((d, i) => { return i; }));
+					.attr('row', ((d, i) => { return i; }))
+				.selectAll('g.bar')
+					.data((d) => { return d.disp_data; })
+					.enter()
+						.append('g')
+						.attr('class', 'bar')
+						.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
+						.on('mouseover', this._mouseOvered)
+						.on('mouseout', this._mouseOuted);
+		// draw the bars
+		this._drawBars(bars);
+	}
 
-		// add data series (bar groups)
-		chartRow.selectAll('.serie g')
-			.data((d) => { return d.disp_data; })
-			.enter()
-				.append('g')
-				.attr('class', 'bar')
-				.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }));
-		// add data series (bar polygons)
+	_drawBars(bars) {
 		const bH = this.barHeight;
 		const bH2 = bH >> 1;
 		const bH4 = bH >> 2;
-		chartRow.selectAll('.serie g.bar polygon')
-			.data((d) => { return d.disp_data; })
-			.enter()
-				.append('polygon')
-					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-					.attr('y', this.barSpace)
-					.attr('w', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])); }))
-					.attr('h', bH)
-					.attr('points', (d) => {
-						const isUnderflow = d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START];
-						const isOverflow = d[IDX_TODATE]    > this.displayDateRange[IDX_XRANGE_END];
-						const x1 = this.xScale(d[IDX_FROMDATE]) - (isUnderflow ? XGRIDLINE_OVERFLOW * 2 / 3 : 0);
-						const y1 = this.barSpace;
-						const x2 = this.xScale(d[IDX_TODATE]);
-						const y2 = y1;
-						const x3 = x2 + (isOverflow ? XGRIDLINE_OVERFLOW * 2 / 3 : 0);
-						const y3 = y2 + bH;
-						const x4 = this.xScale(d[IDX_FROMDATE]);
-						const y4 = y3;
-						return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
-					})
-					.attr('class', (d => {
-						return  'bar '
-							+ (d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START] ? ' underflow' : '')
-							+ (d[IDX_TODATE]   > this.displayDateRange[IDX_XRANGE_END]   ? ' overflow'  : '');
-					}))
-					.style('fill', (d) => {
-						return this.categories[d[IDX_CATEGORY]].barColor;
-					})
-					.style('stroke', (d) => {
-						if (!this.config.bar.border) {
-							return null;
-						}
-						return this.categories[d[IDX_CATEGORY]].strokeColor || d3.rgb(this.categories[d[IDX_CATEGORY]].barColor).darker();
-					})
-					.style('stroke-width', (d) => {
-						return this.categories[d[IDX_CATEGORY]].strokeColor ? BAR_STROKEWIDTH : null;
-					})
-					.on('mouseover', this._mouseOvered)
-					.on('mouseout', this._mouseOuted);
-		// add bar labels
-		chartRow.selectAll('.serie g.bar text.barlabel')
-			.data((d) => { return d.disp_data; })
-			.enter()
-				.append('text')
-					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-					.attr('y', 0)
-					.attr('width', (d => { return (this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE])); }))
-					.attr('height', bH)
-					.attr('class', 'barlabel')
-					.text((d) => {
-						let label = d[IDX_LABEL];
-						if (!label) {
-							return null;
-						}
-						let width = this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]);
-						const maxChars = width / 12;
-						const len = d[IDX_LABEL].length;
-						if (maxChars >= len) {
-							return d[IDX_LABEL];
-						}
-						if (maxChars < 1) {
-							return '';
-						}
-						return d[IDX_LABEL].slice(0, maxChars - 1) + '…';
-					})
-					.attr('dominant-baseline', 'baseline')
-					.attr('dx', SPACE)
-					.attr('dy', this.lineHeight - bH4)
-					.style('fill', (d) => {
-						return this.categories[d[IDX_CATEGORY]].textColor;
-					})
-					.on('mouseover', this._mouseOvered)
-					.on('mouseout', this._mouseOuted);
+		// add bar items: polygon - label - ellipse - info
+		bars.append('polygon')
+			.attr('x', (d => { return this._projectXStart(d); }))
+			.attr('y', this.barSpace)
+			.attr('w', (d => { return this._projectWidth(d); }))
+			.attr('h', bH)
+			.attr('points', (d) => {
+				const isUnderflow = d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START];
+				const isOverflow = d[IDX_TODATE]    > this.displayDateRange[IDX_XRANGE_END];
+				const x1 = this._projectXStart(d) - (isUnderflow ? XGRIDLINE_OVERFLOW * 2 / 3 : 0);
+				const y1 = this.barSpace;
+				const x2 = this._projectXEnd(d);
+				const y2 = y1;
+				const x3 = x2 + (isOverflow ? XGRIDLINE_OVERFLOW * 2 / 3 : 0);
+				const y3 = y2 + bH;
+				const x4 = this._projectXStart(d);
+				const y4 = y3;
+				return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+			})
+			.attr('class', (d => {
+				return  'bar'
+					+ (d[IDX_FROMDATE] < this.displayDateRange[IDX_XRANGE_START] ? ' underflow' : '')
+					+ (d[IDX_TODATE]   > this.displayDateRange[IDX_XRANGE_END]   ? ' overflow'  : '');
+			}))
+			.style('fill', (d) => {
+				return this._getBarColor(d[IDX_CATEGORY]);
+			})
+			.style('stroke', (d) => {
+				if (!this.config.bar.border) {
+					return null;
+				}
+				return this._getStrokeColor(d[IDX_CATEGORY])
+			})
+			.style('stroke-width', (d) => {
+				if (!this.config.bar.border) {
+					return null;
+				}
+				return BAR_STROKEWIDTH;
+			});
+		// add bar label
+		bars.append('text')
+			.attr('x', (d => { return this._projectXStart(d); }))
+			.attr('y', 0)
+			.attr('width', (d => { return this._projectWidth(d); }))
+			.attr('height', bH)
+			.attr('class', 'barlabel')
+			.text((d) => {
+				let label = d[IDX_LABEL];
+				if (!label) {
+					return null;
+				}
+				let width = this._projectWidth(d);
+				const maxChars = width / 12;
+				const len = d[IDX_LABEL].length;
+				if (maxChars >= len) {
+					return d[IDX_LABEL];
+				}
+				if (maxChars < 1) {
+					return '';
+				}
+				return d[IDX_LABEL].slice(0, maxChars - 1) + '…';
+			})
+			.attr('dominant-baseline', 'baseline')
+			.attr('dx', SPACE)
+			.attr('dy', this.lineHeight - bH4)
+			.style('fill', (d) => {
+				return this._getTextColor(d[IDX_CATEGORY]);
+			});
 
 		// add bar info ellipse
-		chartRow.selectAll('.serie g.bar ellipse')
-			.data((d) => { return d.disp_data; })
-			.enter()
-				.append('ellipse')
-					.attr('class', (d => {
-						return d[IDX_INFO] && this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) > MIN_BARWIDTH ? 'barellipse' : 'empty';
-					}))
-					.attr('cx', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-					.attr('cy', 0)
-					.attr('rx', (d => { return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length); }))
-					.attr('ry', bH2 - 2)
-					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); }))
-					.attr('y', 0)
-					.attr('transform', (d => {
-						return `translate(
-							${this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) - (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length))},
-							${bH2 + bH4})`;
-					}))
-					.on('mouseover', this._mouseOvered)
-					.on('mouseout', this._mouseOuted);
+		bars.append('ellipse')
+			.attr('class', (d => {
+				return 'barellipse' + (!d[IDX_INFO] || this._projectWidth(d) < MIN_BARWIDTH ? ' empty' : '');
+			}))
+			.attr('cx', (d => { return this._projectXStart(d); }))
+			.attr('cy', 0)
+			.attr('rx', (d => { return 15 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length); }))
+			.attr('ry', (bH - SPACE) >> 1)
+			.attr('x', (d => { return this._projectXStart(d); }))
+			.attr('y', 0)
+			.attr('transform', (d => {
+				return `translate(
+					${this._projectWidth(d) - (18 + 3 * (d[IDX_INFO] === undefined ? 0 : ('' + d[IDX_INFO]).length))},
+					${bH2 + bH4})`;
+			}));
 		// add bar info text
-		chartRow.selectAll('.serie g.bar text.barinfo')
-			.data(d => { return d.disp_data; })
-			.enter()
-				.append('text')
-					.attr('x', (d => { return this.xScale(d[IDX_FROMDATE]); })) // tooltip x pos
-					.attr('y', bH2 + bH4)
-					.attr('dx', (d => { return this.xScale(d[IDX_FROMDATE]) + this.xScale(d[IDX_TODATE]) - SPACE; })) // text x pos
-					.attr('class', (d => {
-						return d[IDX_INFO] && this.xScale(d[IDX_TODATE]) - this.xScale(d[IDX_FROMDATE]) > MIN_BARWIDTH ? 'barinfo' : 'empty';
-					}))
-					.attr('text-anchor', 'end')
-					.text(d => { return d[IDX_INFO]; })
-					.style('fill', (d => { return this.categories[d[IDX_CATEGORY]].textColor; }))
-					.on('mouseover', this._mouseOvered)
-					.on('mouseout', this._mouseOuted);
+		bars.append('text')
+				.attr('x', (d => { return this._projectXStart(d); })) // tooltip x pos
+				.attr('y', bH2 + bH4)
+				.attr('dx', (d => { return this._projectWidth(d) - SPACE; })) // text x pos
+				.attr('class', (d => {
+					return d[IDX_INFO] && this._projectWidth(d) > MIN_BARWIDTH ? 'barinfo' : 'empty';
+				}))
+				.attr('text-anchor', 'end')
+				.text(d => { return d[IDX_INFO]; })
+				.style('fill', (d => { return this._getTextColor(d[IDX_CATEGORY]); }));
 	}
 
 	_renderTooltip(d) {
@@ -565,12 +570,12 @@ class D3RoadmapChart {
 
 		// load - if any
 		if (d[IDX_LOAD]) {
-			div = this.tooltipDiv.append('div').attr('class', 'load')
+			const load = this.tooltipDiv.append('div').attr('class', 'load')
 			// load is an object and will be rendered as a key-value-list
 			Object.keys(d[IDX_LOAD]).forEach((k) => {
-				div = div.append('div').attr('class', 'keyvalue');
-				div.append('span').attr('class', 'key').text(k);
-				div.append('span').attr('class', 'value').text(d[IDX_LOAD][k]);
+				const kv = load.append('div').attr('class', 'keyvalue');
+				kv.append('span').attr('class', 'key').text(k);
+				kv.append('span').attr('class', 'value').text(d[IDX_LOAD][k]);
 			});
 		}
 	}
@@ -600,9 +605,54 @@ class D3RoadmapChart {
 		};
 	}
 
+	_projectXStart(data) {
+		return this.xScale(data[IDX_FROMDATE]);
+	}
+	_projectXEnd(data) {
+		return this.xScale(data[IDX_TODATE]);
+	}
+	_projectWidth(data) {
+		return this.xScale(data[IDX_TODATE]) - this.xScale(data[IDX_FROMDATE]);
+	}
+
+	_getBarColor(cat) {
+		if (this.categories[cat]) {
+			return this.categories[cat].barColor;
+		}
+		return this.categories[DEFAULT_CATEGORY].barColor;
+	}
+	_getTextColor(cat) {
+		if (this.categories[cat]) {
+			return this.categories[cat].textColor;
+		}
+		return this.categories[DEFAULT_CATEGORY].textColor;
+	}
+	_getStrokeColor(cat) {
+		if (this.categories[cat] && this.categories[cat].strokeColor) {
+			return this.categories[cat].strokeColor;
+		}
+		return d3.rgb(this._getBarColor(cat)).darker();
+	}
+
 	display(data, categories, config) {
 		this.data = data;
-		this.categories = categories;
+		// extract and adjust categories
+
+		this.categories = {};
+		this.categories[DEFAULT_CATEGORY] = {
+			barColor: DEFAULT_BARCOLOR,
+			textColor: DEFAULT_TEXTCOLOR
+		};
+		if (categories) {
+			Object.keys(categories).forEach((k) => {
+				const v = categories[k];
+				this.categories[k] = {
+					barColor:    v && v.barColor  || DEFAULT_BARCOLOR,
+					textColor:   v && v.textColor || DEFAULT_TEXTCOLOR,
+					strokeColor: v.strokeColor
+				};
+			});
+		}
 
 		// extract chart configuration
 		this.config = CHARTCONFIG_DEFAULT;
@@ -628,8 +678,7 @@ class D3RoadmapChart {
 		if (!this.svg) {
 			this.svg = d3.select('#' + this.componentId)
 				.append('svg')
-					.attr('id', this.svgId)
-					.attr('class', this.config.customStyle);
+					.attr('id', this.svgId);
 		} else {
 			d3.select('#' + this.svgId).selectAll('*').remove();
 		}

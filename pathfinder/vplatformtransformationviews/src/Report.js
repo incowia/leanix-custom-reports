@@ -16,8 +16,8 @@ const BC_BUSINESSMANAGEMENT = 'Business Management';
 const BC_INTEGRATION = 'Integration Layers';
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
-	prj0: { barColor: "#46e7ff", textColor: '#fff' },
-	prj1: { barColor: "#008497", textColor: '#fff' }
+	prj0: { barColor: "#dff0d8", textColor: '#000' },
+	prj1: { barColor: "#d9edf7", textColor: '#000' }
 };
 const MOCKED_DATA_ROADMAP = [
 	{
@@ -71,8 +71,8 @@ const MOCKED_DATA_ROADMAP_DEV = [
         measure: "Category 0 www sakjdfsd sdfjsdiof sdfjsdwww www ",
         data: [
 			// Category, FromDate, ToDate, Label, Info, Load
-            ['bgPrimary', "2015-03-31", "2015-04-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
-            ['bgPrimary', "2015-06-30", "2015-07-15", 'Label 2', 999],
+            ['bgPrimary', "2015-01-31", "2015-05-15", 'Label 1', 17, {a: 'abc', b: 'def', c: 'asidjsad ijadad', d: 15, e : new Date()}],
+            ['bgSuccess', "2015-06-30", "2015-08-15", 'Label 2', 999],
             ['bgPrimary', "2015-09-30", "2015-10-15", 'Label 3'],
             ['bgPrimary', "2015-12-31", "2016-01-12"],
             ['bgPrimary', "2016-01-17", "2016-02-22", 'L4', 26214,
@@ -109,7 +109,7 @@ const MOCKED_DATA_ROADMAP_DEV = [
         measure: null,
         data: [
             ['bgSuccess', "2015-01-01", "2016-02-12", 'LABEL XXX', 15],
-            ['bgInfo', "2016-01-13", "2016-05-15", 'abcdefg', 7],
+            ['bgInfo', "2016-02-13", "2016-05-15", 'abcdefg', 7],
             ['bgDanger', "2017-03-31", "2017-04-15", '', 34],
             ['bgDanger', "2017-06-30", "2017-07-15", '', 142],
             ['bgWarning', "2017-09-30", "2017-10-15", null, 76]
@@ -629,18 +629,17 @@ class Report extends Component {
 				return <NarrativeView data={MOCKED_DATA_NARRATIVE}/>;
 			case 4:
 				const chartConfig = {
-					timeSpan: ['2017-01-01', '2020-01-01'],
+					timeSpan: ['2016-01-01', '2019-01-01'],
 					gridlinesXaxis: true,
 					gridlinesYaxis: true,
 					infoLabel: 'CSM',
-					bar: { height: 24, border: true },
-					labelYwidth: 260,
-					customStyle: 'cs1' // customStyle to be defined in roadmap.css
+					bar: { height: 24, border: false },
+					labelYwidth: 260
 				};
 				return (
 					<Roadmap
-						data={MOCKED_DATA_ROADMAP_DEV}
-						categories={CATEGORIES_ROADMAP_DEV}
+						data={MOCKED_DATA_ROADMAP}
+						categories={CATEGORIES_ROADMAP}
 						config={chartConfig}
 					/>);
 			default:

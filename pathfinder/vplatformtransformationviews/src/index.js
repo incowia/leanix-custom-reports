@@ -8,6 +8,9 @@ import '../node_modules/react-select/dist/react-select.min.css';
 import './assets/main.css';
 import './assets/narrativeview.css';
 import './assets/roadmap.css';
+// customized roadmap settings, if any
+import './assets/roadmap_custom.css';
+
 
 import '@leanix/reporting';
 import React from 'react';

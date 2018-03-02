@@ -1,0 +1,30 @@
+.yAxis  line {
+    stroke: #fdd;
+    stroke-width: 1px;
+	opacity: 1;
+}
+
+.domain rect {
+	opacity: 1.0;
+	fill: none;
+	stroke: #ddd;
+	stroke-width: 2px;
+}
+
+.serie text {
+	fill: #000;
+}
+
+.serie .barellipse {
+	fill: #faa;
+	stroke: #777;
+	stroke-width: 1;
+	display: initial
+}
+.serie .empty {
+	display: none;
+}
+
+.serie text.barinfo {
+	transform: translate(-10px, 5px);
+}

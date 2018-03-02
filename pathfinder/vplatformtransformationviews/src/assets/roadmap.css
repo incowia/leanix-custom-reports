@@ -16,6 +16,7 @@ text {
 line.grid {
     stroke: #ddd;
     stroke-width: 1px;
+	opacity: 0.5;
 }
 line.year {
     stroke-width: 2px;
@@ -43,12 +44,13 @@ line.year {
 }
 
 .serie text.barinfo {
-	xfont-weight: bold;
+	font-weight: bold;
+	font-size: 1.2rem;
 }
 
 .serie .barellipse,
 .serie .empty {
-	opacity: 0.0;
+	display: none;
 }
 
 .tooltip * {
@@ -109,36 +111,4 @@ line.year {
 }
 .tooltip .load div:nth-child(odd) {
 	background-color: #fff;
-}
-
-/* customized settings */
-/* cs1: vodafone */
-.cs1 .yAxis  line {
-    stroke: #fdd;
-    stroke-width: 1px;
-}
-
-.cs1  .domain rect {
-	opacity: 1.0;
-	fill: none;
-	stroke: #ddd;
-	stroke-width: 2px;
-}
-
-.cs1 .serie text {
-	fill: #000;
-}
-
-.cs1 .serie .barellipse{
-	fill: #faa;
-	stroke: #777;
-	stroke-width: 1;
-	opacity: 1.0
-}
-.cs1 .serie .empty{
-	opacity: 0
-}
-
-.cs1 .serie text.barinfo {
-	transform: translate(-10px, 5px);
 }
