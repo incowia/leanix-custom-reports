@@ -13,7 +13,8 @@ const LOADING_SUCCESSFUL = 1;
 const LOADING_ERROR = 2;
 
 const BC_BUSINESSMANAGEMENT = 'Business Management';
-const BC_INTEGRATION = 'Integration Layers';
+const BC_INTEGRATIONLAYER = 'Integration Layers';
+const BC_ENTERPRISEOVERLAY = 'Enterprise Overlay Layer';
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	prj0: { barColor: "#dff0d8", textColor: '#000' },
@@ -213,70 +214,6 @@ const MOCKED_DATA_NARRATIVE_DEV = [
     }
 ];
 
-const mainArea = [
-	// contains Lvl 1 Platform BCs with nested children (Lvl 2)
-	// order Lvl 1: Channel layer, Customer Management, Service Management, Resource Management
-	// order Lvl 2: as it is (from query)
-	// if there are at least 2 children, then show Lvl 1, else just show that one child
-	{
-		// Lvl 1 Platform BC (Factsheet object)
-		id: '6',
-		name: 'Channel layer',
-		items: [{
-			// Lvl 2 Platform BC (child, Factsheet object)
-			id: '7',
-			name: 'Channels'
-		}
-		]
-	}, {
-		id: '8',
-		name: 'Customer Management',
-		items: [{
-			id: '9',
-			name: 'Contact Centre Operations'
-		}, {
-			id: '10',
-			name: 'Retail Operations & Logistics'
-		}, {
-			id: '11',
-			name: 'CRM, Billing and Commercial Order Management'
-		}
-		]
-	}, {
-		id: '12',
-		name: 'Service Management',
-		items: [{
-			id: '13',
-			name: 'Service Assurance'
-		}, {
-			id: '14',
-			name: 'Charging & Policy Management'
-		}, {
-			id: '15',
-			name: 'Service Orchestration'
-		}
-		]
-	}, {
-		id: '16',
-		name: 'Resource Management',
-		items: [{
-			id: '17',
-			name: 'Resource Fault & Performance'
-		}, {
-			id: '18',
-			name: 'Resource Inventory'
-		}, {
-			id: '19',
-			name: 'Resource Activation & Configuration'
-		}
-		]
-	}
-];
-const integration = {
-	// Factsheet object
-	id: '20',
-	name: 'Integration'
-};
 const viewOneLegend = [
 	// also valid for view 2
 	// can be made a static constant
@@ -416,13 +353,10 @@ class Report extends Component {
 
 	_handleData(index, platformId) {
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
-		const bcsLvl1u2 = this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform');
-		const sideAreaData = this._handleDataSideArea(bcsLvl1u2);
-		const mainAreaData = this._handleDataMainArea(bcsLvl1u2);
-		// entfernen
-		console.log(mainAreaData);
-		this.state.data.push(1);
-		// ende
+		this.setState({data: this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform')});
+		const sideAreaData = this._handleDataSideArea(this.state.data);
+		const mainAreaData = this._handleDataMainArea(this.state.data);
+		const mainIntermediateAreaData = this._handleDataMainIntermediateArea(this.state.data);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: LOADING_SUCCESSFUL,
@@ -430,7 +364,8 @@ class Report extends Component {
 			// access 'userGroups'
 			selectedMarket: index.byID[selectFieldData[0].value],
 			sideArea: sideAreaData,
-			mainArea: mainAreaData
+			mainArea: mainAreaData,
+			mainIntermediateArea: mainIntermediateAreaData
 		});
 	}
 
@@ -461,7 +396,7 @@ class Report extends Component {
 		const mainAreaData= [];
 		bcs.map((bcselement) =>
 			{
-				if(bcselement.name != BC_BUSINESSMANAGEMENT && bcselement.name != BC_INTEGRATION) {
+				if(bcselement.name != BC_BUSINESSMANAGEMENT && bcselement.name != BC_INTEGRATIONLAYER && bcselement.name != BC_ENTERPRISEOVERLAY) {
 					const bc = {};
 					const items = [];
 					bc.id = bcselement.id;
@@ -480,6 +415,22 @@ class Report extends Component {
 			}
 		);
 		return mainAreaData;
+	}
+
+	_handleDataMainIntermediateArea(bcs) {
+		const mainIntermediaAreaData= {};
+		let child = [];
+		bcs.map((bcselement) =>
+			{
+				if(bcselement.name === BC_INTEGRATIONLAYER) {
+					child = bcselement.relToChild.nodes[0];
+					mainIntermediaAreaData.id = child.id;
+					mainIntermediaAreaData.name = child.displayName;
+					return mainIntermediaAreaData;
+				}
+			}
+		);
+		return mainIntermediaAreaData;
 	}
 
 	_getFilteredBCs(nodes, tagId, tagName) {
@@ -617,7 +568,7 @@ class Report extends Component {
 				return <TemplateView
 					sideArea={this.state.sideArea}
 					mainArea={this.state.mainArea}
-					mainIntermediateArea={integration}
+					mainIntermediateArea={this.state.mainIntermediateArea}
 					legend={viewOneLegend}
 					colorScheme={viewOneColorScheme}
 					additionalContent={viewOneAdditionalContent} />;
