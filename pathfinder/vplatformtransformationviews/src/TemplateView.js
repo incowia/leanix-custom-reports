@@ -48,6 +48,14 @@ class TemplateView extends Component {
 		);
 	}
 
+	/**
+	 * 0: wird bisher nicht angesteuert
+	 * 1: es gibt genau ein Kind: Channels Layer -> Channels
+	 * default if: letztes Element mit Kinder Ende erreicht -> Service Management
+	 * default: Element hat Kinder -> custom Mangement
+	 * @returns {*}
+	 * @private
+	 */
 	_renderMainArea() {
 		return (
 			<div>
