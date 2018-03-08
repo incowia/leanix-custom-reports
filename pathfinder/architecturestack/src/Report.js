@@ -901,6 +901,7 @@ class Report extends Component {
 					setup={this.setup} />
 				<div id='content'>
 					<Legend items={this.state.legendData} itemWidth='150px' />
+					<br />
 					<Matrix setup={this.setup} cellWidth='180px'
 						factsheetType={factsheetType}
 						data={this.state.matrixData}

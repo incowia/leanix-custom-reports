@@ -8,8 +8,17 @@ body {
 	padding: 5px 5px 0px 5px;
 }
 
+#content {
+	display: inline-block;
+}
+
 #content .legend {
 	margin-bottom: 0.5em;
+	display: inline-block;
+}
+
+#content .matrix {
+	display: inline-block;
 }
 
 .matrix table {
