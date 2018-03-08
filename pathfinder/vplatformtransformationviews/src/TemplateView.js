@@ -37,25 +37,32 @@ class TemplateView extends Component {
 		);
 	}
 
+	_renderBlockInline(id, name) {
+		const divStyle = {
+			textAlign: 'center',
+			float: 'left',
+			width: '30%',
+			margin: '2px'
+		}
+		return (
+			<div key={id} className="well well-sm" style={divStyle}>
+				{name}
+			</div>
+		);
+	}
+
 	_renderBlocks(id, name, items) {
 		return (
-			<div key={id} className="well well-sm">
+			<div key={id} className="well well-sm" style={{overflow: 'hidden'}}>
 				{name}
+				<br/>
 				{items.map((e) => {
-					return this._renderBlock(e.id, e.name);
+					return this._renderBlockInline(e.id, e.name);
 				})}
 			</div>
 		);
 	}
 
-	/**
-	 * 0: wird bisher nicht angesteuert
-	 * 1: es gibt genau ein Kind: Channels Layer -> Channels
-	 * default if: letztes Element mit Kinder Ende erreicht -> Service Management
-	 * default: Element hat Kinder -> custom Mangement
-	 * @returns {*}
-	 * @private
-	 */
 	_renderMainArea() {
 		return (
 			<div>
