@@ -359,7 +359,6 @@ class Report extends Component {
 				) {
 					edges {node {id
 						...on Application {
-							lifecycle {phases}
 							relApplicationToPlatform {edges {node{factSheet{id}}}}}						
 						}
 					
