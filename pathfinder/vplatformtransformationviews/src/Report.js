@@ -338,9 +338,34 @@ class Report extends Component {
 				) {
 					edges{node{
 						id name ${platformTagNameDef}
-						...on BusinessCapability { relToChild{edges{node{factSheet{id displayName type tags {name}}}}}}
+						...on BusinessCapability { relToChild{edges{node{factSheet{id displayName type tags {name} } } } } }
 					}}
-				}}`;
+				}
+				businessCapabilitiesLv2: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes" , keys: ["BusinessCapability"]},
+						{facetKey: "hierarchyLevel", keys: ["2"]}, 
+						${platformIdFilter}
+					]}
+				) {
+					edges {node{id
+						... on BusinessCapability { relPlatformToApplication {edges {node {factSheet{id} } } } }
+					}}
+				}
+				applications: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["Application"]}
+					]}
+				) {
+					edges {node {id
+						...on Application {
+							lifecycle {phases}
+							relApplicationToPlatform {edges {node{factSheet{id}}}}}						
+						}
+					
+					}
+				}
+				}`;
 	}
 
 	_handleError(err) {
