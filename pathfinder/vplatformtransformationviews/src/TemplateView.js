@@ -13,15 +13,15 @@ class TemplateView extends Component {
 
 	render() {
 		return (
-			<div className="container">
-				<div className="row">
-					<div className="col-md-3">
+			<div className='container-fluid'>
+				<div className='row'>
+					<div className='col-md-3'>
 						{this._renderBlocks(this.props.sideArea.id, this.props.sideArea.name, this.props.sideArea.items)}
 					</div>
-					<div className="col-md-6">
+					<div className='col-md-6'>
 						{this._renderMainArea()}
 					</div>
-					<div className="col-md-3">
+					<div className='col-md-3'>
 						{this._renderLegend()}
 					</div>
 				</div>
@@ -31,7 +31,7 @@ class TemplateView extends Component {
 
 	_renderBlock(id, name) {
 		return (
-			<div key={id} className="well well-sm" style={{textAlign: 'center'}}>
+			<div key={id} className='well well-sm' style={{ textAlign: 'center' }}>
 				{name}
 			</div>
 		);
@@ -45,7 +45,7 @@ class TemplateView extends Component {
 			margin: '2px'
 		}
 		return (
-			<div key={id} className="well well-sm" style={divStyle}>
+			<div key={id} className='well well-sm' style={divStyle}>
 				{name}
 			</div>
 		);
@@ -53,7 +53,7 @@ class TemplateView extends Component {
 
 	_renderBlocks(id, name, items) {
 		return (
-			<div key={id} className="well well-sm" style={{overflow: 'hidden'}}>
+			<div key={id} className='well well-sm' style={{overflow: 'hidden'}}>
 				{name}
 				<br/>
 				{items.map((e) => {
@@ -106,10 +106,7 @@ class TemplateView extends Component {
 			border = '1px solid black';
 		}
 		return (
-			<p key={e.color}
-			 style={{
-			 	whiteSpace: 'nowrap'
-			 }}>
+			<p key={e.color}>
 				<span className='label'
 					style={{
 						display: 'inline-block',
