@@ -356,7 +356,6 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
-		console.log(index);
 		const selectFieldData = this._getMarkets(index.userGroups.nodes);
 		this.setState({data: this._getFilteredBCs(index.businessCapabilitiesLvl2.nodes, platformId, 'Platform')});
 		const sideAreaData = this._handleDataSideArea(this.state.data);
