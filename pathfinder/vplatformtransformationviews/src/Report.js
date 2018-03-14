@@ -21,7 +21,6 @@ const BC_CHANNELS_LAYER = 'Channels Layer';
 const BC_INTEGRATION_LAYERS = 'Integration Layers';
 
 // lvl 2 platform bc's for name matching
-const BC_CHANNELS = 'Channels';
 const BC_INTEGRATION = 'Integration';
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
@@ -222,9 +221,6 @@ const MOCKED_DATA_NARRATIVE_DEV = [
     }
 ];
 
-const viewOneColorScheme = {}; // will be specified later
-const viewOneAdditionalContent = undefined; // not relevant for view 1
-
 class Report extends Component {
 
 	constructor(props) {
@@ -244,11 +240,12 @@ class Report extends Component {
 			loadingState: LOADING_INIT,
 			setup: null,
 			showView: 0,
-			selectFieldData: null,
+			selectMarketFieldData: null,
 			selectedMarket: null,
-			sideArea: null,
-			mainArea: null,
-			mainIntermediateArea: null
+			templateViewHeatmapsDefData: null,
+			templateViewSideAreaData: null,
+			templateViewMainAreaData: null,
+			templateViewMainIntermediateAreaData: null
 		};
 	}
 
@@ -347,8 +344,6 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
-		console.log(index);
-		console.log(PlatformTransformationHeatmapsDefinition.parse(index, platformId));
 		const marketOptions = index.markets.nodes.map((e) => {
 			return {
 				value: e.id,
@@ -357,6 +352,7 @@ class Report extends Component {
 		});
 		const platformsLvl1 = this._getFilteredBCs(index.platformsLvl1.nodes, platformId, 'Platform', false);
 		const platformsLvl2 = this._getFilteredBCs(index.platformsLvl2.nodes, platformId, 'Platform', true);
+		const heatmapsDefData = PlatformTransformationHeatmapsDefinition.parse(index.markets.nodes, platformsLvl2);
 		// build template view data
 		let sideAreaData = {};
 		const mainAreaData = [];
@@ -399,20 +395,22 @@ class Report extends Component {
 					// ignore all others
 					return;
 			}
-			// add to mainArea
+			// add to templateViewMainAreaData
 			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(platformLvl1, subIndex, platformsLvl2);
 		});
 		console.log(sideAreaData);
 		console.log(mainAreaData);
 		console.log(mainIntermediateAreaData);
+		console.log(heatmapsDefData);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: LOADING_SUCCESSFUL,
-			selectFieldData: marketOptions,
+			selectMarketFieldData: marketOptions,
 			selectedMarket: marketOptions.length > 0 ? marketOptions[0].value : null, // id of the first market
-			sideArea: sideAreaData,
-			mainArea: mainAreaData,
-			mainIntermediateArea: mainIntermediateAreaData
+			templateViewHeatmapsDefData: heatmapsDefData,
+			templateViewSideAreaData: sideAreaData,
+			templateViewMainAreaData: mainAreaData,
+			templateViewMainIntermediateAreaData: mainIntermediateAreaData
 		});
 	}
 
@@ -486,7 +484,7 @@ class Report extends Component {
 			case LOADING_INIT:
 				return this._renderProcessingStep('Loading data...');
 			case LOADING_SUCCESSFUL:
-				if (this.state.selectFieldData.length === 0) {
+				if (this.state.selectMarketFieldData.length === 0) {
 					return this._renderProcessingStep('There is no fitting data.');
 				}
 				return this._renderSuccessful();
@@ -513,7 +511,7 @@ class Report extends Component {
 						<SelectField useSmallerFontSize
 						 id='market'
 						 label='Market'
-						 options={this.state.selectFieldData}
+						 options={this.state.selectMarketFieldData}
 						 value={this.state.selectedMarket}
 						 onChange={this._handleViewSelect} />
 					</div>
@@ -545,7 +543,8 @@ class Report extends Component {
 			<div className='panel panel-default'>
 				<div className='panel-heading'>Views</div>
 				<div className='panel-body bg-info text-muted'>
-					Choose a view down below by clicking on it. The chosen one can be exported directly.
+					Choose a view down below by clicking on it. The chosen one can be exported directly
+					(see <a className='btn btn-default btn-xs disabled' href='#' role='button'>...</a> button in the upper right corner).
 				</div>
 				<div className='list-group'>
 					<button type='button' name='0' className='list-group-item' onClick={this._handleClickViewArea}>Platform Transformation</button>
@@ -584,29 +583,31 @@ class Report extends Component {
 	}
 
 	_renderViewArea() {
+		const TODOSnOviewColorScheme = {};
+		const viewOneAdditionalContent = undefined;
 		switch (this.state.showView) {
 			case 0:
 				return (<TemplateView
-					sideArea={this.state.sideArea}
-					mainArea={this.state.mainArea}
-					mainIntermediateArea={this.state.mainIntermediateArea}
+					sideArea={this.state.templateViewSideAreaData}
+					mainArea={this.state.templateViewMainAreaData}
+					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
 					legend={PlatformTransformationHeatmapsDefinition.LEGEND_PLATFORM_TRANFORMATION}
-					colorScheme={viewOneColorScheme} />);
+					colorScheme={this.state.templateViewHeatmapsDefData.blockColors[this.state.selectedMarket].platform.common} />);
 			case 1:
 				return (<TemplateView
-					sideArea={this.state.sideArea}
-					mainArea={this.state.mainArea}
-					mainIntermediateArea={this.state.mainIntermediateArea}
+					sideArea={this.state.templateViewSideAreaData}
+					mainArea={this.state.templateViewMainAreaData}
+					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
 					legend={PlatformTransformationHeatmapsDefinition.LEGEND_CSM_ADOPTION}
-					colorScheme={viewOneColorScheme}
+					colorScheme={this.state.templateViewHeatmapsDefData.blockColors[this.state.selectedMarket].csmado.common}
 					additionalContent={viewOneAdditionalContent} />);
 			case 2:
 				return (<TemplateView
-					sideArea={this.state.sideArea}
-					mainArea={this.state.mainArea}
-					mainIntermediateArea={this.state.mainIntermediateArea}
+					sideArea={this.state.templateViewSideAreaData}
+					mainArea={this.state.templateViewMainAreaData}
+					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
 					legend={PlatformTransformationHeatmapsDefinition.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
-					colorScheme={viewOneColorScheme}
+					colorScheme={TODOSnOviewColorScheme}
 					additionalContent={viewOneAdditionalContent} />);
 			case 3:
 				return (<NarrativeView data={MOCKED_DATA_NARRATIVE} />);

@@ -1,7 +1,7 @@
 // color definitions
 const GREEN = {
 	name: 'green',
-	cssColor: 'green'
+	cssColor: 'lightgreen'
 };
 const YELLOW = {
 	name: 'yellow',
@@ -13,15 +13,15 @@ const ORANGE = {
 };
 const RED = {
 	name: 'red',
-	cssColor: 'red'
+	cssColor: '#FF5656'
 };
 const GRAY = {
 	name: 'gray',
-	cssColor: 'gray'
+	cssColor: 'silver'
 };
 const GREY = {
 	name: 'grey',
-	cssColor: 'grey'
+	cssColor: GRAY.cssColor
 };
 const WHITE = {
 	name: 'white',
@@ -29,7 +29,7 @@ const WHITE = {
 };
 const BLUE = {
 	name: 'blue',
-	cssColor: 'blue'
+	cssColor: 'deepskyblue'
 };
 const PINK = {
 	name: 'pink',
@@ -48,7 +48,7 @@ COLOR_MAP[PINK.name] = PINK.cssColor;
 
 const FALLBACK_COLOR = WHITE.name;
 
-const VALID_COLORS = [GREEN.name, YELLOW.name, ORANGE.name, RED.name, GRAY.name, GREY.name, WHITE.name, BLUE.name, PINK.name].join('|');
+const VALID_COLORS = Object.keys(COLOR_MAP).join('|');
 
 // legend definitions
 const LEGEND_PLATFORM_TRANFORMATION_VIEW = [{
@@ -106,9 +106,11 @@ const STACK_FIXED = 'fixed';
 const VALID_STACKS = [STACK_COMMON, STACK_CONSUMER, STACK_ENTERPRISE, STACK_MOBILE, STACK_FIXED];
 
 // regexp's for later use
-const COLOR_BLOCKS_REGEXP = new RegExp('(' + VALID_KEYS.join('|') + ')(?:\\s*\\:\\s*(' + VALID_STACKS.join('|') + '))?\\s*\\((?:\\s*([1-9]|\\d+)\\s*,)?\\s*((?:' + VALID_COLORS + ')(?:\\s*,\\s*(?:' + VALID_COLORS + '))*)\\s*\\)', 'g');
+const COLOR_BLOCKS_REGEXP = new RegExp('(' + VALID_KEYS.join('|') + ')(?:\\s*\\:\\s*(' + VALID_STACKS.join('|') + '))?\\s*\\((?:\\s*([1-9]|[1-9]\\d*)\\s*,)?\\s*((?:' + VALID_COLORS + ')(?:\\s*,\\s*(?:' + VALID_COLORS + '))*)\\s*\\)', 'g');
 
 const CSM_ADOPTION_TARGET_REGEXP = new RegExp('csmadoption\\s*target\\s*(' + VALID_STACKS.join('|') + ')?\\s*(\\d+)', 'gi');
+
+const NARRATIVE_REGEXP = new RegExp('narrative\\s*:\\s*((?:\\*\\s*.*\\s*)*)*', 'gi');
 
 function _prepareBlockColors(result, market) {
 	const resultForBlockColors = {
@@ -147,20 +149,18 @@ function _prepareNarrative(result, market) {
 	const resultForNarrative = {
 		name: market.name
 	};
-	result.narrative[market.id] = resultForNarrative;
+	result.narratives[market.id] = resultForNarrative;
 	return resultForNarrative;
 }
 
-function parse(index, platformId) {
-	if (!index) {
+function parse(markets, platforms) {
+	if (!markets || !platforms) {
 		return;
 	}
-	const markets = index.markets.nodes;
-	const platforms = index.platformsLvl2.byID;
 	const result = {
 		blockColors: {},
 		csmAdoTargets: {},
-		narrative: {}
+		narratives: {}
 	};
 	markets.forEach((market) => {
 		const resultForCSMAdoTarget = _prepareCSMAdoTarget(result, market);
@@ -172,14 +172,11 @@ function parse(index, platformId) {
 		}
 		subIndex.nodes.forEach((rel) => {
 			const platform = platforms[rel.id];
-			if (!platform || (!platformId && !index.includesTag(platform, 'Platform'))) {
-				return;
-			}
 			// parse content
 			const text = rel.relationAttr.description;
 			const csmAdoTargets = _getCSMAdoptionTargets(text);
 			const colors = _getColors(text);
-			// TODO narrative
+			const narratives = _getNarratives(text);
 			// handle CSM Adoption target values
 			for (let key in csmAdoTargets) {
 				const stack = resultForCSMAdoTarget[key];
@@ -198,7 +195,9 @@ function parse(index, platformId) {
 				}
 			}
 			// handle narratives
-			// TODO
+			if (narratives.length > 0) {
+				resultForNarrative[platform.id] = narratives;
+			}
 		});
 	});
 	// transform mapping to ColorScheme objects
@@ -219,7 +218,7 @@ function parse(index, platformId) {
 
 function _getColors(text) {
 	if (!text) {
-		return;
+		return {};
 	}
 	const result = {};
 	let tmpArray;
@@ -263,7 +262,7 @@ function _buildCSSBackground(colors) {
 
 function _getCSMAdoptionTargets(text) {
 	if (!text) {
-		return;
+		return {};
 	}
 	const result = {};
 	let tmpArray;
@@ -280,6 +279,28 @@ function _getCSMAdoptionTargets(text) {
 	return result;
 }
 
+function _getNarratives(text) {
+	if (!text) {
+		return [];
+	}
+	let result = [];
+	let tmpArray;
+	while ((tmpArray = NARRATIVE_REGEXP.exec(text)) !== null) {
+		const narlist = tmpArray[1];
+		if (!narlist) {
+			continue;
+		}
+		result = result.concat(narlist.split('*').map((e) => {
+			return e.trim();
+		}).filter((e) => {
+			return e !== undefined && e !== null && e.length > 0;
+		}));
+	}
+	// reset regexp
+	NARRATIVE_REGEXP.lastIndex = 0;
+	return result;
+}
+
 class ColorScheme {
 
 	constructor(mapping) {
@@ -293,7 +314,11 @@ class ColorScheme {
 		if (!id) {
 			return FALLBACK_COLOR;
 		}
-		const color = this._mapping[id][number];
+		const platform = this._mapping[id];
+		if (!platform) {
+			return FALLBACK_COLOR;
+		}
+		const color = platform[number];
 		return !color ? FALLBACK_COLOR : color;
 	}
 }

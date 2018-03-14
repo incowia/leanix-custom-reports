@@ -1,22 +1,43 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
+const DASHED_BORDER = '2px dashed grey';
+const BLOCK_HEIGHT = '4.5em';
 
 class TemplateView extends Component {
 
 	constructor(props) {
 		super(props);
-		this._renderMainArea = this._renderMainArea.bind(this);
-		this._renderBlocks = this._renderBlocks.bind(this);
-		this._renderLegend = this._renderLegend.bind(this);
+	}
+
+	_createRenderItems(items) {
+		return items.reduce((acc, e, i) => {
+			const threeInLine = i % 3;
+			let currentLine = [];
+			if (threeInLine === 0) {
+				// begin new line
+				acc.push(currentLine);
+			} else {
+				currentLine = acc[acc.length - 1];
+			}
+			currentLine.push(e);
+			return acc;
+		}, []);
 	}
 
 	render() {
+		console.log(this.props.colorScheme);
 		return (
-			<div className='container-fluid'>
+			<div className='container'>
 				<div className='row'>
 					<div className='col-md-3'>
-						{this._renderBlocks(this.props.sideArea.id, this.props.sideArea.name, this.props.sideArea.items)}
+						<div className='well well-sm' style={{
+							height: BLOCK_HEIGHT,
+							visibility: 'hidden'
+						}}>
+							dummy for position
+						</div>
+						{this._renderSideArea()}
 					</div>
 					<div className='col-md-6'>
 						{this._renderMainArea()}
@@ -29,36 +50,18 @@ class TemplateView extends Component {
 		);
 	}
 
-	_renderBlock(id, name) {
+	_renderSideArea() {
 		return (
-			<div key={id} className='well well-sm' style={{ textAlign: 'center' }}>
-				{name}
-			</div>
-		);
-	}
-
-	_renderBlockInline(id, name) {
-		const divStyle = {
-			textAlign: 'center',
-			float: 'left',
-			width: '30%',
-			margin: '2px'
-		}
-		return (
-			<div key={id} className='well well-sm' style={divStyle}>
-				{name}
-			</div>
-		);
-	}
-
-	_renderBlocks(id, name, items) {
-		return (
-			<div key={id} className='well well-sm' style={{overflow: 'hidden'}}>
-				{name}
-				<br/>
-				{items.map((e) => {
-					return this._renderBlockInline(e.id, e.name);
-				})}
+			<div className='well well-sm' style={{
+				border: DASHED_BORDER,
+				background: 'white',
+				width: '400px',
+				transform: 'rotate(0.75turn) translate(-22%, -30%)'
+			}}>
+				<p className='text-center text-muted'>
+					{this.props.sideArea.name}
+				</p>
+				{this._renderItems(this.props.sideArea.id, this.props.sideArea.items, false, false, 0)}
 			</div>
 		);
 	}
@@ -67,25 +70,109 @@ class TemplateView extends Component {
 		return (
 			<div>
 				{this.props.mainArea.map((e, i) => {
-					switch (e.items.length) {
-						case 0:
-							return null;
-						case 1:
-							return [
-								this._renderBlock(e.items[0].id, e.items[0].name),
-								this._renderBlock(this.props.mainIntermediateArea.id, this.props.mainIntermediateArea.name)
-							];
-						default:
-							if (i + 1 === this.props.mainArea.length) {
-								return this._renderBlocks(e.id, e.name, e.items);
-							}
-							return [
-								this._renderBlocks(e.id, e.name, e.items),
-								this._renderBlock(this.props.mainIntermediateArea.id, this.props.mainIntermediateArea.name)
-							];
-					}
+					return this._renderMainBlock(e, i, i === this.props.mainArea.length - 1);
 				})}
 			</div>
+		);
+	}
+
+	_renderMainBlock(block, pos, lastBlock) {
+		switch (block.items.length) {
+			case 0:
+				return null;
+			case 1:
+				if (lastBlock) {
+					// last element should not have 'integration' afterwards
+					return this._renderItems(block.id, block.items, false, false, 0);
+				}
+				return [
+					this._renderItems(block.id, block.items, false, true, 0),
+					this._renderItems(this.props.mainIntermediateArea.id, [this.props.mainIntermediateArea], true, false, pos)
+				];
+			default:
+				if (lastBlock) {
+					// last element should not have 'integration' afterwards
+					return this._renderFilledMainBlock(block);
+				}
+				return [
+					this._renderFilledMainBlock(block),
+					this._renderItems(this.props.mainIntermediateArea.id, [this.props.mainIntermediateArea], true, false, pos)
+				];
+		}
+	}
+
+	_renderFilledMainBlock(block) {
+		return (
+			<div key={block.id} className='well well-sm' style={{
+				background: 'white',
+				margin: '-1.25em 0px -0.5em 0px',
+				borderColor: 'red',
+				position: 'relative',
+				zIndex: '0'
+			}}>
+				<p className='text-center text-muted'>
+					{block.name}
+				</p>
+				{this._renderItems(block.id, block.items, false, false, 0)}
+			</div>
+		);
+	}
+
+	_renderItems(id, items, shouldBeSmall, dashedBorder, pos) {
+		if (items.length === 1) {
+			return (
+				<table key={id} style={{
+					width: shouldBeSmall ? '96%' : '100%',
+					margin: '0px auto',
+					position: 'relative',
+					zIndex: '100'
+				}}>
+					<tbody>
+						<tr>
+							{this._renderItem(items[0], 1, true, shouldBeSmall, dashedBorder, pos)}
+						</tr>
+					</tbody>
+				</table>
+			);
+		}
+		const renderItems = this._createRenderItems(items);
+		return (
+			<table key={id} style={{
+				width: '100%',
+				margin: '0px auto'
+			}}>
+				<tbody>
+					{renderItems.map((line, i) => {
+						return (
+							<tr key={i}>
+								{line.map((item, i) => {
+									return this._renderItem(item, line.length, i === line.length - 1, shouldBeSmall, dashedBorder, pos);
+								})}
+							</tr>
+						);
+					})}
+				</tbody>
+			</table>
+		);
+	}
+
+	_renderItem(item, columnCount, lastItemInLine, shouldBeSmall, dashedBorder, pos) {
+		const style = {
+			background: this.props.colorScheme.getColor(item.id, pos),
+			height: shouldBeSmall ? '1.5em' : BLOCK_HEIGHT,
+			marginBottom: '10px'
+		};
+		if (dashedBorder) {
+			style.border = DASHED_BORDER;
+		}
+		return (
+			<td key={item.id} colSpan={4 - columnCount} style={{ paddingRight: columnCount > 0 && !lastItemInLine ? '10px' : '' }}>
+				<div className='well well-sm text-center' style={style}>
+					<div style={{ position: 'relative', top: '50%', transform: 'translateY(-50%)' }}>
+						<b>{item.name}</b>
+					</div>
+				</div>
+			</td>
 		);
 	}
 
@@ -93,20 +180,18 @@ class TemplateView extends Component {
 		return (
 			<div>
 				<h3>Keys</h3>
-				{this.props.legend.map((e) => {
-					return this._renderLegendItem(e);
-				})}
+				<dl className='dl-horizontal'>
+					{this.props.legend.map((e) => {
+						return this._renderLegendItem(e);
+					})}
+				</dl>
 			</div>
 		);
 	}
 
 	_renderLegendItem(e) {
-		let border = '';
-		if (e.color === 'white') {
-			border = '1px solid black';
-		}
-		return (
-			<p key={e.color}>
+		return [(
+			<dt key={e.color + '_dt'} style={{ width: 'auto' }}>
 				<span className='label'
 					style={{
 						display: 'inline-block',
@@ -114,13 +199,14 @@ class TemplateView extends Component {
 						height: '1.5em',
 						verticalAlign: '-30%',
 						backgroundColor: e.color,
-						border: border
+						border: '1px solid black'
 					 }} />
-				<span style={{
-					marginLeft: '0.3em'
-				}}>{e.text}</span>
-			</p>
-		);
+			</dt>
+		), (
+			<dd key={e.color + '_dd'} style={{ marginLeft: '2em' }}>
+				{e.text}
+			</dd>
+		)];
 	}
 }
 
