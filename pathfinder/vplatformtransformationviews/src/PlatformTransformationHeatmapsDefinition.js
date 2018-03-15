@@ -46,7 +46,7 @@ COLOR_MAP[WHITE.name] = WHITE.cssColor;
 COLOR_MAP[BLUE.name] = BLUE.cssColor;
 COLOR_MAP[PINK.name] = PINK.cssColor;
 
-const FALLBACK_COLOR = WHITE.name;
+const FALLBACK_COLOR = WHITE.cssColor;
 
 const VALID_COLORS = Object.keys(COLOR_MAP).join('|');
 
