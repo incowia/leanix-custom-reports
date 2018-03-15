@@ -451,11 +451,11 @@ class Report extends Component {
 				<div className='row'>
 					<div className='col-lg-2' style={{ height: '4em' }}>
 						<SelectField useSmallerFontSize
-						 id='market'
-						 label='Market'
-						 options={this.state.selectMarketFieldData}
-						 value={market.id}
-						 onChange={this._handleSelectMarket} />
+							id='market'
+							label='Market'
+							options={this.state.selectMarketFieldData}
+							value={market.id}
+							onChange={this._handleSelectMarket} />
 					</div>
 					<div className='col-lg-10 text-muted' style={{
 						height: '4em',
