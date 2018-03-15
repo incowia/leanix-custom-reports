@@ -149,7 +149,7 @@ class Report extends Component {
 		this._getFilteredFactsheets = this._getFilteredFactsheets.bind(this);
 		this._createIDMap = this._createIDMap.bind(this);
 		this._handleSelectMarket = this._handleSelectMarket.bind(this);
-		this._handleClickViewArea = this._handleClickViewArea.bind(this);
+		this._handleClickViewList = this._handleClickViewList.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderViewList = this._renderViewList.bind(this);
 		this._renderHeading = this._renderHeading.bind(this);
@@ -407,7 +407,7 @@ class Report extends Component {
 		});
 	}
 
-	_handleClickViewArea(evt) {
+	_handleClickViewList(evt) {
 		const showView = parseInt(evt.target.name, 10);
 		if (this.state.showView.viewIndex === showView) {
 			return;
@@ -494,7 +494,7 @@ class Report extends Component {
 							<button key={i} type='button'
 								name={i}
 								className='list-group-item small'
-								onClick={this._handleClickViewArea}>
+								onClick={this._handleClickViewList}>
 								{stack}
 							</button>
 						);
