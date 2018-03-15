@@ -112,6 +112,13 @@ const CSM_ADOPTION_TARGET_REGEXP = new RegExp('csmadoption\\s*target\\s*(' + VAL
 
 const NARRATIVE_REGEXP = new RegExp('narrative\\s*:\\s*((?:\\*\\s*.*\\s*)*)*', 'gi');
 
+// template view names
+const VIEW_PLATFORM_TRANSFORMATION = 'Platform Transformation';
+const VIEW_CSM_ADOPTION = 'CSM Adoption';
+const VIEW_SIMPLIFICATION_OBSOLESCENCE = 'Simplification & Obsolescence';
+const VIEW_NARRATIVE = 'Narrative';
+const VIEW_PROJECT_ROADMAP = 'Project Roadmap';
+
 function _prepareBlockColors(result, market) {
 	const resultForBlockColors = {
 		name: market.name
@@ -147,13 +154,14 @@ function _prepareCSMAdoTarget(result, market) {
 
 function _prepareNarrative(result, market) {
 	const resultForNarrative = {
-		name: market.name
+		name: market.name,
+		list: []
 	};
 	result.narratives[market.id] = resultForNarrative;
 	return resultForNarrative;
 }
 
-function parse(markets, platforms) {
+function parseDescriptions(markets, platforms) {
 	if (!markets || !platforms) {
 		return;
 	}
@@ -172,6 +180,10 @@ function parse(markets, platforms) {
 		}
 		subIndex.nodes.forEach((rel) => {
 			const platform = platforms[rel.id];
+			if (!platform) {
+				// not a relation to a platform
+				return;
+			}
 			// parse content
 			const text = rel.relationAttr.description;
 			const csmAdoTargets = _getCSMAdoptionTargets(text);
@@ -196,11 +208,19 @@ function parse(markets, platforms) {
 			}
 			// handle narratives
 			if (narratives.length > 0) {
-				resultForNarrative[platform.id] = narratives;
+				resultForNarrative.list.push({
+					id: platform.id,
+					name: platform.name,
+					plans: narratives
+				});
 			}
 		});
+		// sort narratives by name
+		resultForNarrative.list.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
 	});
-	// transform mapping to ColorScheme objects
+	// transform color mapping to ColorScheme objects
 	for (let key in result.blockColors) {
 		const views = result.blockColors[key];
 		for (let key2 in views) {
@@ -301,6 +321,82 @@ function _getNarratives(text) {
 	return result;
 }
 
+function getMarketViews(index, market) {
+	let addConsumerEnterpriseStacks = false;
+	let addMobileFixedStacks = false;
+	if (index.includesTag(market, 'Consumer & Enterprise')) {
+		addConsumerEnterpriseStacks = true;
+	}
+	if (index.includesTag(market, 'Mobile & Fixed')) {
+		addMobileFixedStacks = true;
+	}
+	const stacks = [];
+	stacks.push(VIEW_PLATFORM_TRANSFORMATION + ' (' + STACK_COMMON + ')');
+	if (addConsumerEnterpriseStacks) {
+		stacks.push(VIEW_PLATFORM_TRANSFORMATION + ' (' + STACK_CONSUMER + ')');
+		stacks.push(VIEW_PLATFORM_TRANSFORMATION + ' (' + STACK_ENTERPRISE + ')');
+	}
+	if (addMobileFixedStacks) {
+		stacks.push(VIEW_PLATFORM_TRANSFORMATION + ' (' + STACK_MOBILE + ')');
+		stacks.push(VIEW_PLATFORM_TRANSFORMATION + ' (' + STACK_FIXED + ')');
+	}
+	stacks.push(VIEW_CSM_ADOPTION + ' (' + STACK_COMMON + ')');
+	if (addConsumerEnterpriseStacks) {
+		stacks.push(VIEW_CSM_ADOPTION + ' (' + STACK_CONSUMER + ')');
+		stacks.push(VIEW_CSM_ADOPTION + ' (' + STACK_ENTERPRISE + ')');
+	}
+	if (addMobileFixedStacks) {
+		stacks.push(VIEW_CSM_ADOPTION + ' (' + STACK_MOBILE + ')');
+		stacks.push(VIEW_CSM_ADOPTION + ' (' + STACK_FIXED + ')');
+	}
+	stacks.push(VIEW_SIMPLIFICATION_OBSOLESCENCE + ' (' + STACK_COMMON + ')');
+	if (addConsumerEnterpriseStacks) {
+		stacks.push(VIEW_SIMPLIFICATION_OBSOLESCENCE + ' (' + STACK_CONSUMER + ')');
+		stacks.push(VIEW_SIMPLIFICATION_OBSOLESCENCE + ' (' + STACK_ENTERPRISE + ')');
+	}
+	if (addMobileFixedStacks) {
+		stacks.push(VIEW_SIMPLIFICATION_OBSOLESCENCE + ' (' + STACK_MOBILE + ')');
+		stacks.push(VIEW_SIMPLIFICATION_OBSOLESCENCE + ' (' + STACK_FIXED + ')');
+	}
+	stacks.push(VIEW_NARRATIVE);
+	stacks.push(VIEW_PROJECT_ROADMAP);
+	return stacks;
+}
+
+function getStackFromView(view) {
+	let stack = STACK_COMMON;
+	if (view.includes(STACK_CONSUMER)) {
+		stack = STACK_CONSUMER;
+	} else if (view.includes(STACK_ENTERPRISE)) {
+		stack = STACK_ENTERPRISE;
+	} else if (view.includes(STACK_MOBILE)) {
+		stack = STACK_MOBILE;
+	} else if (view.includes(STACK_FIXED)) {
+		stack = STACK_FIXED;
+	}
+	return stack;
+}
+
+function isPlatformTransformationView(viewName) {
+	return viewName.includes(VIEW_PLATFORM_TRANSFORMATION);
+}
+
+function isCSMAdoptionView(viewName) {
+	return viewName.includes(VIEW_CSM_ADOPTION);
+}
+
+function isSimplificationObsolescenceView(viewName) {
+	return viewName.includes(VIEW_SIMPLIFICATION_OBSOLESCENCE);
+}
+
+function isNarrativeView(viewName) {
+	return viewName.includes(VIEW_NARRATIVE);
+}
+
+function isProjectRoadmapView(viewName) {
+	return viewName.includes(VIEW_PROJECT_ROADMAP);
+}
+
 class ColorScheme {
 
 	constructor(mapping) {
@@ -327,5 +423,12 @@ export default {
 	LEGEND_PLATFORM_TRANFORMATION: LEGEND_PLATFORM_TRANFORMATION_VIEW,
 	LEGEND_CSM_ADOPTION: LEGEND_CSM_ADOPTION_VIEW,
 	LEGEND_SIMPLIFICATION_OBSOLESCENCE: LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW,
-	parse: parse
+	parseDescriptions: parseDescriptions,
+	getMarketViews: getMarketViews,
+	getStackFromView: getStackFromView,
+	isPlatformTransformationView: isPlatformTransformationView,
+	isCSMAdoptionView: isCSMAdoptionView,
+	isSimplificationObsolescenceView: isSimplificationObsolescenceView,
+	isNarrativeView: isNarrativeView,
+	isProjectRoadmapView: isProjectRoadmapView
 };

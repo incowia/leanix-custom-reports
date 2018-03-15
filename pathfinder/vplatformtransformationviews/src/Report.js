@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import CommonQueries from './common/CommonGraphQLQueries';
 import DataIndex from './common/DataIndex';
 import Utilities from './common/Utilities';
-import PlatformTransformationHeatmapsDefinition from './PlatformTransformationHeatmapsDefinition';
+import PTVDef from './PlatformTransformationViewDefinition';
 import SelectField from './SelectField';
 import TemplateView from './TemplateView';
 import NarrativeView from './NarrativeView';
@@ -139,88 +139,6 @@ const MOCKED_DATA_ROADMAP_DEV = [
     }
 ];
 
-const MOCKED_DATA_NARRATIVE = [
-    {
-        platform: 'Channels',
-        plans: [
-			'First release of My Vodafone Transformation launched, supported by the new CSM compliant Micro Services architecture',
-			'Plan to transition My Vodafone developments to TSSC by FY 18/19',
-			'Started transformation to deliver new solutions for corporate site, eCare & eShop and decommission legacy based on Oracle CMS & ATG',
-			'New applications will be cloud ready and will be hosted on Converged Infrastructure in Dublin'
-		]
-    },
-    {
-        platform: "Contact-Centre Operations",
-        plans: [
-			"Target systems in place based Genesis contact centre and Siebel CTI",
-			"No transformations in the pipeline, only incremental enhancements"
-		]
-    },
-    {
-        platform: "Retail Ops & Logistics",
-        plans: [
-			"Retail operations and logistics are handled by a customised local solution and plan is still not clear for the future evolution",
-			"Siebel Partners portal is used in retail stores for customer information, service provisioning, TT etc",
-			"Rollout of a new etupup solution within partners portal",
-			"Ongoing VOdafone of Retail program to deliver new capabilities as per roadmap"
-		]
-    },
-    {
-        platform: "CRM, Billing & COM",
-        plans: [
-			"Target platform in place based on Oracle stack - Siebel/AIA Fusiion Middlewar/BRM.",
-			"Siebel will be enhanced through implementation of the Open UI",
-			"Improve CRM resilience through splitting infrastructure in two different building in Dublin DC",
-			"Both Soebel and BRM are part of the IT resilience prgram to improve the solution's resilience"
-		]
-    }
-];
-const MOCKED_DATA_NARRATIVE_DEV = [
-    {
-        platform: '   ',
-        plans: ['xxx', 'yyy', 'zzz']
-    },
-    {
-        platform: "0 No List items",
-        plans: ["", "   "]
-    },
-    {
-        platform: "1 Democritum Conclusionemque",
-        plans: [
-            "1 Lorem ipsum dolor sit amet, at sit dicta zril. ... corrumpit te!",
-            "",
-            "2 Id eam debitis explicari? Eius voluptatibus at  ... per cibo urbanitas?",
-            "3 Id duo nobis possim hendrerit? Iusto verterem cu vim, ridens ... quis ipsum cotidieque te pro?"
-        ]
-    },
-    {
-        platform: "2 Omnes volutpat ex mel",
-        plans: [
-            "Ea atqui fastidii scribentur vis, homero conclusionemque sea an. Cum ad  ... eum. Expetenda percipitur ex nam.",
-            "Vix cu iudico pertinax persecuti, an ius simul accusamus. Id movet  ... populo concludaturque.",
-            "Sit ad soleat doctus. No esse fabulas argumentum ius, vocent antiopam  ... veniam audiam eu."
-        ]
-    },
-    {
-        platform: "3 Usu mundi viderer ne",
-        plans: [
-            "Id duo erat sadipscing, vero iudicabit his no, sed ad  ... appetere recusabo vis?"
-        ]
-    },
-    {
-        platform: "4 Empty list: Per ea errem democritum conclusionemque",
-        plans: []
-    },
-    {
-        platform: "5 Tale consul numquam mei cu",
-        plans: [
-            "Tale consul numquam mei cu, in enim exerci graece vim, nam ad  ... diceret indoctum recteque.",
-            "Ut nam voluptua electram? Ut vel vidisse verterem omittantur? Eum cibo  ... odio option vim.",
-            "Per ea errem democritum conclusionemque, ex eos possim audire iuvaret. Discere officiis philosophia  ... mel augue posidonium."
-        ]
-    }
-];
-
 class Report extends Component {
 
 	constructor(props) {
@@ -228,10 +146,10 @@ class Report extends Component {
 		this._initReport = this._initReport.bind(this);
 		this._handleData = this._handleData.bind(this);
 		this._handleError = this._handleError.bind(this);
-		this._getFilteredBCs = this._getFilteredBCs.bind(this);
+		this._getFilteredFactsheets = this._getFilteredFactsheets.bind(this);
 		this._createIDMap = this._createIDMap.bind(this);
+		this._handleSelectMarket = this._handleSelectMarket.bind(this);
 		this._handleClickViewArea = this._handleClickViewArea.bind(this);
-		this._handleViewSelect = this._handleViewSelect.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderViewList = this._renderViewList.bind(this);
 		this._renderHeading = this._renderHeading.bind(this);
@@ -239,10 +157,11 @@ class Report extends Component {
 		this.state = {
 			loadingState: LOADING_INIT,
 			setup: null,
-			showView: 0,
+			showView: null,
 			selectMarketFieldData: null,
 			selectedMarket: null,
-			templateViewHeatmapsDefData: null,
+			templateViewMarketData: null,
+			templateViewData: null,
 			templateViewSideAreaData: null,
 			templateViewMainAreaData: null,
 			templateViewMainIntermediateAreaData: null
@@ -262,7 +181,6 @@ class Report extends Component {
 		// get all tags, then the data
 		lx.executeGraphQL(CommonQueries.tagGroups).then((tagGroups) => {
 			const index = new DataIndex();
-			this.index = index;
 			index.put(tagGroups);
 			const platformId = index.getFirstTagID('BC Type', 'Platform');
 			lx.executeGraphQL(this._createQuery(platformId)).then((data) => {
@@ -307,7 +225,6 @@ class Report extends Component {
 					}}
 				}
 				platformsLvl1: allFactSheets(
-					sort: { mode: BY_FIELD, key: "displayName", order: asc },
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
 						{facetKey: "hierarchyLevel", keys: ["1"]}
@@ -322,7 +239,6 @@ class Report extends Component {
 					}}
 				}
 				platformsLvl2: allFactSheets(
-					sort: { mode: BY_FIELD, key: "displayName", order: asc },
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
 						{facetKey: "hierarchyLevel", keys: ["2"]}
@@ -344,15 +260,22 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformId) {
+		console.log(index);
 		const marketOptions = index.markets.nodes.map((e) => {
 			return {
 				value: e.id,
 				label: e.name
 			}
 		});
-		const platformsLvl1 = this._getFilteredBCs(index.platformsLvl1.nodes, platformId, 'Platform', false);
-		const platformsLvl2 = this._getFilteredBCs(index.platformsLvl2.nodes, platformId, 'Platform', true);
-		const heatmapsDefData = PlatformTransformationHeatmapsDefinition.parse(index.markets.nodes, platformsLvl2);
+		// build market data
+		const marketData = this._getFilteredFactsheets(index, index.markets.nodes, undefined, undefined, true);
+		for (let key in marketData) {
+			const market = marketData[key];
+			market.views = PTVDef.getMarketViews(index, market);
+		}
+		const platformsLvl1 = this._getFilteredFactsheets(index, index.platformsLvl1.nodes, platformId, 'Platform', false);
+		const platformsLvl2 = this._getFilteredFactsheets(index, index.platformsLvl2.nodes, platformId, 'Platform', true);
+		const viewData = PTVDef.parseDescriptions(index.markets.nodes, platformsLvl2);
 		// build template view data
 		let sideAreaData = {};
 		const mainAreaData = [];
@@ -372,7 +295,7 @@ class Report extends Component {
 					mainIntermediateAreaData = subIndex.nodes.reduce((acc, rel) => {
 						const platformLvl2 = platformsLvl2[rel.id];
 						if (!platformLvl2 || platformLvl2.name !== BC_INTEGRATION) {
-							return;
+							return acc;
 						}
 						acc.id = platformLvl2.id;
 						acc.name = platformLvl2.name;
@@ -398,40 +321,43 @@ class Report extends Component {
 			// add to templateViewMainAreaData
 			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(platformLvl1, subIndex, platformsLvl2);
 		});
-		console.log(sideAreaData);
-		console.log(mainAreaData);
-		console.log(mainIntermediateAreaData);
-		console.log(heatmapsDefData);
+		console.log(viewData);
 		lx.hideSpinner();
+		const firstSelectedMarket = marketOptions[0].value; // id of the first market
 		this.setState({
 			loadingState: LOADING_SUCCESSFUL,
 			selectMarketFieldData: marketOptions,
-			selectedMarket: marketOptions.length > 0 ? marketOptions[0].value : null, // id of the first market
-			templateViewHeatmapsDefData: heatmapsDefData,
+			selectedMarket: firstSelectedMarket,
+			showView: {
+				name: marketData[firstSelectedMarket].views[0],
+				viewIndex: 0
+			},
+			templateViewMarketData: marketData,
+			templateViewData: viewData,
 			templateViewSideAreaData: sideAreaData,
 			templateViewMainAreaData: mainAreaData,
 			templateViewMainIntermediateAreaData: mainIntermediateAreaData
 		});
 	}
 
-	_getFilteredBCs(nodes, tagId, tagName, asIDMap) {
+	_getFilteredFactsheets(index, nodes, tagId, tagName, asIDMap) {
 		if (asIDMap) {
-			return this._createIDMap(nodes, !tagId ? tagName : undefined);
+			return this._createIDMap(index, nodes, !tagId ? tagName : undefined);
 		} else {
 			if (!tagId) {
 				return nodes.filter((e) => {
-					return this.index.includesTag(e, tagName);
+					return index.includesTag(e, tagName);
 				});
 			}
 			return nodes;
 		}
 	}
 
-	_createIDMap(nodes, tagName) {
+	_createIDMap(index, nodes, tagName) {
 		const result = {};
 		if (tagName) {
 			nodes.forEach((e) => {
-				if (!this.index.includesTag(e, tagName)) {
+				if (!index.includesTag(e, tagName)) {
 					return;
 				}
 				result[e.id] = e;
@@ -460,23 +386,38 @@ class Report extends Component {
 				name: platformLvl2.name
 			});
 		});
+		// sort by name
+		result.items.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
 		return result;
 	}
 
-	_handleViewSelect(option) {
+	_handleSelectMarket(option) {
 		const marketID = option.value;
 		if (this.state.selectedMarket === marketID) {
 			return;
 		}
-		this.setState({ selectedMarket: marketID });
+		this.setState({
+			selectedMarket: marketID,
+			showView: {
+				name: this.state.templateViewMarketData[marketID].views[0],
+				viewIndex: 0
+			}
+		});
 	}
 
 	_handleClickViewArea(evt) {
 		const showView = parseInt(evt.target.name, 10);
-		if (this.state.showView === showView) {
+		if (this.state.showView.viewIndex === showView) {
 			return;
 		}
-		this.setState({ showView: showView });
+		this.setState({
+			showView: {
+				name: this.state.templateViewMarketData[this.state.selectedMarket].views[showView],
+				viewIndex: showView
+			}
+		});
 	}
 
 	render() {
@@ -504,6 +445,7 @@ class Report extends Component {
 	}
 
 	_renderSuccessful() {
+		const market = this.state.templateViewMarketData[this.state.selectedMarket];
 		return (
 			<div className='container-fluid'>
 				<div className='row'>
@@ -512,8 +454,8 @@ class Report extends Component {
 						 id='market'
 						 label='Market'
 						 options={this.state.selectMarketFieldData}
-						 value={this.state.selectedMarket}
-						 onChange={this._handleViewSelect} />
+						 value={market.id}
+						 onChange={this._handleSelectMarket} />
 					</div>
 					<div className='col-lg-10 text-muted' style={{
 						height: '4em',
@@ -525,12 +467,12 @@ class Report extends Component {
 				</div>
 				<div className='row'>
 					<div className='col-lg-2'>
-						{this._renderViewList()}
+						{this._renderViewList(market)}
 					</div>
 					<div className='col-lg-10'>
-						{this._renderHeading()}
+						{this._renderHeading(market)}
 						<div id='export'>
-							{this._renderViewArea()}
+							{this._renderViewArea(market)}
 						</div>
 					</div>
 				</div>
@@ -538,7 +480,7 @@ class Report extends Component {
 		);
 	}
 
-	_renderViewList() {
+	_renderViewList(market) {
 		return (
 			<div className='panel panel-default'>
 				<div className='panel-heading'>Views</div>
@@ -547,85 +489,86 @@ class Report extends Component {
 					(see <a className='btn btn-default btn-xs disabled' href='#' role='button'>...</a> button in the upper right corner).
 				</div>
 				<div className='list-group'>
-					<button type='button' name='0' className='list-group-item' onClick={this._handleClickViewArea}>Platform Transformation</button>
-					<button type='button' name='1' className='list-group-item' onClick={this._handleClickViewArea}>CSM Adoption</button>
-					<button type='button' name='2' className='list-group-item' onClick={this._handleClickViewArea}>Simplification & Obsolescence</button>
-					<button type='button' name='3' className='list-group-item' onClick={this._handleClickViewArea}>Narrative</button>
-					<button type='button' name='4' className='list-group-item' onClick={this._handleClickViewArea}>Project Roadmap</button>
+					{market.views.map((stack, i) => {
+						return (
+							<button key={i} type='button'
+								name={i}
+								className='list-group-item small'
+								onClick={this._handleClickViewArea}>
+								{stack}
+							</button>
+						);
+					})}
 				</div>
 			</div>
 		);
 	}
 
-	_renderHeading() {
-		const marketName = this.index.byID[this.state.selectedMarket].name;
-		let heading = '';
-		switch (this.state.showView) {
-			case 0:
-				heading = 'Platform Transformation';
-				break;
-			case 1:
-				heading = 'CSM Adoption';
-				break;
-			case 2:
-				heading = 'Simplification & Obsolescence';
-				break;
-			case 3:
-				heading = 'Narrative';
-				break;
-			case 4:
-				heading = 'Project Roadmap';
-				break;
-			default:
-				throw new Error('Unknown showView state: ' + this.state.showView);
-		}
-		return (<h2>{heading + ' for Market ' + marketName}</h2>);
+	_renderHeading(market) {
+		return (
+			<h2>
+				{market.views[this.state.showView.viewIndex] + ' for Market ' + market.name}
+			</h2>
+		);
 	}
 
-	_renderViewArea() {
-		const TODOSnOviewColorScheme = {};
-		const viewOneAdditionalContent = undefined;
-		switch (this.state.showView) {
+	_renderViewArea(market) {
+		const viewName = this.state.showView.name;
+		if (PTVDef.isPlatformTransformationView(viewName)) {
+			return this._renderTemplateView(market, 0, PTVDef.getStackFromView(viewName));
+		}
+		if (PTVDef.isCSMAdoptionView(viewName)) {
+			return this._renderTemplateView(market, 1, PTVDef.getStackFromView(viewName));
+		}
+		if (PTVDef.isSimplificationObsolescenceView(viewName)) {
+			return this._renderTemplateView(market, 2, PTVDef.getStackFromView(viewName));
+		}
+		if (PTVDef.isNarrativeView(viewName)) {
+			return (<NarrativeView data={this.state.templateViewData.narratives[market.id].list} />);
+		}
+		if (PTVDef.isProjectRoadmapView(viewName)) {
+			const chartConfig = {
+				timeSpan: ['2016-01-01', '2019-01-01'],
+				gridlinesXaxis: true,
+				gridlinesYaxis: true,
+				infoLabel: 'CSM',
+				bar: { height: 24, border: false },
+				labelYwidth: 260
+			};
+			return (<Roadmap
+				data={MOCKED_DATA_ROADMAP}
+				categories={CATEGORIES_ROADMAP}
+				config={chartConfig} />);
+		}
+		throw new Error('Unknown showView state: ' + this.state.showView);
+	}
+
+	_renderTemplateView(market, view, stack) {
+		// TODO additionalContent
+		switch (view) {
 			case 0:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PlatformTransformationHeatmapsDefinition.LEGEND_PLATFORM_TRANFORMATION}
-					colorScheme={this.state.templateViewHeatmapsDefData.blockColors[this.state.selectedMarket].platform.common} />);
+					legend={PTVDef.LEGEND_PLATFORM_TRANFORMATION}
+					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]} />);
 			case 1:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PlatformTransformationHeatmapsDefinition.LEGEND_CSM_ADOPTION}
-					colorScheme={this.state.templateViewHeatmapsDefData.blockColors[this.state.selectedMarket].csmado.common}
-					additionalContent={viewOneAdditionalContent} />);
+					legend={PTVDef.LEGEND_CSM_ADOPTION}
+					colorScheme={this.state.templateViewData.blockColors[market.id].csmado[stack]}
+					additionalContent={undefined} />);
 			case 2:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PlatformTransformationHeatmapsDefinition.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
-					colorScheme={TODOSnOviewColorScheme}
-					additionalContent={viewOneAdditionalContent} />);
-			case 3:
-				return (<NarrativeView data={MOCKED_DATA_NARRATIVE} />);
-			case 4:
-				const chartConfig = {
-					timeSpan: ['2016-01-01', '2019-01-01'],
-					gridlinesXaxis: true,
-					gridlinesYaxis: true,
-					infoLabel: 'CSM',
-					bar: { height: 24, border: false },
-					labelYwidth: 260
-				};
-				return (<Roadmap
-					data={MOCKED_DATA_ROADMAP}
-					categories={CATEGORIES_ROADMAP}
-					config={chartConfig} />);
-			default:
-				throw new Error('Unknown showView state: ' + this.state.showView);
+					legend={PTVDef.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
+					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]}
+					additionalContent={undefined} />);
 		}
 	}
 }

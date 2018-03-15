@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 const DASHED_BORDER = '2px dashed grey';
+const CONTAINER_BLOCK_CSS_CLASS = 'text-center text-muted';
 const BLOCK_HEIGHT = '4.5em';
 
 class TemplateView extends Component {
@@ -26,7 +27,6 @@ class TemplateView extends Component {
 	}
 
 	render() {
-		console.log(this.props.colorScheme);
 		return (
 			<div className='container'>
 				<div className='row'>
@@ -54,14 +54,39 @@ class TemplateView extends Component {
 		return (
 			<div className='well well-sm' style={{
 				border: DASHED_BORDER,
-				background: 'white',
-				width: '400px',
-				transform: 'rotate(0.75turn) translate(-22%, -30%)'
+				background: 'white'
 			}}>
-				<p className='text-center text-muted'>
-					{this.props.sideArea.name}
-				</p>
-				{this._renderItems(this.props.sideArea.id, this.props.sideArea.items, false, false, 0)}
+				{this._renderContainerHeading(this.props.sideArea.name)}
+				{this.props.sideArea.items.map((item) => {
+					return this._renderSideAreaItem(item);
+				})}
+			</div>
+		);
+	}
+
+	_renderContainerHeading(name) {
+		return (
+			<p className={CONTAINER_BLOCK_CSS_CLASS}>
+				{name}
+			</p>
+		);
+	}
+
+	_renderSideAreaItem(item) {
+		const style = {
+			background: this.props.colorScheme.getColor(item.id, 0),
+			height: BLOCK_HEIGHT,
+			marginBottom: '10px'
+		};
+		return this._renderBlock(item, style);
+	}
+
+	_renderBlock(item, style) {
+		return (
+			<div key={item.id} className='well well-sm text-center' style={style}>
+				<div style={{ position: 'relative', top: '50%', transform: 'translateY(-50%)' }}>
+					<b>{item.name}</b>
+				</div>
 			</div>
 		);
 	}
@@ -83,7 +108,7 @@ class TemplateView extends Component {
 			case 1:
 				if (lastBlock) {
 					// last element should not have 'integration' afterwards
-					return this._renderItems(block.id, block.items, false, false, 0);
+					return this._renderItems(block.id, block.items, false, true, 0);
 				}
 				return [
 					this._renderItems(block.id, block.items, false, true, 0),
@@ -110,9 +135,7 @@ class TemplateView extends Component {
 				position: 'relative',
 				zIndex: '0'
 			}}>
-				<p className='text-center text-muted'>
-					{block.name}
-				</p>
+				{this._renderContainerHeading(block.name)}
 				{this._renderItems(block.id, block.items, false, false, 0)}
 			</div>
 		);
@@ -167,11 +190,7 @@ class TemplateView extends Component {
 		}
 		return (
 			<td key={item.id} colSpan={4 - columnCount} style={{ paddingRight: columnCount > 0 && !lastItemInLine ? '10px' : '' }}>
-				<div className='well well-sm text-center' style={style}>
-					<div style={{ position: 'relative', top: '50%', transform: 'translateY(-50%)' }}>
-						<b>{item.name}</b>
-					</div>
-				</div>
+				{this._renderBlock(item, style)}
 			</td>
 		);
 	}
