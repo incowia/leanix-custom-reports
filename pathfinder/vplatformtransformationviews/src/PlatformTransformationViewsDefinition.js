@@ -1,3 +1,15 @@
+import Utilities from './common/Utilities';
+
+// dates for the logic below
+const CURRENT_DATE = new Date();
+CURRENT_DATE.setHours(0, 0, 0, 0);
+const CURRENT_DATE_TIME = CURRENT_DATE.getTime();
+
+function _formatDateNumber(n) {
+	return n < 10 ? '0' + n : n;
+}
+const CURRENT_DATE_STRING = CURRENT_DATE.getFullYear() + '-' + _formatDateNumber(CURRENT_DATE.getMonth() + 1) + '-' + _formatDateNumber(CURRENT_DATE.getDate());
+
 // color definitions
 const GREEN = {
 	name: 'green',
@@ -104,13 +116,16 @@ const STACK_MOBILE = 'mobile';
 const STACK_FIXED = 'fixed';
 
 const VALID_STACKS = [STACK_COMMON, STACK_CONSUMER, STACK_ENTERPRISE, STACK_MOBILE, STACK_FIXED];
+const VALID_STACKS_FOR_REGEXP = VALID_STACKS.join('|');
 
 // regexp's for later use
-const COLOR_BLOCKS_REGEXP = new RegExp('(' + VALID_KEYS.join('|') + ')(?:\\s*\\:\\s*(' + VALID_STACKS.join('|') + '))?\\s*\\((?:\\s*([1-9]|[1-9]\\d*)\\s*,)?\\s*((?:' + VALID_COLORS + ')(?:\\s*,\\s*(?:' + VALID_COLORS + '))*)\\s*\\)', 'g');
+const COLOR_BLOCKS_REGEXP = new RegExp('(' + VALID_KEYS.join('|') + ')(?:\\s*\\:\\s*(' + VALID_STACKS_FOR_REGEXP + '))?\\s*\\((?:\\s*([1-9]|[1-9]\\d*)\\s*,)?\\s*((?:' + VALID_COLORS + ')(?:\\s*,\\s*(?:' + VALID_COLORS + '))*)\\s*\\)', 'gi');
 
-const CSM_ADOPTION_TARGET_REGEXP = new RegExp('csmadoption\\s*target\\s*(' + VALID_STACKS.join('|') + ')?\\s*(\\d+)', 'gi');
+const CSM_ADOPTION_TARGET_REGEXP = new RegExp('csmadoption\\s*target\\s*(' + VALID_STACKS_FOR_REGEXP + ')?\\s*(\\d+)', 'gi');
 
 const NARRATIVE_REGEXP = new RegExp('narrative\\s*:\\s*((?:\\*\\s*.*\\s*)*)*', 'gi');
+
+const PRIMARY_REGEXP = new RegExp('primary', 'i');
 
 // template view names
 const VIEW_PLATFORM_TRANSFORMATION = 'Platform Transformation';
@@ -243,8 +258,8 @@ function _getColors(text) {
 	const result = {};
 	let tmpArray;
 	while ((tmpArray = COLOR_BLOCKS_REGEXP.exec(text)) !== null) {
-		const view = tmpArray[1];
-		const stack = tmpArray[2] !== undefined ? tmpArray[2] : STACK_COMMON;
+		const view = tmpArray[1].toLowerCase();
+		const stack = tmpArray[2] !== undefined ? tmpArray[2].toLowerCase() : STACK_COMMON;
 		const position = tmpArray[3] !== undefined ? parseInt(tmpArray[3], 10) - 1 : 0;
 		let colors = tmpArray[4];
 		if (!view || !colors) {
@@ -272,7 +287,7 @@ function _buildCSSBackground(colors) {
 		// multiple colors, use linear-gradient
 		const colorArray = colors.split(',');
 		colors = colorArray.map((e) => {
-			return COLOR_MAP[e.trim()];
+			return COLOR_MAP[e.toLowerCase().trim()];
 		}).join(',');
 		return 'linear-gradient(to right, ' + colors + ')'
 	}
@@ -287,7 +302,7 @@ function _getCSMAdoptionTargets(text) {
 	const result = {};
 	let tmpArray;
 	while ((tmpArray = CSM_ADOPTION_TARGET_REGEXP.exec(text)) !== null) {
-		const stack = tmpArray[1] !== undefined ? tmpArray[1] : STACK_COMMON;
+		const stack = tmpArray[1] !== undefined ? tmpArray[1].toLowerCase() : STACK_COMMON;
 		const targetValue = tmpArray[2] !== undefined ? parseInt(tmpArray[2], 10) : 0;
 		if (targetValue === undefined || targetValue === null) {
 			continue;
@@ -322,14 +337,11 @@ function _getNarratives(text) {
 }
 
 function getMarketViews(index, market) {
-	let addConsumerEnterpriseStacks = false;
-	let addMobileFixedStacks = false;
-	if (index.includesTag(market, 'Consumer & Enterprise')) {
-		addConsumerEnterpriseStacks = true;
+	if (!index || !market) {
+		return;
 	}
-	if (index.includesTag(market, 'Mobile & Fixed')) {
-		addMobileFixedStacks = true;
-	}
+	const addConsumerEnterpriseStacks = _isConsumerEnterpriseStack(index, market);
+	const addMobileFixedStacks = _isMobileFixedStack(index, market);
 	const stacks = [];
 	stacks.push(VIEW_PLATFORM_TRANSFORMATION + ' (' + STACK_COMMON + ')');
 	if (addConsumerEnterpriseStacks) {
@@ -363,6 +375,14 @@ function getMarketViews(index, market) {
 	return stacks;
 }
 
+function _isConsumerEnterpriseStack(index, market) {
+	return index.includesTag(market, 'Consumer & Enterprise');
+}
+
+function _isMobileFixedStack(index, market) {
+	return index.includesTag(market, 'Mobile & Fixed');
+}
+
 function getStackFromView(view) {
 	let stack = STACK_COMMON;
 	if (view.includes(STACK_CONSUMER)) {
@@ -378,23 +398,227 @@ function getStackFromView(view) {
 }
 
 function isPlatformTransformationView(viewName) {
+	if (!viewName) {
+		return false;
+	}
 	return viewName.includes(VIEW_PLATFORM_TRANSFORMATION);
 }
 
 function isCSMAdoptionView(viewName) {
+	if (!viewName) {
+		return false;
+	}
 	return viewName.includes(VIEW_CSM_ADOPTION);
 }
 
 function isSimplificationObsolescenceView(viewName) {
+	if (!viewName) {
+		return false;
+	}
 	return viewName.includes(VIEW_SIMPLIFICATION_OBSOLESCENCE);
 }
 
 function isNarrativeView(viewName) {
+	if (!viewName) {
+		return false;
+	}
 	return viewName.includes(VIEW_NARRATIVE);
 }
 
 function isProjectRoadmapView(viewName) {
+	if (!viewName) {
+		return false;
+	}
 	return viewName.includes(VIEW_PROJECT_ROADMAP);
+}
+
+function getCSMAdoptionValues(index, platform, applications, csmInterfaces, marketData, segmentData) {
+	if (!platform || !applications || !csmInterfaces || !marketData || !segmentData) {
+		return;
+	}
+	const result = {};
+	// prepare result object
+	// add markets
+	for (let key in marketData) {
+		result[key] = {
+			name: marketData[key].name
+		};
+	}
+	// add stacks
+	for (let key in result) {
+		const market = result[key];
+		VALID_STACKS.forEach((stack) => {
+			market[stack] = {
+				current: {},
+				planned: {}
+			};
+		});
+	}
+	const subIndex = platform.relPlatformToApplication;
+	if (!subIndex) {
+		return result;
+	}
+	subIndex.nodes.forEach((rel) => {
+		const applicationPlanned = applications.planned[rel.id];
+		const applicationActive = applications.active[rel.id];
+		if (!applicationPlanned && !applicationActive) {
+			return;
+		}
+		const application = applicationPlanned ? applicationPlanned : applicationActive;
+		const market = _getMarket(marketData, application);
+		if (!market) {
+			return;
+		}
+		const csmApis = _getCSMAPIs(application, csmInterfaces);
+		if (!csmApis) {
+			return;
+		}
+		const stacks = _getStacksFromApplication(index, application, market, segmentData);
+		const marketResults = result[market.id];
+		// application counted for current or planned?
+		// planned: active & planned applications, but only CSM APIs which have an activeFrom in future
+		_addValuesForCSMAPI(stacks, marketResults, 'planned', csmApis, application, (csmApi) => {
+			return csmApi.activeFrom && csmApi.activeFrom > CURRENT_DATE_TIME;
+		});
+		if (application === applicationActive) {
+			// current: only active applications, but only CSM APIs which have no or an activeFrom not in future
+			_addValuesForCSMAPI(stacks, marketResults, 'current', csmApis, application, (csmApi) => {
+				return !csmApi.activeFrom || csmApi.activeFrom <= CURRENT_DATE_TIME;
+			});
+		}
+	});
+	return result;
+}
+
+function _getMarket(marketData, application) {
+	const subIndex = application.relApplicationToOwningUserGroup;
+	if (!subIndex) {
+		return;
+	}
+	// only one market possible
+	return marketData[subIndex.nodes[0].id];
+}
+
+function _getStacksFromApplication(index, application, market, segmentData) {
+	// the market has which stacks?
+	const isConsumerEnterprise = _isConsumerEnterpriseStack(index, market);
+	const isMobileFixed = _isMobileFixedStack(index, market);
+	// the application belongs to which stacks?
+	let isConsumer = false;
+	let isEnterprise = false;
+	let consumerIsPrimary = false; // consumer & enterprise are mutually exclusive, but might occur both
+	let enterpriseIsPrimary = false;
+	let isMobile = false;
+	let isFixed = false;
+	// check consumer & enterprise, can only be true, if market allows it
+	if (isConsumerEnterprise) {
+		const subIndex = application.relApplicationToSegment;
+		if (subIndex) {
+			subIndex.nodes.forEach((rel) => {
+				const segment = segmentData[rel.id];
+				if (!segment) {
+					return;
+				}
+				if (segment.name === 'Consumer') {
+					isConsumer = true;
+					consumerIsPrimary = rel.relationAttr.description ? PRIMARY_REGEXP.test(rel.relationAttr.description) : false;
+				} else if (segment.name === 'Enterprise') {
+					isEnterprise = true;
+					enterpriseIsPrimary = rel.relationAttr.description ? PRIMARY_REGEXP.test(rel.relationAttr.description) : false;
+				}
+				// reset regexp
+				PRIMARY_REGEXP.lastIndex = 0;
+			});
+		}
+		// bad data quality, which needs to be handled somehow
+		if (isConsumer && isEnterprise) {
+			if (consumerIsPrimary && enterpriseIsPrimary) {
+				// both with a primary flag
+				console.error(application.name + ' has Consumer & Enterprise as CUSTOMER SEGMENT, but both have a "Primary" flag.');
+			} else if (!consumerIsPrimary && !enterpriseIsPrimary) {
+				// no primary flag
+				console.error(application.name + ' has Consumer & Enterprise as CUSTOMER SEGMENT, but no one has a "Primary" flag.');
+			}
+		}
+	}
+	// check mobile & fixed, can only be true, if market allows it
+	if (isMobileFixed) {
+		isMobile = index.includesTag(application, 'Mobile IT');
+		isFixed = index.includesTag(application, 'Fixed IT');
+	}
+	const result = [];
+	if (isConsumer) {
+		if (isEnterprise) {
+			// look if consumer is the primary
+			if (consumerIsPrimary) {
+				result.push(STACK_CONSUMER);
+			}
+		} else {
+			result.push(STACK_CONSUMER);
+		}
+	}
+	if (isEnterprise) {
+		if (isConsumer) {
+			// look if enterprise is the primary
+			if (enterpriseIsPrimary) {
+				result.push(STACK_ENTERPRISE);
+			}
+		} else {
+			result.push(STACK_ENTERPRISE);
+		}
+	}
+	if (isMobile) {
+		result.push(STACK_MOBILE);
+	}
+	if (isFixed) {
+		result.push(STACK_FIXED);
+	}
+	if (result.length === 0) {
+		// at least the common stack
+		result.push(STACK_COMMON);
+	}
+	return result;
+}
+
+function _getCSMAPIs(application, csmInterfaces) {
+	const subIndex = application.relProviderApplicationToInterface;
+	if (!subIndex) {
+		return [];
+	}
+	const result = [];
+	subIndex.nodes.forEach((rel) => {
+		const csmApi = csmInterfaces[rel.id];
+		if (!csmApi) {
+			return;
+		}
+		result.push({
+			id: csmApi.id,
+			name: csmApi.name,
+			// timestamp
+			activeFrom: rel.relationAttr.activeFrom ? Utilities.parseDateString(rel.relationAttr.activeFrom) : undefined
+		});
+	});
+	return result;
+}
+
+function _addValuesForCSMAPI(stacks, marketResults, valueType, csmApis, application, addIf) {
+	stacks.forEach((stack) => {
+		const values = marketResults[stack][valueType];
+		csmApis.forEach((csmApi) => {
+			if (!addIf(csmApi)) {
+				return;
+			}
+			let valuesForCSMAPI = values[csmApi.id];
+			if (!valuesForCSMAPI) {
+				valuesForCSMAPI = {
+					name: csmApi.name,
+					applications: {}
+				};
+				values[csmApi.id] = valuesForCSMAPI;
+			}
+			valuesForCSMAPI.applications[application.id] = application;
+		});
+	});
 }
 
 class ColorScheme {
@@ -420,6 +644,7 @@ class ColorScheme {
 }
 
 export default {
+	CURRENT_DATE_STRING: CURRENT_DATE_STRING,
 	LEGEND_PLATFORM_TRANFORMATION: LEGEND_PLATFORM_TRANFORMATION_VIEW,
 	LEGEND_CSM_ADOPTION: LEGEND_CSM_ADOPTION_VIEW,
 	LEGEND_SIMPLIFICATION_OBSOLESCENCE: LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW,
@@ -430,5 +655,6 @@ export default {
 	isCSMAdoptionView: isCSMAdoptionView,
 	isSimplificationObsolescenceView: isSimplificationObsolescenceView,
 	isNarrativeView: isNarrativeView,
-	isProjectRoadmapView: isProjectRoadmapView
+	isProjectRoadmapView: isProjectRoadmapView,
+	getCSMAdoptionValues: getCSMAdoptionValues
 };

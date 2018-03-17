@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 const DASHED_BORDER = '2px dashed grey';
 const CONTAINER_BLOCK_CSS_CLASS = 'text-center text-muted';
-const BLOCK_HEIGHT = '4.5em';
+const BLOCK_HEIGHT = '5.5em';
 
 class TemplateView extends Component {
 
@@ -83,9 +83,15 @@ class TemplateView extends Component {
 
 	_renderBlock(item, style) {
 		return (
-			<div key={item.id} className='well well-sm text-center' style={style}>
-				<div style={{ position: 'relative', top: '50%', transform: 'translateY(-50%)' }}>
+			<div key={item.id} className='well well-sm text-center small' style={style}>
+				<div style={{
+					padding: '0px 2.5em',
+					position: 'relative',
+					top: '50%',
+					transform: 'translateY(-50%)'
+				}}>
 					<b>{item.name}</b>
+					{this.props.additionalContent && this.props.additionalContent(item.id)}
 				</div>
 			</div>
 		);

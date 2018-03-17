@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import CommonQueries from './common/CommonGraphQLQueries';
 import DataIndex from './common/DataIndex';
 import Utilities from './common/Utilities';
-import PTVDef from './PlatformTransformationViewDefinition';
+import PTVsDef from './PlatformTransformationViewsDefinition';
 import SelectField from './SelectField';
 import TemplateView from './TemplateView';
 import NarrativeView from './NarrativeView';
@@ -22,6 +22,13 @@ const BC_INTEGRATION_LAYERS = 'Integration Layers';
 
 // lvl 2 platform bc's for name matching
 const BC_INTEGRATION = 'Integration';
+
+// lifecycle phases
+const PLAN = 'plan';
+const PHASE_IN = 'phaseIn';
+const ACTIVE = 'active';
+const PHASE_OUT = 'phaseOut';
+const END_OF_LIFE = 'endOfLife';
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	prj0: { barColor: "#dff0d8", textColor: '#000' },
@@ -150,6 +157,7 @@ class Report extends Component {
 		this._createIDMap = this._createIDMap.bind(this);
 		this._handleSelectMarket = this._handleSelectMarket.bind(this);
 		this._handleClickViewList = this._handleClickViewList.bind(this);
+		this._renderAdditionalContentForCSMAdoption = this._renderAdditionalContentForCSMAdoption.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderViewList = this._renderViewList.bind(this);
 		this._renderHeading = this._renderHeading.bind(this);
@@ -182,10 +190,12 @@ class Report extends Component {
 		lx.executeGraphQL(CommonQueries.tagGroups).then((tagGroups) => {
 			const index = new DataIndex();
 			index.put(tagGroups);
-			const platformId = index.getFirstTagID('BC Type', 'Platform');
-			lx.executeGraphQL(this._createQuery(platformId)).then((data) => {
+			const platformTagId = index.getFirstTagID('BC Type', 'Platform');
+			const itTagId = index.getFirstTagID('CostCentre', 'IT');
+			const csmTagId = index.getFirstTagID('CSM', 'CSM');
+			lx.executeGraphQL(this._createQuery(platformTagId, itTagId, csmTagId)).then((data) => {
 				index.put(data);
-				this._handleData(index, platformId);
+				this._handleData(index, platformTagId, itTagId, csmTagId);
 			}).catch(this._handleError);
 		}).catch(this._handleError);
 	}
@@ -203,12 +213,22 @@ class Report extends Component {
 		};
 	}
 
-	_createQuery(platformId) {
+	_createQuery(platformTagId, itTagId, csmTagId) {
 		let platformIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
 		let platformTagNameDef = 'tags { name }'; // initial assume to get it
-		if (platformId) {
-			platformIdFilter = `, {facetKey: "BC Type", keys: ["${platformId}"]}`;
+		if (platformTagId) {
+			platformIdFilter = `, {facetKey: "BC Type", keys: ["${platformTagId}"]}`;
 			platformTagNameDef = '';
+		}
+		let itIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
+		if (itTagId) {
+			itIdFilter = `, {facetKey: "CostCentre", keys: ["${itTagId}"]}`;
+		}
+		let csmIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
+		let csmTagNameDef = 'tags { name }'; // initial assume to get it
+		if (itTagId) {
+			csmIdFilter = `, {facetKey: "CSM", keys: ["${csmTagId}"]}`;
+			csmTagNameDef = '';
 		}
 		return `{markets: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
@@ -247,6 +267,55 @@ class Report extends Component {
 				) {
 					edges { node {
 						id name ${platformTagNameDef}
+						... on BusinessCapability {
+							relPlatformToApplication { edges { node { factSheet { id } } } }
+						}
+					}}
+				}
+				applicationsPlanned: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["Application"]},
+						{facetKey: "lifecycle", keys: ["plan", "phaseIn"], dateFilter: {
+							from: "${PTVsDef.CURRENT_DATE_STRING}", to: "${PTVsDef.CURRENT_DATE_STRING}", type: TODAY
+						}}
+						${itIdFilter}
+					]}
+				) {
+					edges { node {
+						id name tags { name }
+						... on Application {
+							relApplicationToOwningUserGroup { edges { node { factSheet { id } } } }
+							relApplicationToSegment { edges { node { description factSheet { id } } } }
+							relProviderApplicationToInterface { edges { node { activeFrom factSheet { id } } } }
+						}
+					}}
+				}
+				applicationsActive: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["Application"]},
+						{facetKey: "lifecycle", keys: ["active", "phaseOut"], dateFilter: {
+							from: "${PTVsDef.CURRENT_DATE_STRING}", to: "${PTVsDef.CURRENT_DATE_STRING}", type: TODAY
+						}}
+						${itIdFilter}
+					]}
+				) {
+					edges { node {
+						id name tags { name }
+						... on Application {
+							relApplicationToOwningUserGroup { edges { node { factSheet { id } } } }
+							relApplicationToSegment { edges { node { description factSheet { id } } } }
+							relProviderApplicationToInterface { edges { node { activeFrom factSheet { id } } } }
+						}
+					}}
+				}
+				csmInterfaces: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["Interface"]}
+						${csmIdFilter}
+					]}
+				) {
+					edges { node {
+						id name ${csmTagNameDef}
 					}}
 				}}`;
 	}
@@ -259,23 +328,38 @@ class Report extends Component {
 		lx.hideSpinner();
 	}
 
-	_handleData(index, platformId) {
+	_handleData(index, platformTagId, itTagId, csmTagId) {
 		console.log(index);
-		const marketOptions = index.markets.nodes.map((e) => {
+		const segments = [];
+		const markets = [];
+		index.markets.nodes.forEach((e) => {
+			if (index.includesTag(e, 'Segment')) {
+				segments.push(e);
+			} else {
+				markets.push(e);
+			}
+		})
+		const marketOptions = markets.map((e) => {
 			return {
 				value: e.id,
 				label: e.name
 			}
 		});
-		// build market data
-		const marketData = this._getFilteredFactsheets(index, index.markets.nodes, undefined, undefined, true);
+		// build general data objects
+		const marketData = this._getFilteredFactsheets(index, markets, undefined, undefined, true);
 		for (let key in marketData) {
 			const market = marketData[key];
-			market.views = PTVDef.getMarketViews(index, market);
+			market.views = PTVsDef.getMarketViews(index, market);
 		}
-		const platformsLvl1 = this._getFilteredFactsheets(index, index.platformsLvl1.nodes, platformId, 'Platform', false);
-		const platformsLvl2 = this._getFilteredFactsheets(index, index.platformsLvl2.nodes, platformId, 'Platform', true);
-		const viewData = PTVDef.parseDescriptions(index.markets.nodes, platformsLvl2);
+		const segmentData = this._getFilteredFactsheets(index, segments, undefined, undefined, true);
+		const platformsLvl1 = this._getFilteredFactsheets(index, index.platformsLvl1.nodes, platformTagId, 'Platform', false);
+		const platformsLvl2 = this._getFilteredFactsheets(index, index.platformsLvl2.nodes, platformTagId, 'Platform', true);
+		const applications = {
+			planned: this._getFilteredFactsheets(index, index.applicationsPlanned.nodes, itTagId, 'IT', true),
+			active: this._getFilteredFactsheets(index, index.applicationsActive.nodes, itTagId, 'IT', true)
+		};
+		const csmInterfaces = this._getFilteredFactsheets(index, index.csmInterfaces.nodes, csmTagId, 'CSM', true);
+		const viewData = PTVsDef.parseDescriptions(markets, platformsLvl2);
 		// build template view data
 		let sideAreaData = {};
 		const mainAreaData = [];
@@ -289,18 +373,22 @@ class Report extends Component {
 			let mainAreaPos = 0;
 			switch (platformLvl1.name) {
 				case BC_BUSINESS_MANAGEMENT:
-					sideAreaData = this._createTemplateViewEntry(platformLvl1, subIndex, platformsLvl2);
+					sideAreaData = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData);
 					return;
 				case BC_INTEGRATION_LAYERS:
-					mainIntermediateAreaData = subIndex.nodes.reduce((acc, rel) => {
+					mainIntermediateAreaData = subIndex.nodes.find((rel) => {
 						const platformLvl2 = platformsLvl2[rel.id];
-						if (!platformLvl2 || platformLvl2.name !== BC_INTEGRATION) {
-							return acc;
-						}
-						acc.id = platformLvl2.id;
-						acc.name = platformLvl2.name;
-						return acc;
-					}, {});
+						return platformLvl2 && platformLvl2.name === BC_INTEGRATION;
+					});
+					if (mainIntermediateAreaData) {
+						// get factsheet object
+						mainIntermediateAreaData = platformsLvl2[mainIntermediateAreaData.id];
+						// strip data
+						mainIntermediateAreaData = {
+							id: mainIntermediateAreaData.id,
+							name: mainIntermediateAreaData.name
+						};
+					}
 					return;
 				case BC_CHANNELS_LAYER:
 					mainAreaPos = 0;
@@ -319,7 +407,7 @@ class Report extends Component {
 					return;
 			}
 			// add to templateViewMainAreaData
-			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(platformLvl1, subIndex, platformsLvl2);
+			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData);
 		});
 		console.log(viewData);
 		lx.hideSpinner();
@@ -370,7 +458,7 @@ class Report extends Component {
 		return result;
 	}
 
-	_createTemplateViewEntry(platformLvl1, subIndex, platformsLvl2) {
+	_createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData) {
 		const result = {
 			id: platformLvl1.id,
 			name: platformLvl1.name,
@@ -383,7 +471,9 @@ class Report extends Component {
 			}
 			result.items.push({
 				id: platformLvl2.id,
-				name: platformLvl2.name
+				name: platformLvl2.name,
+				csmAdoValues: PTVsDef.getCSMAdoptionValues(index, platformLvl2, applications, csmInterfaces, marketData, segmentData),
+				simObsValues: 'TODO'
 			});
 		});
 		// sort by name
@@ -418,6 +508,27 @@ class Report extends Component {
 				viewIndex: showView
 			}
 		});
+	}
+
+	_getPlatformFromAreaData(platformId) {
+		// could be in sideArea or mainArea
+		const sideArea = this.state.templateViewSideAreaData;
+		let entry = sideArea.items.find((entry) => {
+			return entry.id === platformId;
+		});
+		if (entry) {
+			return entry;
+		}
+		const mainArea = this.state.templateViewMainAreaData;
+		for (let i = 0; i < mainArea.length; i++) {
+			entry = mainArea[i].items.find((entry) => {
+				return entry.id === platformId;
+			});
+			if (entry) {
+				break;
+			}
+		}
+		return entry;
 	}
 
 	render() {
@@ -514,19 +625,19 @@ class Report extends Component {
 
 	_renderViewArea(market) {
 		const viewName = this.state.showView.name;
-		if (PTVDef.isPlatformTransformationView(viewName)) {
-			return this._renderTemplateView(market, 0, PTVDef.getStackFromView(viewName));
+		if (PTVsDef.isPlatformTransformationView(viewName)) {
+			return this._renderTemplateView(market, 0, PTVsDef.getStackFromView(viewName));
 		}
-		if (PTVDef.isCSMAdoptionView(viewName)) {
-			return this._renderTemplateView(market, 1, PTVDef.getStackFromView(viewName));
+		if (PTVsDef.isCSMAdoptionView(viewName)) {
+			return this._renderTemplateView(market, 1, PTVsDef.getStackFromView(viewName));
 		}
-		if (PTVDef.isSimplificationObsolescenceView(viewName)) {
-			return this._renderTemplateView(market, 2, PTVDef.getStackFromView(viewName));
+		if (PTVsDef.isSimplificationObsolescenceView(viewName)) {
+			return this._renderTemplateView(market, 2, PTVsDef.getStackFromView(viewName));
 		}
-		if (PTVDef.isNarrativeView(viewName)) {
+		if (PTVsDef.isNarrativeView(viewName)) {
 			return (<NarrativeView data={this.state.templateViewData.narratives[market.id].list} />);
 		}
-		if (PTVDef.isProjectRoadmapView(viewName)) {
+		if (PTVsDef.isProjectRoadmapView(viewName)) {
 			const chartConfig = {
 				timeSpan: ['2016-01-01', '2019-01-01'],
 				gridlinesXaxis: true,
@@ -551,25 +662,42 @@ class Report extends Component {
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PTVDef.LEGEND_PLATFORM_TRANFORMATION}
+					legend={PTVsDef.LEGEND_PLATFORM_TRANFORMATION}
 					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]} />);
 			case 1:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PTVDef.LEGEND_CSM_ADOPTION}
+					legend={PTVsDef.LEGEND_CSM_ADOPTION}
 					colorScheme={this.state.templateViewData.blockColors[market.id].csmado[stack]}
-					additionalContent={undefined} />);
+					additionalContent={this._renderAdditionalContentForCSMAdoption} />);
 			case 2:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PTVDef.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
+					legend={PTVsDef.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
 					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]}
 					additionalContent={undefined} />);
 		}
+	}
+
+	_renderAdditionalContentForCSMAdoption(platformId) {
+		const platform = this._getPlatformFromAreaData(platformId);
+		if (!platform) {
+			// id could also be integration, which must be excluded
+			return null;
+		}
+		const market = this.state.templateViewMarketData[this.state.selectedMarket];
+		const stack = PTVsDef.getStackFromView(this.state.showView.name);
+		const values = platform.csmAdoValues[market.id][stack];
+		const target = this.state.templateViewData.csmAdoTargets[market.id][stack][platformId];
+		console.log(platform.name + ' -> '
+			+ 'current: ' + Object.keys(values.current).length
+			+ ', planned: ' + Object.keys(values.planned).length
+			+ ', target: ' + (target ? target : 0));
+		return null;
 	}
 }
 
