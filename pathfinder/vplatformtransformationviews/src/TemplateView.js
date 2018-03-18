@@ -82,16 +82,18 @@ class TemplateView extends Component {
 	}
 
 	_renderBlock(item, style) {
+		style.position = 'relative';
 		return (
-			<div key={item.id} className='well well-sm text-center small' style={style}>
-				<div style={{
-					padding: '0px 2.5em',
+			<div key={item.id} className='well well-sm' style={style}>
+				{this.props.additionalContent && this.props.additionalContent(this.props.market, this.props.stack, item.id)}
+				<div className='text-center small' style={{
+					padding: '0px 15%',
 					position: 'relative',
 					top: '50%',
-					transform: 'translateY(-50%)'
+					transform: 'translateY(-50%)',
+					clear: 'both'
 				}}>
 					<b>{item.name}</b>
-					{this.props.additionalContent && this.props.additionalContent(item.id)}
 				</div>
 			</div>
 		);
@@ -202,16 +204,20 @@ class TemplateView extends Component {
 	}
 
 	_renderLegend() {
-		return (
-			<div>
-				<h3>Keys</h3>
+		const render = [(
+			<div key='legend'>
+				<h3>Color Keys</h3>
 				<dl className='dl-horizontal'>
 					{this.props.legend.map((e) => {
 						return this._renderLegendItem(e);
 					})}
 				</dl>
 			</div>
-		);
+		)];
+		if (this.props.additionalContentLegend) {
+			render.push(this.props.additionalContentLegend());
+		}
+		return render;
 	}
 
 	_renderLegendItem(e) {
@@ -269,7 +275,10 @@ TemplateView.propTypes = {
 		}).isRequired
 	).isRequired,
 	colorScheme: PropTypes.object.isRequired,
-	additionalContent: PropTypes.func
+	market: PropTypes.string.isRequired,
+	stack: PropTypes.string.isRequired,
+	additionalContent: PropTypes.func,
+	additionalContentLegend: PropTypes.func
 };
 
 export default TemplateView;

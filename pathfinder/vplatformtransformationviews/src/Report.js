@@ -158,6 +158,7 @@ class Report extends Component {
 		this._handleSelectMarket = this._handleSelectMarket.bind(this);
 		this._handleClickViewList = this._handleClickViewList.bind(this);
 		this._renderAdditionalContentForCSMAdoption = this._renderAdditionalContentForCSMAdoption.bind(this);
+		this._renderAdditionalContentLegendForCSMAdoption = this._renderAdditionalContentLegendForCSMAdoption.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderViewList = this._renderViewList.bind(this);
 		this._renderHeading = this._renderHeading.bind(this);
@@ -663,7 +664,9 @@ class Report extends Component {
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
 					legend={PTVsDef.LEGEND_PLATFORM_TRANFORMATION}
-					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]} />);
+					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]}
+					market={market.id}
+					stack={stack} />);
 			case 1:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
@@ -671,7 +674,10 @@ class Report extends Component {
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
 					legend={PTVsDef.LEGEND_CSM_ADOPTION}
 					colorScheme={this.state.templateViewData.blockColors[market.id].csmado[stack]}
-					additionalContent={this._renderAdditionalContentForCSMAdoption} />);
+					market={market.id}
+					stack={stack}
+					additionalContent={this._renderAdditionalContentForCSMAdoption}
+					additionalContentLegend={this._renderAdditionalContentLegendForCSMAdoption} />);
 			case 2:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
@@ -679,25 +685,69 @@ class Report extends Component {
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
 					legend={PTVsDef.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
 					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]}
-					additionalContent={undefined} />);
+					market={market.id}
+					stack={stack}
+					additionalContent={undefined}
+					additionalContentLegend={undefined} />);
 		}
 	}
 
-	_renderAdditionalContentForCSMAdoption(platformId) {
+	_renderAdditionalContentForCSMAdoption(marketId, stack, platformId) {
 		const platform = this._getPlatformFromAreaData(platformId);
 		if (!platform) {
 			// id could also be integration, which must be excluded
 			return null;
 		}
-		const market = this.state.templateViewMarketData[this.state.selectedMarket];
-		const stack = PTVsDef.getStackFromView(this.state.showView.name);
-		const values = platform.csmAdoValues[market.id][stack];
-		const target = this.state.templateViewData.csmAdoTargets[market.id][stack][platformId];
-		console.log(platform.name + ' -> '
-			+ 'current: ' + Object.keys(values.current).length
-			+ ', planned: ' + Object.keys(values.planned).length
-			+ ', target: ' + (target ? target : 0));
-		return null;
+		const values = platform.csmAdoValues[marketId][stack];
+		const current = values.current;
+		const planned = values.planned;
+		const target = this.state.templateViewData.csmAdoTargets[marketId][stack][platformId];
+		const currentCount = Object.keys(current).length;
+		const plannedCount = Object.keys(planned).length;
+		const targetCount = (target ? target : 0);
+		if (!currentCount && !plannedCount && !targetCount) {
+			return null;
+		}
+		const legend = PTVsDef.LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL;
+		return (
+			<div className='text-right' style={{
+				position: 'absolute',
+				top: '0px',
+				left: '0px',
+				width: '100%',
+				padding: '0.2em'
+			}}>
+				<p style={{
+					margin: '0px',
+					padding: '0px',
+					lineHeight: '1.25em'
+				}}>
+					<span className={legend.current.cssClass}>{currentCount}</span>
+					<span className={legend.planned.cssClass}>{plannedCount}</span>
+				</p>
+				<p style={{
+					margin: '0px',
+					padding: '0px',
+					lineHeight: '1.25em'
+				}}>
+					<span className={legend.target.cssClass}>{targetCount}</span>
+				</p>
+			</div>
+		);
+	}
+
+	_renderAdditionalContentLegendForCSMAdoption() {
+		const legend = PTVsDef.LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL;
+		return (
+			<div key='additionalLegend'>
+				<h3>Values</h3>
+				<ul className='list-unstyled'>
+					<li><span className={legend.current.cssClass}>{legend.current.text}</span></li>
+					<li><span className={legend.planned.cssClass}>{legend.planned.text}</span></li>
+					<li><span className={legend.target.cssClass}>{legend.target.text}</span></li>
+				</ul>
+			</div>
+		);
 	}
 }
 

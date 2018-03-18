@@ -65,10 +65,10 @@ const VALID_COLORS = Object.keys(COLOR_MAP).join('|');
 // legend definitions
 const LEGEND_PLATFORM_TRANFORMATION_VIEW = [{
 		color: GREEN.cssColor,
-		text: 'Target Platform already in place'
+		text: 'Target platform already in place'
 	}, {
 		color: YELLOW.cssColor,
-		text: 'Plan to Adopt platform from another market'
+		text: 'Plan to adopt platform from another market'
 	}, {
 		color: ORANGE.cssColor,
 		text: 'Step-wise evolution to target'
@@ -89,6 +89,20 @@ const LEGEND_PLATFORM_TRANFORMATION_VIEW = [{
 		text: 'No information available / not supported by IT'
 	}
 ];
+const LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL = {
+	current: {
+		cssClass: 'label label-default',
+		text: 'Current # of CSM APIs provided'
+	},
+	planned: {
+		cssClass: 'label label-danger',
+		text: 'Planned # of CSM APIs being implemented'
+	},
+	target: {
+		cssClass: 'label label-primary',
+		text: 'Target # of CSM APIs to be achieved'
+	}
+};
 const LEGEND_CSM_ADOPTION_VIEW = LEGEND_PLATFORM_TRANFORMATION_VIEW;
 const LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW = [{
 		color: GREEN.cssColor,
@@ -647,6 +661,7 @@ export default {
 	CURRENT_DATE_STRING: CURRENT_DATE_STRING,
 	LEGEND_PLATFORM_TRANFORMATION: LEGEND_PLATFORM_TRANFORMATION_VIEW,
 	LEGEND_CSM_ADOPTION: LEGEND_CSM_ADOPTION_VIEW,
+	LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL: LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL,
 	LEGEND_SIMPLIFICATION_OBSOLESCENCE: LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW,
 	parseDescriptions: parseDescriptions,
 	getMarketViews: getMarketViews,
