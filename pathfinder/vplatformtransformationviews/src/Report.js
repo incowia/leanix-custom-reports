@@ -722,15 +722,15 @@ class Report extends Component {
 					padding: '0px',
 					lineHeight: '1.25em'
 				}}>
-					<span className={legend.current.cssClass}>{currentCount}</span>
-					<span className={legend.planned.cssClass}>{plannedCount}</span>
+					<span className={legend.current.cssClass} style={{ border: '1px solid black' }}>{currentCount}</span>
+					<span className={legend.planned.cssClass} style={{ border: '1px solid black' }}>{plannedCount}</span>
 				</p>
 				<p style={{
 					margin: '0px',
 					padding: '0px',
 					lineHeight: '1.25em'
 				}}>
-					<span className={legend.target.cssClass}>{targetCount}</span>
+					<span className={legend.target.cssClass} style={{ border: '1px solid black' }}>{targetCount}</span>
 				</p>
 			</div>
 		);
@@ -742,9 +742,9 @@ class Report extends Component {
 			<div key='additionalLegend'>
 				<h3>Values</h3>
 				<ul className='list-unstyled'>
-					<li><span className={legend.current.cssClass}>{legend.current.text}</span></li>
-					<li><span className={legend.planned.cssClass}>{legend.planned.text}</span></li>
-					<li><span className={legend.target.cssClass}>{legend.target.text}</span></li>
+					<li><span className={legend.current.cssClass} style={{ border: '1px solid black' }}>{legend.current.text}</span></li>
+					<li><span className={legend.planned.cssClass} style={{ border: '1px solid black' }}>{legend.planned.text}</span></li>
+					<li><span className={legend.target.cssClass} style={{ border: '1px solid black' }}>{legend.target.text}</span></li>
 				</ul>
 			</div>
 		);
