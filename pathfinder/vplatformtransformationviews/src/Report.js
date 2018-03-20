@@ -720,7 +720,7 @@ class Report extends Component {
 				<p style={{
 					margin: '0px',
 					padding: '0px',
-					lineHeight: '1.25em'
+					lineHeight: '1.3em'
 				}}>
 					<span className={legend.current.cssClass} style={{ border: '1px solid black' }}>{currentCount}</span>
 					<span className={legend.planned.cssClass} style={{ border: '1px solid black' }}>{plannedCount}</span>
@@ -728,7 +728,7 @@ class Report extends Component {
 				<p style={{
 					margin: '0px',
 					padding: '0px',
-					lineHeight: '1.25em'
+					lineHeight: '1.3em'
 				}}>
 					<span className={legend.target.cssClass} style={{ border: '1px solid black' }}>{targetCount}</span>
 				</p>

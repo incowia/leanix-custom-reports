@@ -509,6 +509,7 @@ function _getMarket(marketData, application) {
 	if (!subIndex) {
 		return;
 	}
+	// TODO could be a department, in this case the market is the parent
 	// only one market possible
 	return marketData[subIndex.nodes[0].id];
 }

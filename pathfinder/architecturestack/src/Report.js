@@ -218,6 +218,17 @@ class Report extends Component {
 				inputType: 'HTML',
 				orientation: 'landscape'
 			},
+			tableConfigCallback: () => {
+				return {
+					attributes: [
+						'displayName',
+						this._getSelectedViewOption(this.reportState.selectedFactsheetType).value,
+						this._getSelectedXAxisOption(this.reportState.selectedFactsheetType).value,
+						this._getSelectedYAxisOption(this.reportState.selectedFactsheetType).value
+					],
+					factSheetType: this.reportState.selectedFactsheetType
+				};
+			},
 			restoreStateCallback: (state) => {
 				console.log('Callback:');
 				console.log(state);
