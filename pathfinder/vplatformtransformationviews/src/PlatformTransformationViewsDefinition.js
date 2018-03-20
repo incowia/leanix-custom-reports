@@ -446,8 +446,8 @@ function isProjectRoadmapView(viewName) {
 	return viewName.includes(VIEW_PROJECT_ROADMAP);
 }
 
-function getCSMAdoptionValues(index, platform, applications, csmInterfaces, marketData, segmentData) {
-	if (!platform || !applications || !csmInterfaces || !marketData || !segmentData) {
+function getCSMAdoptionValues(index, platform, applications, csmInterfaces, marketData, segmentData, departmentData) {
+	if (!platform || !applications || !csmInterfaces || !marketData || !segmentData || !departmentData) {
 		return;
 	}
 	const result = {};
@@ -479,7 +479,7 @@ function getCSMAdoptionValues(index, platform, applications, csmInterfaces, mark
 			return;
 		}
 		const application = applicationPlanned ? applicationPlanned : applicationActive;
-		const market = _getMarket(marketData, application);
+		const market = _getMarket(marketData, departmentData, application);
 		if (!market) {
 			return;
 		}
@@ -504,14 +504,16 @@ function getCSMAdoptionValues(index, platform, applications, csmInterfaces, mark
 	return result;
 }
 
-function _getMarket(marketData, application) {
+function _getMarket(marketData, departmentData, application) {
 	const subIndex = application.relApplicationToOwningUserGroup;
 	if (!subIndex) {
 		return;
 	}
-	// TODO could be a department, in this case the market is the parent
 	// only one market possible
-	return marketData[subIndex.nodes[0].id];
+	const owningUGID = subIndex.nodes[0].id;
+	// could be a department, in this case the market is its parent
+	const marketID = departmentData[owningUGID] ? departmentData[owningUGID].market : owningUGID;
+	return marketData[marketID];
 }
 
 function _getStacksFromApplication(index, application, market, segmentData) {

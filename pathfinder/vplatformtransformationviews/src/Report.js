@@ -192,11 +192,12 @@ class Report extends Component {
 			const index = new DataIndex();
 			index.put(tagGroups);
 			const platformTagId = index.getFirstTagID('BC Type', 'Platform');
+			const applicationTagId = index.getFirstTagID('Application Type', 'Application');
 			const itTagId = index.getFirstTagID('CostCentre', 'IT');
 			const csmTagId = index.getFirstTagID('CSM', 'CSM');
-			lx.executeGraphQL(this._createQuery(platformTagId, itTagId, csmTagId)).then((data) => {
+			lx.executeGraphQL(this._createQuery(platformTagId, applicationTagId, itTagId, csmTagId)).then((data) => {
 				index.put(data);
-				this._handleData(index, platformTagId, itTagId, csmTagId);
+				this._handleData(index, platformTagId, applicationTagId, itTagId, csmTagId);
 			}).catch(this._handleError);
 		}).catch(this._handleError);
 	}
@@ -214,22 +215,32 @@ class Report extends Component {
 		};
 	}
 
-	_createQuery(platformTagId, itTagId, csmTagId) {
-		let platformIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
-		let platformTagNameDef = 'tags { name }'; // initial assume to get it
+	_createQuery(platformTagId, applicationTagId, itTagId, csmTagId) {
+		// initial assume tagGroup.name changed or the id couldn't be determined otherwise
+		const idFilter = {
+			platform: '',
+			application: '',
+			it: '',
+			csm: ''
+		};
+		// initial assume to get it
+		const tagNameDef = {
+			platform: 'tags { name }',
+			csm: 'tags { name }'
+		};
 		if (platformTagId) {
-			platformIdFilter = `, {facetKey: "BC Type", keys: ["${platformTagId}"]}`;
-			platformTagNameDef = '';
+			idFilter.platform = `, {facetKey: "BC Type", keys: ["${platformTagId}"]}`;
+			tagNameDef.platform = '';
 		}
-		let itIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
-		if (itTagId) {
-			itIdFilter = `, {facetKey: "CostCentre", keys: ["${itTagId}"]}`;
+		if (applicationTagId) {
+			idFilter.application = `, {facetKey: "Application Type", keys: ["${applicationTagId}"]}`;
 		}
-		let csmIdFilter = ''; // initial assume tagGroup.name changed or the id couldn't be determined otherwise
-		let csmTagNameDef = 'tags { name }'; // initial assume to get it
 		if (itTagId) {
-			csmIdFilter = `, {facetKey: "CSM", keys: ["${csmTagId}"]}`;
-			csmTagNameDef = '';
+			idFilter.it = `, {facetKey: "CostCentre", keys: ["${itTagId}"]}`;
+		}
+		if (csmTagId) {
+			idFilter.csm = `, {facetKey: "CSM", keys: ["${csmTagId}"]}`;
+			tagNameDef.csm = '';
 		}
 		return `{markets: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
@@ -245,15 +256,28 @@ class Report extends Component {
 						}
 					}}
 				}
+				departments: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["UserGroup"]},
+						{facetKey: "hierarchyLevel", operator: NOR, keys: ["1"]}
+					]}
+				) {
+					edges { node {
+						id
+						... on UserGroup {
+							relToParent { edges { node { factSheet { id } } } }
+						}
+					}}
+				}
 				platformsLvl1: allFactSheets(
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
 						{facetKey: "hierarchyLevel", keys: ["1"]}
-						${platformIdFilter}
+						${idFilter.platform}
 					]}
 				) {
 					edges { node {
-						id name ${platformTagNameDef}
+						id name ${tagNameDef.platform}
 						... on BusinessCapability {
 							relToChild { edges { node { factSheet { id } } } }
 						}
@@ -263,11 +287,11 @@ class Report extends Component {
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["BusinessCapability"]},
 						{facetKey: "hierarchyLevel", keys: ["2"]}
-						${platformIdFilter}
+						${idFilter.platform}
 					]}
 				) {
 					edges { node {
-						id name ${platformTagNameDef}
+						id name ${tagNameDef.platform}
 						... on BusinessCapability {
 							relPlatformToApplication { edges { node { factSheet { id } } } }
 						}
@@ -279,7 +303,8 @@ class Report extends Component {
 						{facetKey: "lifecycle", keys: ["plan", "phaseIn"], dateFilter: {
 							from: "${PTVsDef.CURRENT_DATE_STRING}", to: "${PTVsDef.CURRENT_DATE_STRING}", type: TODAY
 						}}
-						${itIdFilter}
+						${idFilter.application}
+						${idFilter.it}
 					]}
 				) {
 					edges { node {
@@ -297,7 +322,8 @@ class Report extends Component {
 						{facetKey: "lifecycle", keys: ["active", "phaseOut"], dateFilter: {
 							from: "${PTVsDef.CURRENT_DATE_STRING}", to: "${PTVsDef.CURRENT_DATE_STRING}", type: TODAY
 						}}
-						${itIdFilter}
+						${idFilter.application}
+						${idFilter.it}
 					]}
 				) {
 					edges { node {
@@ -312,11 +338,11 @@ class Report extends Component {
 				csmInterfaces: allFactSheets(
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["Interface"]}
-						${csmIdFilter}
+						${idFilter.csm}
 					]}
 				) {
 					edges { node {
-						id name ${csmTagNameDef}
+						id name ${tagNameDef.csm}
 					}}
 				}}`;
 	}
@@ -329,7 +355,7 @@ class Report extends Component {
 		lx.hideSpinner();
 	}
 
-	_handleData(index, platformTagId, itTagId, csmTagId) {
+	_handleData(index, platformTagId, applicationTagId, itTagId, csmTagId) {
 		console.log(index);
 		const segments = [];
 		const markets = [];
@@ -352,12 +378,17 @@ class Report extends Component {
 			const market = marketData[key];
 			market.views = PTVsDef.getMarketViews(index, market);
 		}
+		const departmentData = this._getFilteredFactsheets(index, index.departments.nodes, undefined, undefined, true);
+		for (let key in departmentData) {
+			const department = departmentData[key];
+			department.market = this._getMarketIDForDepartment(marketData, departmentData, department);
+		}
 		const segmentData = this._getFilteredFactsheets(index, segments, undefined, undefined, true);
 		const platformsLvl1 = this._getFilteredFactsheets(index, index.platformsLvl1.nodes, platformTagId, 'Platform', false);
 		const platformsLvl2 = this._getFilteredFactsheets(index, index.platformsLvl2.nodes, platformTagId, 'Platform', true);
 		const applications = {
-			planned: this._getFilteredFactsheets(index, index.applicationsPlanned.nodes, itTagId, 'IT', true),
-			active: this._getFilteredFactsheets(index, index.applicationsActive.nodes, itTagId, 'IT', true)
+			planned: this._getFilteredFactsheets(index, index.applicationsPlanned.nodes, [applicationTagId, itTagId], ['Application', 'IT'], true),
+			active: this._getFilteredFactsheets(index, index.applicationsActive.nodes, [applicationTagId, itTagId], ['Application', 'IT'], true)
 		};
 		const csmInterfaces = this._getFilteredFactsheets(index, index.csmInterfaces.nodes, csmTagId, 'CSM', true);
 		const viewData = PTVsDef.parseDescriptions(markets, platformsLvl2);
@@ -374,7 +405,7 @@ class Report extends Component {
 			let mainAreaPos = 0;
 			switch (platformLvl1.name) {
 				case BC_BUSINESS_MANAGEMENT:
-					sideAreaData = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData);
+					sideAreaData = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData, departmentData);
 					return;
 				case BC_INTEGRATION_LAYERS:
 					mainIntermediateAreaData = subIndex.nodes.find((rel) => {
@@ -408,7 +439,7 @@ class Report extends Component {
 					return;
 			}
 			// add to templateViewMainAreaData
-			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData);
+			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData, departmentData);
 		});
 		console.log(viewData);
 		lx.hideSpinner();
@@ -429,24 +460,48 @@ class Report extends Component {
 		});
 	}
 
-	_getFilteredFactsheets(index, nodes, tagId, tagName, asIDMap) {
+	_getMarketIDForDepartment(marketData, departmentData, department) {
+		const subIndex = department.relToParent;
+		if (!subIndex) {
+			return;
+		}
+		const parentId = subIndex.nodes[0].id;
+		const market = marketData[parentId];
+		if (!market) {
+			// it's another department, try next parent
+			return this._getMarketIDForDepartment(marketData, departmentData, departmentData[parentId]);
+		}
+		return market.id;
+	}
+
+	_getFilteredFactsheets(index, nodes, tagIds, tagNames, asIDMap) {
 		if (asIDMap) {
-			return this._createIDMap(index, nodes, !tagId ? tagName : undefined);
+			return this._createIDMap(index, nodes, tagIds, tagNames);
 		} else {
-			if (!tagId) {
+			if (!tagIds) {
 				return nodes.filter((e) => {
-					return index.includesTag(e, tagName);
+					return this._includesTags(index, e, tagIds, tagNames);
 				});
 			}
 			return nodes;
 		}
 	}
 
-	_createIDMap(index, nodes, tagName) {
+	_includesTags(index, node, tagIds, tagNames) {
+		if (Array.isArray(tagIds)) {
+			return tagIds.every((tagId, i) => {
+				return tagId || index.includesTag(node, tagNames[i]);
+			});
+		} else {
+			return tagIds || index.includesTag(node, tagNames);
+		}
+	}
+
+	_createIDMap(index, nodes, tagIds, tagNames) {
 		const result = {};
-		if (tagName) {
+		if (tagIds) {
 			nodes.forEach((e) => {
-				if (!index.includesTag(e, tagName)) {
+				if (!this._includesTags(index, e, tagIds, tagNames)) {
 					return;
 				}
 				result[e.id] = e;
@@ -459,7 +514,7 @@ class Report extends Component {
 		return result;
 	}
 
-	_createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData) {
+	_createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData, departmentData) {
 		const result = {
 			id: platformLvl1.id,
 			name: platformLvl1.name,
@@ -473,7 +528,7 @@ class Report extends Component {
 			result.items.push({
 				id: platformLvl2.id,
 				name: platformLvl2.name,
-				csmAdoValues: PTVsDef.getCSMAdoptionValues(index, platformLvl2, applications, csmInterfaces, marketData, segmentData),
+				csmAdoValues: PTVsDef.getCSMAdoptionValues(index, platformLvl2, applications, csmInterfaces, marketData, segmentData, departmentData),
 				simObsValues: 'TODO'
 			});
 		});
