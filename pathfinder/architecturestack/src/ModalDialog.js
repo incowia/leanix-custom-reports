@@ -29,14 +29,14 @@ class ModalDialog extends Component {
 				}}>
 					<div className='panel panel-default' style={{ width: this.props.width, margin: '0 auto' }}>
 						<div className='panel-heading'>
-							<h3 className='panel-title'>
+							<h4 className='panel-title'>
 								<button type='button' className='close' style={{ right: '0px' }}
 									data-dismiss='alert' aria-label='Close'
 									onClick={this.props.onClose}>
 									<span aria-hidden='true'>&times;</span>
 								</button>
 								{this.props.title}
-							</h3>
+							</h4>
 						</div>
 						<div className='panel-body'>
 							{this.props.content()}

@@ -1,9 +1,9 @@
 {
 	"name": "architecturestack",
-	"version": "1.0.0",
-	"description": "TODO",
+	"version": "1.1.0",
+	"description": "Shows a matrix that is formed based on the properties and/or tags of the factsheets. Depending on the configuration, X and Y axes as well as the coloring are adjustable.",
 	"engines": {
-		"node": ">=6.11.1"
+		"node": ">=8.10.0"
 	},
 	"leanixReport": {
 		"id": "net.leanix.architecturestack",
@@ -11,6 +11,7 @@
 		"defaultConfig": {}
 	},
 	"scripts": {
+		"build": "lxr build",
 		"start": "lxr start",
 		"upload": "lxr upload",
 		"webpack": "webpack"
@@ -41,12 +42,12 @@
 		"webpack-dev-server": "2.5.0"
 	},
 	"dependencies": {
-		"@leanix/reporting": "0.2.1",
+		"@leanix/reporting": "0.2.2",
 		"bootstrap": "3.3.7",
-		"prop-types": "15.6.0",
-		"react": "15.6.1",
-		"react-bootstrap-table": "4.1.1",
-		"react-dom": "15.6.1",
-		"react-select": "1.0.0-rc.10"
+		"prop-types": "15.6.1",
+		"react": "16.2.0",
+		"react-bootstrap-table": "4.3.1",
+		"react-dom": "16.2.0",
+		"react-select": "1.2.1"
 	}
 }

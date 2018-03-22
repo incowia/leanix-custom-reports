@@ -219,12 +219,18 @@ class Report extends Component {
 				orientation: 'landscape'
 			},
 			tableConfigCallback: () => {
+				/*
+				It would be possible to display the right attributes, but there are a lot of bugs in the CR framework
+				and there seems to be no possiblity to define a tag value in these attributes -> go safe for the default then
+
+				this._getSelectedViewOption(this.reportState.selectedFactsheetType).value,
+				this._getSelectedXAxisOption(this.reportState.selectedFactsheetType).value,
+				this._getSelectedYAxisOption(this.reportState.selectedFactsheetType).value
+				*/
 				return {
 					attributes: [
 						'displayName',
-						this._getSelectedViewOption(this.reportState.selectedFactsheetType).value,
-						this._getSelectedXAxisOption(this.reportState.selectedFactsheetType).value,
-						this._getSelectedYAxisOption(this.reportState.selectedFactsheetType).value
+						'description'
 					],
 					factSheetType: this.reportState.selectedFactsheetType
 				};

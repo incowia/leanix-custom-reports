@@ -39,7 +39,7 @@ class MissingDataAlert extends Component {
 					</button>
 					<strong>Attention:</strong> {this.props.missingData.length} {factsheet} not
 					included in this report due to missing
-					data: <a href='#' className='alert-link' onClick={this._handleShowList(true)}>Show list</a>
+					data. <a href='#' className='alert-link' onClick={this._handleShowList(true)}>Show list</a>.
 				</div>
 			</div>
 		);
