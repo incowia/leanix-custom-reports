@@ -16,7 +16,8 @@ class MissingDataAlert extends Component {
 	}
 
 	_handleShowList(setTo) {
-		return () => {
+		return (evt) => {
+			evt.preventDefault();
 			return this.setState({
 				showList: setTo
 			});

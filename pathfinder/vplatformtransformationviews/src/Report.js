@@ -2,11 +2,15 @@ import React, { Component } from 'react';
 import CommonQueries from './common/CommonGraphQLQueries';
 import DataIndex from './common/DataIndex';
 import Utilities from './common/Utilities';
-import PTVsDef from './PlatformTransformationViewsDefinition';
+import TableUtilities from './common/TableUtilities';
+import ModalDialog from './common/ModalDialog';
+import ViewUtils from './ViewsUtilities';
+import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import SelectField from './SelectField';
 import TemplateView from './TemplateView';
 import NarrativeView from './NarrativeView';
 import Roadmap from './Roadmap';
+import ProjectRoadmapView from './ProjectRoadmapView';
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
@@ -23,12 +27,26 @@ const BC_INTEGRATION_LAYERS = 'Integration Layers';
 // lvl 2 platform bc's for name matching
 const BC_INTEGRATION = 'Integration';
 
-// lifecycle phases
-const PLAN = 'plan';
-const PHASE_IN = 'phaseIn';
-const ACTIVE = 'active';
-const PHASE_OUT = 'phaseOut';
-const END_OF_LIFE = 'endOfLife';
+const VALUE_BOX_ELEMENT_STYLE = {
+	position: 'absolute',
+	top: '0px',
+	left: '0px',
+	width: '100%',
+	padding: '0.2em',
+	zIndex: 100
+};
+
+const VALUE_BOX_GROUP_STYLE = {
+	margin: '0px',
+	padding: '0px',
+	lineHeight: '1em'
+};
+
+const VALUE_BOX_STYLE = {
+	display: 'inline-block',
+	width: '100%',
+	border: '1px solid black'
+};
 
 const CATEGORIES_ROADMAP = { // category names and their colors defined here
 	prj0: { barColor: "#dff0d8", textColor: '#000' },
@@ -157,15 +175,29 @@ class Report extends Component {
 		this._createIDMap = this._createIDMap.bind(this);
 		this._handleSelectMarket = this._handleSelectMarket.bind(this);
 		this._handleClickViewList = this._handleClickViewList.bind(this);
+		this._handleCloseModalDialog = this._handleCloseModalDialog.bind(this);
+		this._handleValueBoxClick = this._handleValueBoxClick.bind(this);
+		this._createDialogTableData = this._createDialogTableData.bind(this);
 		this._renderAdditionalContentForCSMAdoption = this._renderAdditionalContentForCSMAdoption.bind(this);
-		this._renderAdditionalContentLegendForCSMAdoption = this._renderAdditionalContentLegendForCSMAdoption.bind(this);
+		this._renderAdditionalContentForSimplificationObsolescence = this._renderAdditionalContentForSimplificationObsolescence.bind(this);
+		this._renderAdditionalContentNotes = this._renderAdditionalContentNotes.bind(this);
 		this._renderSuccessful = this._renderSuccessful.bind(this);
 		this._renderViewList = this._renderViewList.bind(this);
 		this._renderHeading = this._renderHeading.bind(this);
 		this._renderViewArea = this._renderViewArea.bind(this);
+		this._renderModalDialogContent = this._renderModalDialogContent.bind(this);
+		this._renderValueBoxWithLink = this._renderValueBoxWithLink.bind(this);
+		this._renderValueBox = this._renderValueBox.bind(this);
 		this.state = {
+			// TODO remove
+			showRoadmapData: true,
 			loadingState: LOADING_INIT,
 			setup: null,
+			showDialog: false,
+			dialogValueBoxId: null,
+			dialogPlatformId: null,
+			dialogTableData: null,
+			dialogWidth: '0px',
 			showView: null,
 			selectMarketFieldData: null,
 			selectedMarket: null,
@@ -192,12 +224,11 @@ class Report extends Component {
 			const index = new DataIndex();
 			index.put(tagGroups);
 			const platformTagId = index.getFirstTagID('BC Type', 'Platform');
-			const applicationTagId = index.getFirstTagID('Application Type', 'Application');
-			const itTagId = index.getFirstTagID('CostCentre', 'IT');
 			const csmTagId = index.getFirstTagID('CSM', 'CSM');
-			lx.executeGraphQL(this._createQuery(platformTagId, applicationTagId, itTagId, csmTagId)).then((data) => {
+			const transformTagId = index.getFirstTagID('Budget Type', 'Transform');
+			lx.executeGraphQL(this._createQuery(platformTagId, csmTagId, transformTagId)).then((data) => {
 				index.put(data);
-				this._handleData(index, platformTagId, applicationTagId, itTagId, csmTagId);
+				this._handleData(index, platformTagId, csmTagId, transformTagId);
 			}).catch(this._handleError);
 		}).catch(this._handleError);
 	}
@@ -215,32 +246,30 @@ class Report extends Component {
 		};
 	}
 
-	_createQuery(platformTagId, applicationTagId, itTagId, csmTagId) {
+	_createQuery(platformTagId, csmTagId, transformTagId) {
 		// initial assume tagGroup.name changed or the id couldn't be determined otherwise
 		const idFilter = {
 			platform: '',
-			application: '',
-			it: '',
-			csm: ''
+			csm: '',
+			transform: ''
 		};
 		// initial assume to get it
 		const tagNameDef = {
 			platform: 'tags { name }',
-			csm: 'tags { name }'
+			csm: 'tags { name }',
+			transform: 'tags { name }'
 		};
 		if (platformTagId) {
 			idFilter.platform = `, {facetKey: "BC Type", keys: ["${platformTagId}"]}`;
 			tagNameDef.platform = '';
 		}
-		if (applicationTagId) {
-			idFilter.application = `, {facetKey: "Application Type", keys: ["${applicationTagId}"]}`;
-		}
-		if (itTagId) {
-			idFilter.it = `, {facetKey: "CostCentre", keys: ["${itTagId}"]}`;
-		}
 		if (csmTagId) {
 			idFilter.csm = `, {facetKey: "CSM", keys: ["${csmTagId}"]}`;
 			tagNameDef.csm = '';
+		}
+		if (transformTagId) {
+			idFilter.transform = `, {facetKey: "Budget Type", keys: ["${transformTagId}"]}`;
+			tagNameDef.transform = '';
 		}
 		return `{markets: allFactSheets(
 					sort: { mode: BY_FIELD, key: "displayName", order: asc },
@@ -297,38 +326,17 @@ class Report extends Component {
 						}
 					}}
 				}
-				applicationsPlanned: allFactSheets(
+				applications: allFactSheets(
 					filter: {facetFilters: [
 						{facetKey: "FactSheetTypes", keys: ["Application"]},
-						{facetKey: "lifecycle", keys: ["plan", "phaseIn"], dateFilter: {
-							from: "${PTVsDef.CURRENT_DATE_STRING}", to: "${PTVsDef.CURRENT_DATE_STRING}", type: TODAY
-						}}
-						${idFilter.application}
-						${idFilter.it}
+						{facetKey: "relApplicationToOwningUserGroup", operator: NOR, keys: ["__missing__"]},
+						{facetKey: "relApplicationToPlatform", operator: NOR, keys: ["__missing__"]}
 					]}
 				) {
 					edges { node {
 						id name tags { name }
 						... on Application {
-							relApplicationToOwningUserGroup { edges { node { factSheet { id } } } }
-							relApplicationToSegment { edges { node { description factSheet { id } } } }
-							relProviderApplicationToInterface { edges { node { activeFrom factSheet { id } } } }
-						}
-					}}
-				}
-				applicationsActive: allFactSheets(
-					filter: {facetFilters: [
-						{facetKey: "FactSheetTypes", keys: ["Application"]},
-						{facetKey: "lifecycle", keys: ["active", "phaseOut"], dateFilter: {
-							from: "${PTVsDef.CURRENT_DATE_STRING}", to: "${PTVsDef.CURRENT_DATE_STRING}", type: TODAY
-						}}
-						${idFilter.application}
-						${idFilter.it}
-					]}
-				) {
-					edges { node {
-						id name tags { name }
-						... on Application {
+							lifecycle { phases { phase startDate } }
 							relApplicationToOwningUserGroup { edges { node { factSheet { id } } } }
 							relApplicationToSegment { edges { node { description factSheet { id } } } }
 							relProviderApplicationToInterface { edges { node { activeFrom factSheet { id } } } }
@@ -344,6 +352,23 @@ class Report extends Component {
 					edges { node {
 						id name ${tagNameDef.csm}
 					}}
+				}
+				projects: allFactSheets(
+					filter: {facetFilters: [
+						{facetKey: "FactSheetTypes", keys: ["Project"]},
+						{facetKey: "relProjectToUserGroup", operator: NOR, keys: ["__missing__"]},
+						{facetKey: "relProjectToBusinessCapability", operator: NOR, keys: ["__missing__"]}
+						${idFilter.transform}
+					]}
+				) {
+					edges { node {
+						id name ${tagNameDef.transform}
+						... on Project {
+							lifecycle { phases { phase startDate } }
+							relProjectToUserGroup { edges { node { factSheet { id } } } }
+							relProjectToBusinessCapability { edges { node { factSheet { id } } } }
+						}
+					}}
 				}}`;
 	}
 
@@ -355,7 +380,7 @@ class Report extends Component {
 		lx.hideSpinner();
 	}
 
-	_handleData(index, platformTagId, applicationTagId, itTagId, csmTagId) {
+	_handleData(index, platformTagId, csmTagId, transformTagId) {
 		console.log(index);
 		const segments = [];
 		const markets = [];
@@ -373,10 +398,12 @@ class Report extends Component {
 			}
 		});
 		// build general data objects
+		const applicationData = this._getApplicationData(index);
+		const csmInterfaceData = this._getFilteredFactsheets(index, index.csmInterfaces.nodes, csmTagId, 'CSM', true);
 		const marketData = this._getFilteredFactsheets(index, markets, undefined, undefined, true);
 		for (let key in marketData) {
 			const market = marketData[key];
-			market.views = PTVsDef.getMarketViews(index, market);
+			market.views = ViewUtils.getMarketViews(index, market);
 		}
 		const departmentData = this._getFilteredFactsheets(index, index.departments.nodes, undefined, undefined, true);
 		for (let key in departmentData) {
@@ -386,12 +413,14 @@ class Report extends Component {
 		const segmentData = this._getFilteredFactsheets(index, segments, undefined, undefined, true);
 		const platformsLvl1 = this._getFilteredFactsheets(index, index.platformsLvl1.nodes, platformTagId, 'Platform', false);
 		const platformsLvl2 = this._getFilteredFactsheets(index, index.platformsLvl2.nodes, platformTagId, 'Platform', true);
-		const applications = {
-			planned: this._getFilteredFactsheets(index, index.applicationsPlanned.nodes, [applicationTagId, itTagId], ['Application', 'IT'], true),
-			active: this._getFilteredFactsheets(index, index.applicationsActive.nodes, [applicationTagId, itTagId], ['Application', 'IT'], true)
+		const boxValueData = {
+			applications: applicationData,
+			csmInterfaces: csmInterfaceData,
+			markets: marketData,
+			segments: segmentData,
+			departments: departmentData
 		};
-		const csmInterfaces = this._getFilteredFactsheets(index, index.csmInterfaces.nodes, csmTagId, 'CSM', true);
-		const viewData = PTVsDef.parseDescriptions(markets, platformsLvl2);
+		const viewData = ViewUtils.parseDescriptions(markets, platformsLvl2);
 		// build template view data
 		let sideAreaData = {};
 		const mainAreaData = [];
@@ -405,21 +434,15 @@ class Report extends Component {
 			let mainAreaPos = 0;
 			switch (platformLvl1.name) {
 				case BC_BUSINESS_MANAGEMENT:
-					sideAreaData = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData, departmentData);
+					sideAreaData = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, boxValueData, viewData.blockColors);
 					return;
 				case BC_INTEGRATION_LAYERS:
-					mainIntermediateAreaData = subIndex.nodes.find((rel) => {
+					const integrationPlatform = subIndex.nodes.find((rel) => {
 						const platformLvl2 = platformsLvl2[rel.id];
 						return platformLvl2 && platformLvl2.name === BC_INTEGRATION;
 					});
-					if (mainIntermediateAreaData) {
-						// get factsheet object
-						mainIntermediateAreaData = platformsLvl2[mainIntermediateAreaData.id];
-						// strip data
-						mainIntermediateAreaData = {
-							id: mainIntermediateAreaData.id,
-							name: mainIntermediateAreaData.name
-						};
+					if (integrationPlatform) {
+						mainIntermediateAreaData = this._createAreaDataEntry(index, platformsLvl2[integrationPlatform.id], boxValueData, viewData.blockColors, true);
 					}
 					return;
 				case BC_CHANNELS_LAYER:
@@ -439,8 +462,13 @@ class Report extends Component {
 					return;
 			}
 			// add to templateViewMainAreaData
-			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData, departmentData);
+			mainAreaData[mainAreaPos] = this._createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, boxValueData, viewData.blockColors);
 		});
+		// build project roadmap data
+		// TODO
+		// TODO old as second, new as first view
+		const projectData = this._getProjectData(index);
+		console.log(projectData);
 		console.log(viewData);
 		lx.hideSpinner();
 		const firstSelectedMarket = marketOptions[0].value; // id of the first market
@@ -458,6 +486,80 @@ class Report extends Component {
 			templateViewMainAreaData: mainAreaData,
 			templateViewMainIntermediateAreaData: mainIntermediateAreaData
 		});
+	}
+
+	_createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, boxValueData, blockColors) {
+		const result = {
+			id: platformLvl1.id,
+			name: platformLvl1.name,
+			items: []
+		};
+		subIndex.nodes.forEach((rel) => {
+			const platformLvl2 = platformsLvl2[rel.id];
+			if (!platformLvl2) {
+				return;
+			}
+			result.items.push(this._createAreaDataEntry(index, platformLvl2, boxValueData, blockColors, false));
+		});
+		// sort by name
+		result.items.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
+		return result;
+	}
+
+	_createAreaDataEntry(index, platform, boxValueData, blockColors, isIntegration) {
+		const result = {
+			id: platform.id,
+			name: platform.name,
+			boxValues: ViewUtils.getBoxValues(index, platform, boxValueData)
+		};
+		// compute remaining blockColors
+		ViewUtils.addSimObsBlockColors(blockColors, result, isIntegration);
+		return result;
+	}
+
+	_getApplicationData(index) {
+		const result = {
+			all: {},
+			active: {},
+			planned: {}
+		};
+		index.applications.nodes.forEach((application) => {
+			if (!Utilities.hasLifecycle(application)) {
+				return;
+			}
+			application.lifecycles = Utilities.getLifecycles(application);
+			application.currentLifecycle = Utilities.getCurrentLifecycle(application, ViewUtils.CURRENT_DATE_TIME);
+			result.all[application.id] = application;
+			switch (application.currentLifecycle.phase) {
+				case ViewUtils.LIFECYLCE_PHASE_PLAN:
+				case ViewUtils.LIFECYLCE_PHASE_PHASE_IN:
+					result.planned[application.id] = application;
+					break;
+				case ViewUtils.LIFECYLCE_PHASE_ACTIVE:
+				case ViewUtils.LIFECYLCE_PHASE_PHASE_OUT:
+					result.active[application.id] = application;
+					break;
+				case ViewUtils.LIFECYLCE_PHASE_END_OF_LIFE:
+				default:
+					break;
+			}
+		});
+		return result;
+	}
+
+	_getProjectData(index) {
+		const result = [];
+		index.projects.nodes.forEach((project) => {
+			if (!Utilities.hasLifecycle(project)) {
+				return;
+			}
+			project.lifecycles = Utilities.getLifecycles(project);
+			project.currentLifecycle = Utilities.getCurrentLifecycle(project, ViewUtils.CURRENT_DATE_TIME);
+			result.push(project);
+		});
+		return result;
 	}
 
 	_getMarketIDForDepartment(marketData, departmentData, department) {
@@ -514,31 +616,6 @@ class Report extends Component {
 		return result;
 	}
 
-	_createTemplateViewEntry(index, platformLvl1, subIndex, platformsLvl2, applications, csmInterfaces, marketData, segmentData, departmentData) {
-		const result = {
-			id: platformLvl1.id,
-			name: platformLvl1.name,
-			items: []
-		};
-		subIndex.nodes.forEach((rel) => {
-			const platformLvl2 = platformsLvl2[rel.id];
-			if (!platformLvl2) {
-				return;
-			}
-			result.items.push({
-				id: platformLvl2.id,
-				name: platformLvl2.name,
-				csmAdoValues: PTVsDef.getCSMAdoptionValues(index, platformLvl2, applications, csmInterfaces, marketData, segmentData, departmentData),
-				simObsValues: 'TODO'
-			});
-		});
-		// sort by name
-		result.items.sort((a, b) => {
-			return a.name.localeCompare(b.name);
-		});
-		return result;
-	}
-
 	_handleSelectMarket(option) {
 		const marketID = option.value;
 		if (this.state.selectedMarket === marketID) {
@@ -566,8 +643,137 @@ class Report extends Component {
 		});
 	}
 
+	_handleCloseModalDialog() {
+		this.setState({
+			showDialog: false,
+			dialogValueBoxId: null,
+			dialogPlatformId: null,
+			dialogTableData: null,
+			dialogWidth: '0px'
+		});
+	}
+
+	_handleValueBoxClick(platformId, valueBoxId) {
+		return (evt) => {
+			evt.preventDefault();
+			const viewName = this.state.showView.name;
+			this.setState({
+				showDialog: true,
+				dialogValueBoxId: valueBoxId,
+				dialogPlatformId: platformId,
+				dialogTableData: this._createDialogTableData(platformId, valueBoxId),
+				dialogWidth: ViewUtils.isCSMAdoptionView(viewName) ? '1000px' : '400px'
+			});
+		};
+	}
+
+	_createDialogTableData(platformId, valueBoxId) {
+		const result = [];
+		const platform = this._getPlatformFromAreaData(platformId);
+		let viewType = null;
+		let valueType = null;
+		let createEntryMethod = null;
+		switch (valueBoxId) {
+			case ViewUtils.LEGEND_CSM_ADOPTION_ADDITIONAL.current.text:
+				viewType = 'csmado';
+				valueType = 'current';
+				createEntryMethod = '_createDialogTableDataEntryForCsmAdo';
+				break;
+			case ViewUtils.LEGEND_CSM_ADOPTION_ADDITIONAL.planned.text:
+				viewType = 'csmado';
+				valueType = 'planned';
+				createEntryMethod = '_createDialogTableDataEntryForCsmAdo';
+				break;
+			case ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL.current.text:
+				viewType = 'simobs';
+				valueType = 'current';
+				createEntryMethod = '_createDialogTableDataEntryForSimObs';
+				break;
+			case ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL.currentObsolete.text:
+				viewType = 'simobs';
+				valueType = 'currentObsolete';
+				createEntryMethod = '_createDialogTableDataEntryForSimObs';
+				break;
+			case ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL.target.text:
+				viewType = 'simobs';
+				valueType = 'target';
+				createEntryMethod = '_createDialogTableDataEntryForSimObs';
+				break;
+			case ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL.targetObsolete.text:
+				viewType = 'simobs';
+				valueType = 'targetObsolete';
+				createEntryMethod = '_createDialogTableDataEntryForSimObs';
+				break;
+			default:
+				break;
+		}
+		if (!viewType || !valueType || !createEntryMethod) {
+			return result;
+		}
+		const stack = ViewUtils.getStackFromView(this.state.showView.name);
+		const values = platform.boxValues[this.state.selectedMarket][stack][viewType][valueType];
+		if (Array.isArray(values)) {
+			values.forEach((e) => {
+				result.push(this[createEntryMethod](e));
+			});
+		} else {
+			for (let key in values) {
+				result.push(this[createEntryMethod](values, key));
+			}
+		}
+		// sort by name
+		result.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
+		return result;
+	}
+
+	_createDialogTableDataEntryForCsmAdo(values, csmApiName) {
+		const interfaces = [];
+		for (let interfaceId in values[csmApiName].interfaces) {
+			interfaces.push(values[csmApiName].interfaces[interfaceId]);
+		}
+		const applications = [];
+		for (let applicationId in values[csmApiName].applications) {
+			applications.push(values[csmApiName].applications[applicationId]);
+		}
+		// sort by name
+		interfaces.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
+		applications.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
+		return {
+			name: csmApiName,
+			applicationNames: applications.map((e) => {
+				return e.name;
+			}),
+			applicationIds: applications.map((e) => {
+				return e.id;
+			}),
+			interfaceNames: interfaces.map((e) => {
+				return e.name;
+			}),
+			interfaceIds: interfaces.map((e) => {
+				return e.id;
+			})
+		};
+	}
+
+	_createDialogTableDataEntryForSimObs(value) {
+		return {
+			id: value.id,
+			name: value.name
+		};
+	}
+
 	_getPlatformFromAreaData(platformId) {
-		// could be in sideArea or mainArea
+		// could be in sideArea or mainArea or mainIntermediateArea
+		const mainIntermediateArea = this.state.templateViewMainIntermediateAreaData;
+		if (mainIntermediateArea.id === platformId) {
+			return mainIntermediateArea;
+		}
 		const sideArea = this.state.templateViewSideAreaData;
 		let entry = sideArea.items.find((entry) => {
 			return entry.id === platformId;
@@ -585,6 +791,19 @@ class Report extends Component {
 			}
 		}
 		return entry;
+	}
+
+	_createModalDialogTitle() {
+		const viewName = this.state.showView.name;
+		const platform = this._getPlatformFromAreaData(this.state.dialogPlatformId);
+		if (!platform) {
+			// id is given, if the dialog should be shown
+			return 'Hidden';
+		}
+		if (ViewUtils.isCSMAdoptionView(viewName) || ViewUtils.isSimplificationObsolescenceView(viewName)) {
+			return this.state.dialogValueBoxId + ' for ' + platform.name;
+		}
+		return 'Unknown title';
 	}
 
 	render() {
@@ -614,37 +833,105 @@ class Report extends Component {
 	_renderSuccessful() {
 		const market = this.state.templateViewMarketData[this.state.selectedMarket];
 		return (
-			<div className='container-fluid'>
-				<div className='row'>
-					<div className='col-lg-2' style={{ height: '4em' }}>
-						<SelectField useSmallerFontSize
-							id='market'
-							label='Market'
-							options={this.state.selectMarketFieldData}
-							value={market.id}
-							onChange={this._handleSelectMarket} />
+			<div>
+				<ModalDialog
+					show={this.state.showDialog}
+					width={this.state.dialogWidth}
+					title={this._createModalDialogTitle()}
+					content={this._renderModalDialogContent}
+					onClose={this._handleCloseModalDialog} />
+				<div className='container-fluid'>
+					<div className='row'>
+						<div className='col-lg-2' style={{ height: '4em' }}>
+							<SelectField useSmallerFontSize
+								id='market'
+								label='Market'
+								options={this.state.selectMarketFieldData}
+								value={market.id}
+								onChange={this._handleSelectMarket} />
+						</div>
+						<div className='col-lg-10 text-muted' style={{
+							height: '4em',
+							lineHeight: '4em',
+							verticalAlign: 'bottom'
+						}}>
+							Choose a market for which one you want to see more details.
+						</div>
 					</div>
-					<div className='col-lg-10 text-muted' style={{
-						height: '4em',
-						lineHeight: '4em',
-						verticalAlign: 'bottom'
-					}}>
-						Choose a market for which one you want to see more details.
-					</div>
-				</div>
-				<div className='row'>
-					<div className='col-lg-2'>
-						{this._renderViewList(market)}
-					</div>
-					<div className='col-lg-10'>
-						{this._renderHeading(market)}
-						<div id='export'>
-							{this._renderViewArea(market)}
+					<div className='row'>
+						<div className='col-lg-2'>
+							{this._renderViewList(market)}
+						</div>
+						<div className='col-lg-10'>
+							{this._renderHeading(market)}
+							{this._renderAdditionalContentNotes()}
+							<div id='export'>
+								{this._renderViewArea(market)}
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		);
+	}
+
+	_renderModalDialogContent() {
+		const viewName = this.state.showView.name;
+		if (ViewUtils.isCSMAdoptionView(viewName)) {
+			return (
+				<BootstrapTable data={this.state.dialogTableData} keyField='name'
+					 striped hover search exportCSV height='300px'
+					 options={{ clearSearch: true }}>
+					<TableHeaderColumn dataSort
+						 dataField='name'
+						 width='300px'
+						 dataAlign='left'
+						 dataFormat={TableUtilities.formatOptionalText}
+						 csvHeader='csm-api-name'
+						 filter={TableUtilities.textFilter}
+						>CSM API</TableHeaderColumn>
+					<TableHeaderColumn
+						 dataField='applicationNames'
+						 width='300px'
+						 dataAlign='left'
+						 dataFormat={TableUtilities.formatLinkArrayFactsheets(this.state.setup)}
+						 formatExtraData={{ type: 'Application', id: 'applicationIds' }}
+						 csvHeader='provider-applications'
+						 csvFormat={TableUtilities.formatArray}
+						 csvFormatExtraData=';'
+						 filter={TableUtilities.textFilter}
+						>Provider applications</TableHeaderColumn>
+					<TableHeaderColumn
+						 dataField='interfaceNames'
+						 width='300px'
+						 dataAlign='left'
+						 dataFormat={TableUtilities.formatLinkArrayFactsheets(this.state.setup)}
+						 formatExtraData={{ type: 'Interface', id: 'interfaceIds' }}
+						 csvHeader='connected-interfaces'
+						 csvFormat={TableUtilities.formatArray}
+						 csvFormatExtraData=';'
+						 filter={TableUtilities.textFilter}
+						>Connected interfaces</TableHeaderColumn>
+				</BootstrapTable>
+			);
+		}
+		if (ViewUtils.isSimplificationObsolescenceView(viewName)) {
+			return (
+				<BootstrapTable data={this.state.dialogTableData} keyField='id'
+					 striped hover search exportCSV height='300px'
+					 options={{ clearSearch: true }}>
+					<TableHeaderColumn
+						 dataField='name'
+						 width='300px'
+						 dataAlign='left'
+						 dataFormat={TableUtilities.formatLinkFactsheet(this.state.setup)}
+						 formatExtraData={{ type: 'Application', id: 'id' }}
+						 csvHeader='application'
+						>Application</TableHeaderColumn>
+				</BootstrapTable>
+			);
+		}
+		return null;
 	}
 
 	_renderViewList(market) {
@@ -681,19 +968,35 @@ class Report extends Component {
 
 	_renderViewArea(market) {
 		const viewName = this.state.showView.name;
-		if (PTVsDef.isPlatformTransformationView(viewName)) {
-			return this._renderTemplateView(market, 0, PTVsDef.getStackFromView(viewName));
+		if (ViewUtils.isPlatformTransformationView(viewName)) {
+			return this._renderTemplateView(market, 0, ViewUtils.getStackFromView(viewName));
 		}
-		if (PTVsDef.isCSMAdoptionView(viewName)) {
-			return this._renderTemplateView(market, 1, PTVsDef.getStackFromView(viewName));
+		if (ViewUtils.isCSMAdoptionView(viewName)) {
+			return this._renderTemplateView(market, 1, ViewUtils.getStackFromView(viewName));
 		}
-		if (PTVsDef.isSimplificationObsolescenceView(viewName)) {
-			return this._renderTemplateView(market, 2, PTVsDef.getStackFromView(viewName));
+		if (ViewUtils.isSimplificationObsolescenceView(viewName)) {
+			return this._renderTemplateView(market, 2, ViewUtils.getStackFromView(viewName));
 		}
-		if (PTVsDef.isNarrativeView(viewName)) {
+		if (ViewUtils.isNarrativeView(viewName)) {
 			return (<NarrativeView data={this.state.templateViewData.narratives[market.id].list} />);
 		}
-		if (PTVsDef.isProjectRoadmapView(viewName)) {
+		if (ViewUtils.isProjectRoadmapView(viewName)) {
+			// TODO remove toggle
+			return (
+				<div>
+					<button onClick={() => {
+						this.setState({ showRoadmapData: !this.state.showRoadmapData });
+					}}>{this.state.showRoadmapData ? 'hide' : 'show'}</button>
+					<ProjectRoadmapView showData={this.state.showRoadmapData} data={[]} />
+				</div>
+			);
+		}
+		// TODO remove
+		if (ViewUtils.isProjectRoadmapView2(viewName)) {
+			// TODO
+			// - project roadmap
+			// -> +3 years time frame
+			// -> start ab current quartal
 			const chartConfig = {
 				timeSpan: ['2016-01-01', '2019-01-01'],
 				gridlinesXaxis: true,
@@ -711,14 +1014,13 @@ class Report extends Component {
 	}
 
 	_renderTemplateView(market, view, stack) {
-		// TODO additionalContent
 		switch (view) {
 			case 0:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PTVsDef.LEGEND_PLATFORM_TRANFORMATION}
+					legend={ViewUtils.LEGEND_PLATFORM_TRANFORMATION}
 					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]}
 					market={market.id}
 					stack={stack} />);
@@ -727,33 +1029,29 @@ class Report extends Component {
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PTVsDef.LEGEND_CSM_ADOPTION}
+					legend={ViewUtils.LEGEND_CSM_ADOPTION}
 					colorScheme={this.state.templateViewData.blockColors[market.id].csmado[stack]}
 					market={market.id}
 					stack={stack}
 					additionalContent={this._renderAdditionalContentForCSMAdoption}
-					additionalContentLegend={this._renderAdditionalContentLegendForCSMAdoption} />);
+					additionalContentLegend={this._renderAdditionalContentLegend(ViewUtils.LEGEND_CSM_ADOPTION_ADDITIONAL)} />);
 			case 2:
 				return (<TemplateView
 					sideArea={this.state.templateViewSideAreaData}
 					mainArea={this.state.templateViewMainAreaData}
 					mainIntermediateArea={this.state.templateViewMainIntermediateAreaData}
-					legend={PTVsDef.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
-					colorScheme={this.state.templateViewData.blockColors[market.id].platform[stack]}
+					legend={ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE}
+					colorScheme={this.state.templateViewData.blockColors[market.id].simobs[stack]}
 					market={market.id}
 					stack={stack}
-					additionalContent={undefined}
-					additionalContentLegend={undefined} />);
+					additionalContent={this._renderAdditionalContentForSimplificationObsolescence}
+					additionalContentLegend={this._renderAdditionalContentLegend(ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL)} />);
 		}
 	}
 
 	_renderAdditionalContentForCSMAdoption(marketId, stack, platformId) {
 		const platform = this._getPlatformFromAreaData(platformId);
-		if (!platform) {
-			// id could also be integration, which must be excluded
-			return null;
-		}
-		const values = platform.csmAdoValues[marketId][stack];
+		const values = platform.boxValues[marketId][stack].csmado;
 		const current = values.current;
 		const planned = values.planned;
 		const target = this.state.templateViewData.csmAdoTargets[marketId][stack][platformId];
@@ -763,46 +1061,117 @@ class Report extends Component {
 		if (!currentCount && !plannedCount && !targetCount) {
 			return null;
 		}
-		const legend = PTVsDef.LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL;
+		const legend = ViewUtils.LEGEND_CSM_ADOPTION_ADDITIONAL;
 		return (
-			<div className='text-right' style={{
-				position: 'absolute',
-				top: '0px',
-				left: '0px',
-				width: '100%',
-				padding: '0.2em'
-			}}>
-				<p style={{
-					margin: '0px',
-					padding: '0px',
-					lineHeight: '1.3em'
-				}}>
-					<span className={legend.current.cssClass} style={{ border: '1px solid black' }}>{currentCount}</span>
-					<span className={legend.planned.cssClass} style={{ border: '1px solid black' }}>{plannedCount}</span>
-				</p>
-				<p style={{
-					margin: '0px',
-					padding: '0px',
-					lineHeight: '1.3em'
-				}}>
-					<span className={legend.target.cssClass} style={{ border: '1px solid black' }}>{targetCount}</span>
-				</p>
+			<div style={VALUE_BOX_ELEMENT_STYLE}>
+				<table style={{ display: 'inline-block' }}>
+					<tbody>
+						<tr style={VALUE_BOX_GROUP_STYLE}>
+							<td>
+								{this._renderValueBoxWithLink(platformId, legend.current.text, legend.current.cssClass, currentCount)}
+							</td>
+							<td>
+								{this._renderValueBoxWithLink(platformId, legend.planned.text, legend.planned.cssClass, plannedCount)}
+							</td>
+						</tr>
+						<tr style={VALUE_BOX_GROUP_STYLE}>
+							<td></td>
+							<td>
+								{this._renderValueBox(legend.target.cssClass, targetCount)}
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		);
 	}
 
-	_renderAdditionalContentLegendForCSMAdoption() {
-		const legend = PTVsDef.LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL;
+	_renderAdditionalContentForSimplificationObsolescence(marketId, stack, platformId) {
+		const platform = this._getPlatformFromAreaData(platformId);
+		const values = platform.boxValues[marketId][stack].simobs;
+		const current = values.current.length;
+		const currentObsolete = values.currentObsolete.length;
+		const target = values.target.length;
+		const targetObsolete = values.targetObsolete.length;
+		if (!current && !currentObsolete && !target && !targetObsolete) {
+			return null;
+		}
+		const legend = ViewUtils.LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL;
 		return (
-			<div key='additionalLegend'>
-				<h3>Values</h3>
-				<ul className='list-unstyled'>
-					<li><span className={legend.current.cssClass} style={{ border: '1px solid black' }}>{legend.current.text}</span></li>
-					<li><span className={legend.planned.cssClass} style={{ border: '1px solid black' }}>{legend.planned.text}</span></li>
-					<li><span className={legend.target.cssClass} style={{ border: '1px solid black' }}>{legend.target.text}</span></li>
-				</ul>
+			<div style={VALUE_BOX_ELEMENT_STYLE}>
+				<table style={{ display: 'inline-block' }}>
+					<tbody>
+						<tr style={VALUE_BOX_GROUP_STYLE}>
+							<td>
+								{this._renderValueBoxWithLink(platformId, legend.current.text, legend.current.cssClass, current)}
+							</td>
+							<td>
+								{this._renderValueBoxWithLink(platformId, legend.currentObsolete.text, legend.currentObsolete.cssClass, currentObsolete)}
+							</td>
+						</tr>
+						<tr style={VALUE_BOX_GROUP_STYLE}>
+							<td>
+								{this._renderValueBoxWithLink(platformId, legend.target.text, legend.target.cssClass, target)}
+							</td>
+							<td>
+								{this._renderValueBoxWithLink(platformId, legend.targetObsolete.text, legend.targetObsolete.cssClass, targetObsolete)}
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		);
+	}
+
+	_renderValueBoxWithLink(platformId, valueBoxId, cssClass, value) {
+		if (value < 1) {
+			return this._renderValueBox(cssClass, value);
+		}
+		return (
+			<a href='#' onClick={this._handleValueBoxClick(platformId, valueBoxId)}>
+				{this._renderValueBox(cssClass, value)}
+			</a>
+		);
+	}
+
+	_renderValueBox(cssClass, value) {
+		return (
+			<span className={cssClass} style={VALUE_BOX_STYLE}>
+				{value}
+			</span>
+		);
+	}
+
+	_renderAdditionalContentLegend(legend) {
+		return () => {
+			return (
+				<div key='additionalLegend'>
+					<h3>Values</h3>
+					<ul className='list-unstyled'>
+						{Object.keys(legend).map((k, i) => {
+							return (
+								<li key={i}>
+									<span className={legend[k].cssClass} style={VALUE_BOX_STYLE}>
+										{legend[k].text}
+									</span>
+								</li>
+							);
+						})}
+					</ul>
+				</div>
+			);
+		};
+	}
+
+	_renderAdditionalContentNotes() {
+		const viewName = this.state.showView.name;
+		if (ViewUtils.isCSMAdoptionView(viewName) || ViewUtils.isSimplificationObsolescenceView(viewName)) {
+			return (
+				<p className='small text-muted'>Click on one of the value boxes to see what's getting counted.</p>
+			);
+		}
+		// TODO add help text for narrative & project roadmap view
+		return null;
 	}
 }
 

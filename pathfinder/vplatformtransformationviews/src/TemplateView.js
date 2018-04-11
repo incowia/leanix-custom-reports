@@ -82,6 +82,7 @@ class TemplateView extends Component {
 	}
 
 	_renderBlock(item, style) {
+		// TODO link
 		style.position = 'relative';
 		return (
 			<div key={item.id} className='well well-sm' style={style}>

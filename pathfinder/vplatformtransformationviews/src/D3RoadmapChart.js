@@ -1,5 +1,7 @@
 import * as d3 from 'd3';
 
+// TODO remove
+
 const FIRST_RECORD = 0;
 const IDX_XRANGE_START = 0;
 const IDX_XRANGE_END = 1;

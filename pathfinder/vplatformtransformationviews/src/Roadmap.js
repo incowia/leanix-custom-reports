@@ -3,28 +3,23 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import D3RoadmapChart from './D3RoadmapChart';
 
+// TODO remove
+
 class Roadmap extends Component {
 
 	constructor(props) {
 		super(props);
-		this.state = {
-			width: null,
-			height: null
-		};
-
 		this.componentId = 'roadmap';
 		this.chartInstance = null;
-
-		this._updateDimensions = this._updateDimensions.bind(this);
+		this._handleResize = this._handleResize.bind(this);
 	}
 
-	componentWillMount() {
-		this._updateDimensions();
+	_handleResize() {
+		this.forceUpdate();
 	}
 
 	componentDidMount() {
-		window.addEventListener("resize", this._updateDimensions);
-
+		window.addEventListener('resize', this._handleResize);
 		if (this.chartInstance) {
 			return;
 		}
@@ -40,21 +35,12 @@ class Roadmap extends Component {
 	}
 
 	componentWillUnmount() {
-		window.removeEventListener("resize", this._updateDimensions);
+		window.removeEventListener('resize', this._handleResize);
 		if (this.chartInstance) {
 			this.chartInstance.destroy();
 			this.chartInstance = undefined;
 		}
 	}
-
-	_updateDimensions() {
-		const w = window;
-        const d = document.documentElement;
-        const b = d.getElementsByTagName('body')[0];
-        const width = w.innerWidth || d.clientWidth || b.clientWidth;
-        const height = w.innerHeight|| d.clientHeight|| b.clientHeight;
-        this.setState({width: width, height: height});
-    }
 
 	render() {
 		if (this.chartInstance) {

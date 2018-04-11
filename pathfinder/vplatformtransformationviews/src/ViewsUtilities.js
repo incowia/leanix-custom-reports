@@ -5,10 +5,16 @@ const CURRENT_DATE = new Date();
 CURRENT_DATE.setHours(0, 0, 0, 0);
 const CURRENT_DATE_TIME = CURRENT_DATE.getTime();
 
-function _formatDateNumber(n) {
-	return n < 10 ? '0' + n : n;
-}
-const CURRENT_DATE_STRING = CURRENT_DATE.getFullYear() + '-' + _formatDateNumber(CURRENT_DATE.getMonth() + 1) + '-' + _formatDateNumber(CURRENT_DATE.getDate());
+const TODAY_PLUS_3_YEARS_DATE = new Date(CURRENT_DATE_TIME);
+TODAY_PLUS_3_YEARS_DATE.setFullYear(TODAY_PLUS_3_YEARS_DATE.getFullYear() + 3);
+const TODAY_PLUS_3_YEARS_TIME = TODAY_PLUS_3_YEARS_DATE.getTime();
+
+// lifecycle phases
+const PLAN = 'plan';
+const PHASE_IN = 'phaseIn';
+const ACTIVE = 'active';
+const PHASE_OUT = 'phaseOut';
+const END_OF_LIFE = 'endOfLife';
 
 // color definitions
 const GREEN = {
@@ -17,7 +23,7 @@ const GREEN = {
 };
 const YELLOW = {
 	name: 'yellow',
-	cssColor: 'yellow'
+	cssColor: '#EDF060'
 };
 const ORANGE = {
 	name: 'orange',
@@ -25,7 +31,7 @@ const ORANGE = {
 };
 const RED = {
 	name: 'red',
-	cssColor: '#FF5656'
+	cssColor: '#EB7474'
 };
 const GRAY = {
 	name: 'gray',
@@ -89,6 +95,7 @@ const LEGEND_PLATFORM_TRANFORMATION_VIEW = [{
 		text: 'No information available / not supported by IT'
 	}
 ];
+const LEGEND_CSM_ADOPTION_VIEW = LEGEND_PLATFORM_TRANFORMATION_VIEW;
 const LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL = {
 	current: {
 		cssClass: 'label label-default',
@@ -103,7 +110,6 @@ const LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL = {
 		text: 'Target # of CSM APIs to be achieved'
 	}
 };
-const LEGEND_CSM_ADOPTION_VIEW = LEGEND_PLATFORM_TRANFORMATION_VIEW;
 const LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW = [{
 		color: GREEN.cssColor,
 		text: 'There is a <=25% gap between the current and target # of applications'
@@ -112,9 +118,27 @@ const LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW = [{
 		text: 'There is a >25% to <50% gap between the current and target # of applications'
 	}, {
 		color: RED.cssColor,
-		text: 'There is a >50% gap between the current and target # of applications'
+		text: 'There is a >=50% gap between the current and target # of applications'
 	}
 ];
+const LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW_ADDITIONAL = {
+	current: {
+		cssClass: 'label label-default',
+		text: 'Current # of applications'
+	},
+	currentObsolete: {
+		cssClass: 'label label-danger',
+		text: 'Current # of obsolete applications'
+	},
+	target: {
+		cssClass: 'label label-primary',
+		text: 'Target # of applications'
+	},
+	targetObsolete: {
+		cssClass: 'label label-warning',
+		text: 'Target # of obsolete applications'
+	}
+};
 
 // key definitions
 const KEY_PLATFORM = 'platform';
@@ -306,7 +330,7 @@ function _buildCSSBackground(colors) {
 		return 'linear-gradient(to right, ' + colors + ')'
 	}
 	// only one, use it directly
-	return COLOR_MAP[colors.trim()];
+	return COLOR_MAP[colors.toLowerCase().trim()];
 }
 
 function _getCSMAdoptionTargets(text) {
@@ -386,6 +410,8 @@ function getMarketViews(index, market) {
 	}
 	stacks.push(VIEW_NARRATIVE);
 	stacks.push(VIEW_PROJECT_ROADMAP);
+	// TODO remove
+	stacks.push(VIEW_PROJECT_ROADMAP + ' 2');
 	return stacks;
 }
 
@@ -443,28 +469,41 @@ function isProjectRoadmapView(viewName) {
 	if (!viewName) {
 		return false;
 	}
-	return viewName.includes(VIEW_PROJECT_ROADMAP);
+	return viewName.includes(VIEW_PROJECT_ROADMAP) /* TODO remove */ && !viewName.includes('2');
 }
 
-function getCSMAdoptionValues(index, platform, applications, csmInterfaces, marketData, segmentData, departmentData) {
-	if (!platform || !applications || !csmInterfaces || !marketData || !segmentData || !departmentData) {
+function isProjectRoadmapView2(viewName) {
+	// TODO remove
+	if (!viewName) {
+		return false;
+	}
+	return viewName.includes(VIEW_PROJECT_ROADMAP + ' 2');
+}
+
+function getBoxValues(index, platform, boxValueData) {
+	if (!platform || !boxValueData) {
 		return;
 	}
 	const result = {};
 	// prepare result object
 	// add markets
-	for (let key in marketData) {
+	for (let key in boxValueData.markets) {
 		result[key] = {
-			name: marketData[key].name
+			name: boxValueData.markets[key].name
 		};
-	}
-	// add stacks
-	for (let key in result) {
-		const market = result[key];
+		// add stacks
 		VALID_STACKS.forEach((stack) => {
-			market[stack] = {
-				current: {},
-				planned: {}
+			result[key][stack] = {
+				csmado: {
+					current: {},
+					planned: {}
+				},
+				simobs: {
+					current: [],
+					currentObsolete: [],
+					target: [],
+					targetObsolete: []
+				}
 			};
 		});
 	}
@@ -473,34 +512,52 @@ function getCSMAdoptionValues(index, platform, applications, csmInterfaces, mark
 		return result;
 	}
 	subIndex.nodes.forEach((rel) => {
-		const applicationPlanned = applications.planned[rel.id];
-		const applicationActive = applications.active[rel.id];
-		if (!applicationPlanned && !applicationActive) {
+		const application = boxValueData.applications.all[rel.id];
+		if (!application) {
 			return;
 		}
-		const application = applicationPlanned ? applicationPlanned : applicationActive;
-		const market = _getMarket(marketData, departmentData, application);
+		const market = _getMarket(boxValueData.markets, boxValueData.departments, application);
 		if (!market) {
 			return;
 		}
-		const csmApis = _getCSMAPIs(application, csmInterfaces);
-		if (!csmApis) {
-			return;
-		}
-		const stacks = _getStacksFromApplication(index, application, market, segmentData);
+		const stacks = _getStacksFromApplication(index, application, market, boxValueData.segments);
 		const marketResults = result[market.id];
-		// application counted for current or planned?
-		// planned: active & planned applications, but only CSM APIs which have an activeFrom in future
-		_addValuesForCSMAPI(stacks, marketResults, 'planned', csmApis, application, (csmApi) => {
-			return csmApi.activeFrom && csmApi.activeFrom > CURRENT_DATE_TIME;
-		});
-		if (application === applicationActive) {
-			// current: only active applications, but only CSM APIs which have no or an activeFrom not in future
-			_addValuesForCSMAPI(stacks, marketResults, 'current', csmApis, application, (csmApi) => {
-				return !csmApi.activeFrom || csmApi.activeFrom <= CURRENT_DATE_TIME;
+		// get values for simplification & obsolescence
+		_addValuesForSimObs(index, stacks, marketResults, application);
+		// get values for csm adoption
+		const applicationPlanned = boxValueData.applications.planned[rel.id];
+		const applicationActive = boxValueData.applications.active[rel.id];
+		if (applicationPlanned || applicationActive) {
+			const csmApis = _getCSMAPIs(application, boxValueData.csmInterfaces);
+			if (!csmApis) {
+				return;
+			}
+			// application counted for current or planned?
+			// planned: active & planned applications, but only CSM APIs which have an activeFrom in future
+			_addValuesForCSMAPI(stacks, marketResults, 'planned', csmApis, application, (csmApi) => {
+				return csmApi.activeFrom && csmApi.activeFrom > CURRENT_DATE_TIME;
 			});
+			if (applicationActive && application.id === applicationActive.id) {
+				// current: only active applications, but only CSM APIs which have no or an activeFrom not in future
+				_addValuesForCSMAPI(stacks, marketResults, 'current', csmApis, application, (csmApi) => {
+					return !csmApi.activeFrom || csmApi.activeFrom <= CURRENT_DATE_TIME;
+				});
+			}
 		}
 	});
+	// sort simObs values by name
+	for (let key in result) {
+		if (key === 'name') {
+			continue;
+		}
+		for (let stack in result[key]) {
+			for (let valueType in result[key][stack].simobs) {
+				result[key][stack].simobs[valueType].sort((a, b) => {
+					return a.name.localeCompare(b.name);
+				});
+			}
+		}
+	}
 	return result;
 }
 
@@ -509,7 +566,7 @@ function _getMarket(marketData, departmentData, application) {
 	if (!subIndex) {
 		return;
 	}
-	// only one market possible
+	// only one market possible, so go with the first one
 	const owningUGID = subIndex.nodes[0].id;
 	// could be a department, in this case the market is its parent
 	const marketID = departmentData[owningUGID] ? departmentData[owningUGID].market : owningUGID;
@@ -560,8 +617,9 @@ function _getStacksFromApplication(index, application, market, segmentData) {
 	}
 	// check mobile & fixed, can only be true, if market allows it
 	if (isMobileFixed) {
-		isMobile = index.includesTag(application, 'Mobile IT');
-		isFixed = index.includesTag(application, 'Fixed IT');
+		const both = index.includesTag(application, 'Mobile & Fixed IT');
+		isMobile = both || index.includesTag(application, 'Mobile IT');
+		isFixed = both || index.includesTag(application, 'Fixed IT');
 	}
 	const result = [];
 	if (isConsumer) {
@@ -597,6 +655,76 @@ function _getStacksFromApplication(index, application, market, segmentData) {
 	return result;
 }
 
+function _addValuesForSimObs(index, stacks, marketResults, application) {
+	const obsolete = _isObsolete(index, application);
+	// current: every active & phaseOut application as today
+	// current obsolete: every current application w/ 'Obsolescence' tag (n-2, Age, OoS)
+	const currentPhase = application.currentLifecycle.phase;
+	if (currentPhase === ACTIVE || currentPhase === PHASE_OUT) {
+		stacks.forEach((stack) => {
+			const values = marketResults[stack].simobs;
+			values.current.push(application);
+		});
+		if (obsolete) {
+			stacks.forEach((stack) => {
+				const values = marketResults[stack].simobs;
+				values.currentObsolete.push(application);
+			});
+		}
+	}
+	// target: every application that has an endOfLife date set between [today; +3 years] is excluded, every application w/o an endOfLife date, but w/ 'Recommendation' tag (Decommission, Replace, Consolidate) as well
+	// target obsolete: every target application w/ 'Obsolescence' tag (n-2, Age, OoS)
+	const endOfLife = Utilities.getLifecyclePhase(application.lifecycles, END_OF_LIFE);
+	if ((endOfLife && endOfLife.startDate <= TODAY_PLUS_3_YEARS_TIME) || _isMarkedForRemoval(index, application)) {
+		return;
+	}
+	stacks.forEach((stack) => {
+		const values = marketResults[stack].simobs;
+		values.target.push(application);
+	});
+	if (obsolete) {
+		stacks.forEach((stack) => {
+			const values = marketResults[stack].simobs;
+			values.targetObsolete.push(application);
+		});
+	}
+}
+
+function _isObsolete(index, application) {
+	return index.includesTag(application, 'Obsolete: n-2') || index.includesTag(application, 'Obsolete: Age') || index.includesTag(application, 'Obsolete: OoS');
+}
+
+function _isMarkedForRemoval(index, application) {
+	return index.includesTag(application, 'Decommission') || index.includesTag(application, 'Replace') || index.includesTag(application, 'Consolidate');
+}
+
+function _addValuesForCSMAPI(stacks, marketResults, valueType, csmApis, application, addIf) {
+	stacks.forEach((stack) => {
+		const values = marketResults[stack].csmado[valueType];
+		csmApis.forEach((csmApi) => {
+			if (!addIf(csmApi)) {
+				return;
+			}
+			// CSM APIs are interfaces, that have a combined name: ${application.name}-${csm_api}
+			const csmApiName = csmApi.name.replace(_quotePattern(application.name), '').trim().substring(1);
+			let valuesForCSMAPI = values[csmApiName];
+			if (!valuesForCSMAPI) {
+				valuesForCSMAPI = {
+					interfaces: {},
+					applications: {}
+				};
+				values[csmApiName] = valuesForCSMAPI;
+			}
+			valuesForCSMAPI.interfaces[csmApi.id] = csmApi;
+			valuesForCSMAPI.applications[application.id] = application;
+		});
+	});
+}
+
+function _quotePattern(s) {
+	return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 function _getCSMAPIs(application, csmInterfaces) {
 	const subIndex = application.relProviderApplicationToInterface;
 	if (!subIndex) {
@@ -618,24 +746,32 @@ function _getCSMAPIs(application, csmInterfaces) {
 	return result;
 }
 
-function _addValuesForCSMAPI(stacks, marketResults, valueType, csmApis, application, addIf) {
-	stacks.forEach((stack) => {
-		const values = marketResults[stack][valueType];
-		csmApis.forEach((csmApi) => {
-			if (!addIf(csmApi)) {
-				return;
+function addSimObsBlockColors(blockColors, areaData, isIntegration) {
+	for (let marketId in areaData.boxValues) {
+		const stackValues = areaData.boxValues[marketId];
+		const marketBlockColors = !blockColors[marketId].simobs ? {} : blockColors[marketId].simobs;
+		blockColors[marketId].simobs = marketBlockColors;
+		VALID_STACKS.forEach((stack) => {
+			const colorScheme = !marketBlockColors[stack] ? new ColorScheme({}) : marketBlockColors[stack];
+			marketBlockColors[stack] = colorScheme;
+			const values = stackValues[stack].simobs;
+			const current = values.current.length;
+			const target = values.target.length;
+			const diff = Math.abs(current - target) / current;
+			let colorCode = GREEN;
+			if (diff >= 0.5) {
+				colorCode = RED;
+			} else if (diff > 0.25) {
+				colorCode = YELLOW;
 			}
-			let valuesForCSMAPI = values[csmApi.id];
-			if (!valuesForCSMAPI) {
-				valuesForCSMAPI = {
-					name: csmApi.name,
-					applications: {}
-				};
-				values[csmApi.id] = valuesForCSMAPI;
+			const cssColor = _buildCSSBackground(colorCode.name);
+			if (isIntegration) {
+				colorScheme._mapping[areaData.id] = [cssColor, cssColor, cssColor];
+			} else {
+				colorScheme._mapping[areaData.id] = [cssColor];
 			}
-			valuesForCSMAPI.applications[application.id] = application;
 		});
-	});
+	}
 }
 
 class ColorScheme {
@@ -661,11 +797,18 @@ class ColorScheme {
 }
 
 export default {
-	CURRENT_DATE_STRING: CURRENT_DATE_STRING,
+	CURRENT_DATE_TIME: CURRENT_DATE_TIME,
+	TODAY_PLUS_3_YEARS_TIME: TODAY_PLUS_3_YEARS_TIME,
+	LIFECYLCE_PHASE_PLAN: PLAN,
+	LIFECYLCE_PHASE_PHASE_IN: PHASE_IN,
+	LIFECYLCE_PHASE_ACTIVE: ACTIVE,
+	LIFECYLCE_PHASE_PHASE_OUT: PHASE_OUT,
+	LIFECYLCE_PHASE_END_OF_LIFE: END_OF_LIFE,
 	LEGEND_PLATFORM_TRANFORMATION: LEGEND_PLATFORM_TRANFORMATION_VIEW,
 	LEGEND_CSM_ADOPTION: LEGEND_CSM_ADOPTION_VIEW,
-	LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL: LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL,
+	LEGEND_CSM_ADOPTION_ADDITIONAL: LEGEND_CSM_ADOPTION_VIEW_ADDITIONAL,
 	LEGEND_SIMPLIFICATION_OBSOLESCENCE: LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW,
+	LEGEND_SIMPLIFICATION_OBSOLESCENCE_ADDITIONAL: LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW_ADDITIONAL,
 	parseDescriptions: parseDescriptions,
 	getMarketViews: getMarketViews,
 	getStackFromView: getStackFromView,
@@ -674,5 +817,8 @@ export default {
 	isSimplificationObsolescenceView: isSimplificationObsolescenceView,
 	isNarrativeView: isNarrativeView,
 	isProjectRoadmapView: isProjectRoadmapView,
-	getCSMAdoptionValues: getCSMAdoptionValues
+	// TODO remove
+	isProjectRoadmapView2: isProjectRoadmapView2,
+	getBoxValues: getBoxValues,
+	addSimObsBlockColors: addSimObsBlockColors
 };
