@@ -84,7 +84,7 @@ const MOCKED_DATA_ROADMAP = [
         data: []
 	},
 	{
-        measure: "CRM, Billing and COM",
+        measure: "CRM, Billing & Commercial Order Management",
         data: [
             ['prj0', "2017-01-01", "2018-07-01", 'Ramp-Up and RFP'],
             ['prj1', "2018-07-01", "2022-04-01", 'Solstice', 50]

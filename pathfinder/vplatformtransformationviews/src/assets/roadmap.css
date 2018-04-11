@@ -6,6 +6,8 @@ text {
     dominant-baseline: middle;
     font-size: 1.5rem;
 	font-weight: bold;
+	white-space: pre-line;
+	text-overflow: ellipsis;
 }
 
 .ticks path,

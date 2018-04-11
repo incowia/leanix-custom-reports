@@ -361,8 +361,8 @@ class D3RoadmapChart {
 				.attr('dy', -SPACE)
 				.attr('class', 'ytitle')
 				.text(function (d) {
-					let label = domDefs[d].label;
-					if (!label) {
+					return d;
+					/* if (!label) {
 						return null;
 					}
 					const maxChars = labelWidth / 10; // rough rule: 10 chars per 100px
@@ -372,7 +372,20 @@ class D3RoadmapChart {
 					if (maxChars < 1) {
 						return '';
 					}
-					return label.slice(0, maxChars - 1) + '…';
+					return label.slice(0, maxChars - 1) + '…'; */
+				}).each(function (d) {
+					// LOOKHERE http://schepers.cc/its-a-wrap
+					// https://developer.mozilla.org/en-US/docs/Web/SVG/Element/tspan
+					const selection = d3.select(this);
+					const node = this;
+					let textLength = node.getComputedTextLength();
+					const maxLength = labelWidth - XGRIDLINE_OVERFLOW - SPACE;
+					let text = d;
+					while (textLength > maxLength && text.length > 0) {
+						text = text.slice(0, -1);
+						selection.text(text + '…');
+						textLength = node.getComputedTextLength();
+					}
 				});
 
 		// horizontal grid lines
@@ -400,7 +413,7 @@ class D3RoadmapChart {
 				.enter()
 					.append('line')
 						.attr('class', 'grid xAxis')
-						.attr('x1', (d => { return this.xScale(d); }))
+						.attr('x1', (d => { console.log(d); return this.xScale(d); }))
 						.attr('x2', (d => { return this.xScale(d); }))
 						.attr('y1', 0)
 						.attr('y2', this.lineHeight * this.data.length + this.bottomSpace);

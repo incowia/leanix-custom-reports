@@ -68,8 +68,8 @@ class ProjectRoadmapView extends Component {
 
 	_computeViewPort(start, end) {
 		let viewPortStart = start;
-		if (start < ViewUtils.CURRENT_DATE_TIME) {
-			viewPortStart = ViewUtils.CURRENT_DATE_TIME;
+		if (start < ViewUtils.CURRENT_QUARTER_TIME) {
+			viewPortStart = ViewUtils.CURRENT_QUARTER_TIME;
 		} else if (start >= ViewUtils.TODAY_PLUS_3_YEARS_TIME) {
 			viewPortStart = undefined;
 		}
@@ -88,7 +88,7 @@ class ProjectRoadmapView extends Component {
 		// add listeners
 		window.addEventListener('resize', this._handleResize);
 		// create the nested D3-based component
-		const instance = new D3ProjectRoadmap(config.id, ViewUtils.CURRENT_DATE_TIME, ViewUtils.TODAY_PLUS_3_YEARS_TIME);
+		const instance = new D3ProjectRoadmap(config.id, ViewUtils.CURRENT_QUARTER_TIME, ViewUtils.TODAY_PLUS_3_YEARS_TIME);
 		// call update immediately, since 'componentDidUpdate' won't be called after mounting
 		instance.update(this._normalizeData(this.props.data));
 		// store the instance in the 'inner state' object of the wrapper
@@ -136,11 +136,11 @@ class ProjectRoadmapView extends Component {
 		this._updateInstance();
 	}
 
-	_handleOnWillUnmount(config, state, div) {
+	_handleOnWillUnmount(config, wrapperState, div) {
 		// remove listeners
 		window.removeEventListener('resize', this._handleResize);
 		// destroy the nested D3-based component
-		state.instance.destroy();
+		wrapperState.instance.destroy();
 	}
 
 	render() {
@@ -150,6 +150,9 @@ class ProjectRoadmapView extends Component {
 		}
 		return (
 			<Wrapper ref={this.wrapper}
+				style={{
+					padding: '.5em .4em .3em .2em'
+				}}
 				id={COMPONENT_ID}
 				onMount={this._handleOnMount}
 				onWillUnmount={this._handleOnWillUnmount} />

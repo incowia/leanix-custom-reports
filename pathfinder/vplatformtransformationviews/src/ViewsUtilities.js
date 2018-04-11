@@ -5,6 +5,17 @@ const CURRENT_DATE = new Date();
 CURRENT_DATE.setHours(0, 0, 0, 0);
 const CURRENT_DATE_TIME = CURRENT_DATE.getTime();
 
+const CURRENT_QUARTER_DATE = new Date(CURRENT_DATE.getFullYear(), getFirstQuarterMonth(CURRENT_DATE), 1);
+function getFirstQuarterMonth(date) {
+	switch (date.getMonth()) {
+		case 0: case 1: case 2: return 0;
+		case 3: case 4: case 5: return 3;
+		case 6: case 7: case 8: return 6;
+		default: return 9;
+	}
+}
+const CURRENT_QUARTER_TIME = CURRENT_QUARTER_DATE.getTime();
+
 const TODAY_PLUS_3_YEARS_DATE = new Date(CURRENT_DATE_TIME);
 TODAY_PLUS_3_YEARS_DATE.setFullYear(TODAY_PLUS_3_YEARS_DATE.getFullYear() + 3);
 const TODAY_PLUS_3_YEARS_TIME = TODAY_PLUS_3_YEARS_DATE.getTime();
@@ -798,6 +809,7 @@ class ColorScheme {
 
 export default {
 	CURRENT_DATE_TIME: CURRENT_DATE_TIME,
+	CURRENT_QUARTER_TIME: CURRENT_QUARTER_TIME,
 	TODAY_PLUS_3_YEARS_TIME: TODAY_PLUS_3_YEARS_TIME,
 	LIFECYLCE_PHASE_PLAN: PLAN,
 	LIFECYLCE_PHASE_PHASE_IN: PHASE_IN,
