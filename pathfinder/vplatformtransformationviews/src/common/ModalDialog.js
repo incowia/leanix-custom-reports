@@ -90,7 +90,8 @@ class ModalDialog extends Component {
 
 ModalDialog.propTypes = {
 	show: PropTypes.bool.isRequired,
-	width: PropTypes.string.isRequired,
+	// TODO movable
+	width: PropTypes.string.isRequired, // TODO minWidth definieren
 	title: PropTypes.string.isRequired,
 	content: PropTypes.func.isRequired,
 	onClose: PropTypes.func.isRequired,
