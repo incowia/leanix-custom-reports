@@ -236,6 +236,7 @@ class Report extends Component {
 	_createConfig() {
 		return {
 			allowEditing: false,
+			allowTableView: false,
 			export: {
 				autoScale: true,
 				exportElementSelector: '#export',

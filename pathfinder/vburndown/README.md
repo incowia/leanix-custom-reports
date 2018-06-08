@@ -1,6 +1,6 @@
-# Application Burndown Chart
+# Burndown
 
-A report that shows lifecyle information of applications in a burndown chart.
+Shows lifecyle information of factsheets in a burndown chart.
 
 ## Table of Contents
 
@@ -21,8 +21,15 @@ In the project directory, one can run:
 
 `npm start`
 
-This command will start the local development server. Please make sure you're logged in the leanIX workspace from `lxr.json` first.
+This command will start the local development server. Please make sure you have properly configured `lxr.json` first.
+It will take the specified API Token from `lxr.json` and automatically do a login to the workspace.
+
+`npm run build`
+
+Builds the report and outputs the build result into `dist` folder.
+
 
 `npm run upload`
 
+Uploads the report to the workspace configured in `lxr.json`.
 Please see [Uploading to LeanIX workspace](https://github.com/leanix/leanix-reporting-cli#uploading-to-leanix-workspace).

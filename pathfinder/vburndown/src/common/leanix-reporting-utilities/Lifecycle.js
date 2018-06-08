@@ -1,4 +1,4 @@
-The MIT License (MIT)
+/* The MIT License (MIT)
 
 Copyright (c) 2018 LeanIX GmbH
 
@@ -18,5 +18,26 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+SOFTWARE. */
 
+// from https://github.com/leanix/leanix-custom-reports
+
+import DateRange from './DateRange';
+
+class Lifecycle extends DateRange {
+
+	constructor(start, name) {
+		super(start, undefined, true, false);
+		if (this.start === undefined || this.start === null) {
+			throw 'Param "start" is mandatory.';
+		}
+		if (!name) {
+			throw 'Param "name" is mandatory.';
+		}
+		this.name = name;
+		this.previous = undefined;
+		this.next = undefined;
+	}
+}
+
+export default Lifecycle;

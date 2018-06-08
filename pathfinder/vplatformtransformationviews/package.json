@@ -1,9 +1,9 @@
 {
 	"name": "vplatformtransformationviews",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "A report with different views of the platform transformation process.",
 	"engines": {
-		"node": ">=8.10.0"
+		"node": ">=8.11.2"
 	},
 	"leanixReport": {
 		"id": "com.vodafone.vplatformtransformationviews",
@@ -42,7 +42,7 @@
 		"webpack-dev-server": "2.5.0"
 	},
 	"dependencies": {
-		"@leanix/reporting": "0.2.2",
+		"@leanix/reporting": "0.2.3",
 		"bootstrap": "3.3.7",
 		"d3": "4.12.2",
 		"react": "16.3.1",

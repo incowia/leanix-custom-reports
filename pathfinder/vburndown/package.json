@@ -1,26 +1,25 @@
 {
-	"name": "vburndown",
-	"version": "1.0.0",
-	"description": "A report that shows lifecyle information of applications in a burndown chart.",
+	"name": "burndown",
+	"version": "2.0.0",
+	"description": "Shows lifecyle information of factsheets in a burndown chart.",
 	"private": true,
 	"engines": {
-		"node": ">=6.11.1"
+		"node": ">=8.11.2"
 	},
 	"leanixReport": {
-		"id": "com.vodafone.vburndown",
-		"title": "Application Burndown Chart",
+		"id": "com.leanix.burndown",
+		"title": "Burndown",
 		"defaultConfig": {}
 	},
 	"scripts": {
+		"build": "lxr build",
 		"start": "lxr start",
 		"upload": "lxr upload",
 		"webpack": "webpack"
 	},
 	"keywords": [
 		"leanix",
-		"custom-report",
-		"burndown",
-		"chart"
+		"custom-report"
 	],
 	"author": "LeanIX GmbH",
 	"license": "MIT",
@@ -43,14 +42,13 @@
 		"webpack-dev-server": "2.5.0"
 	},
 	"dependencies": {
-		"@leanix/reporting": "0.2.0",
+		"@leanix/reporting": "0.2.3",
 		"bootstrap": "3.3.7",
-		"prop-types": "15.5.10",
-		"react": "15.6.1",
-		"react-bootstrap-table": "4.0.3",
-		"react-dom": "15.6.1",
-		"c3": "0.4.18",
-		"moment": "2.18.1",
-		"moment-range": "3.0.3"
+		"c3": "0.4.23",
+		"prop-types": "15.6.1",
+		"react": "16.4.0",
+		"react-bootstrap-table": "4.3.1",
+		"react-dom": "16.4.0",
+		"react-select": "1.2.1"
 	}
 }

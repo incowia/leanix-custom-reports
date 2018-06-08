@@ -10,11 +10,7 @@ module.exports = {
 		filename: 'report.[chunkhash].js'
 	},
 	module: {
-		rules: [
-			/**
-			 * Bundle JavaScript (ES6)
-			 */
-			{
+		rules: [{
 				test: /\.js$/,
 				exclude: /(node_modules|bower_components)/,
 				use: {
@@ -23,11 +19,7 @@ module.exports = {
 						presets: ['env', 'react']
 					}
 				}
-			},
-			/**
-			 * Bundle CSS, images and fonts
-			 */
-			{
+			}, {
 				test: /\.css$/,
 				use: [
 					require.resolve('style-loader'), {
@@ -53,27 +45,16 @@ module.exports = {
 		]
 	},
 	plugins: [
-		/**
-		 * Make jquery and lodash globally available
-		 * (dependencies of @leanix/reporting library)
-		 */
 		new webpack.ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery',
 			'_': 'lodash'
 		}),
-		/**
-		 * Copy assets into dist folder.
-		 */
 		new CopyWebpackPlugin([{
 					from: 'src/assets',
 					to: 'assets'
 				}
 			]),
-		/**
-		 * Insert created bundles as script tags at the end
-		 * of the body tag in index.html
-		 */
 		new HtmlWebpackPlugin({
 			inject: true,
 			template: 'src/index.html'

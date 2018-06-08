@@ -22,7 +22,6 @@ function _createCategories() {
 	// create categories in an interval from now - 6 month to now + 6 months
 	const currentMonthStart = DateUtil.setFirstDayOfMonth(DateUtil.getInitDate(), false);
 	const currentMonthEnd = DateUtil.setLastDayOfMonth(DateUtil.getInitDate(), true);
-	const currentMonth = currentMonthStart.month();
 	const result = [{
 			name: 'time'
 		}
