@@ -22,8 +22,8 @@ SOFTWARE. */
 
 // from https://github.com/leanix/leanix-custom-reports
 
-const INIT_START = getCurrentDate(false);
-const INIT_END = getCurrentDate(true);
+const INIT_START = getCurrent(false);
+const INIT_END = getCurrent(true);
 
 function getInit(asEndDate) {
 	return asEndDate ? INIT_END : INIT_START;
@@ -56,8 +56,28 @@ function getTimestamp(date) {
 	}
 }
 
+function toInputDateString(date) {
+	const dateObj = typeof date === 'number' || date instanceof Number ? new Date(date) : date;
+	// YYYY-MM-DD
+	return dateObj.getFullYear() + '-'
+		+ _ensureTwoDigitString(dateObj.getMonth() + 1) + '-'
+		+ _ensureTwoDigitString(dateObj.getDate());
+}
+
+function _ensureTwoDigitString(num) {
+	return num < 10 ? ('0' + num) : num;
+}
+
+function parseInputDateString(str) {
+	// YYYY-MM-DD
+	const values = str.split('-');
+	return new Date(parseInt(values[0], 10), parseInt(values[1], 10) - 1, parseInt(values[2], 10)).getTime();
+}
+
 export default {
 	getInit: getInit,
 	getCurrent: getCurrent,
-	getTimestamp: getTimestamp
+	getTimestamp: getTimestamp,
+	toInputDateString: toInputDateString,
+	parseInputDateString: parseInputDateString
 };

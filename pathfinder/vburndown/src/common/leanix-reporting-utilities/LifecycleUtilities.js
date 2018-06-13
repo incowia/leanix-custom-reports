@@ -22,6 +22,7 @@ SOFTWARE. */
 
 // from https://github.com/leanix/leanix-custom-reports
 
+import Utilities from './Utilities';
 import Lifecycle from './Lifecycle';
 
 const PLAN = 'plan';
@@ -76,20 +77,30 @@ function getLifecycles(node, model) {
 	}
 	model = _getModel(model);
 	const lifecycles = node.lifecycle.phases.map((e) => {
-		return new Lifecycle(_parseDateString(e.startDate), e.name);
-	});
+		return new Lifecycle(_parseDateString(e.startDate), e.phase);
+	}).sort(getLifecycleSorter(model));
 	// set end, previous & next properties
 	lifecycles.forEach((e) => {
-		const previous = getByPhase(lifecycles, model.previous(e.name));
+		const previous = getPrevious(lifecycles, e, model);
 		if (previous) {
 			e.previous = previous;
 		}
-		const next = getByPhase(lifecycles, model.next(e.name));
+		const next = getNext(lifecycles, e, model);
 		if (next) {
 			e.next = next;
-			e.end = next.end;
+			e.end = next.start;
 		}
 	});
+	return lifecycles;
+}
+
+function getLifecycleSorter(model) {
+	model = _getModel(model);
+	return (first, second) => {
+		const firstIndex = model.phases.indexOf(first.name ? first.name : first);
+		const secondIndex = model.phases.indexOf(second.name ? second.name : second);
+		return firstIndex - secondIndex;
+	};
 }
 
 function _getModel(model) {
@@ -122,13 +133,14 @@ function _getSeqByPhase(lifecycles, lifecycle, model, seqKey) {
 	if (!lifecycle) {
 		return;
 	}
-	let p = getByPhase(lifecycles, model[seqKey](lifecycle.name));
+	let lastPhaseKey = lifecycle.name;
+	let p = getByPhase(lifecycles, model[seqKey](lastPhaseKey));
 	while (!p) {
-		const phaseKey = model[seqKey](lifecycle.name);
-		if (!phaseKey) {
+		lastPhaseKey = model[seqKey](lastPhaseKey);
+		if (!lastPhaseKey) {
 			break;
 		}
-		p = getByPhase(lifecycles, phaseKey);
+		p = getByPhase(lifecycles, lastPhaseKey);
 	}
 	return p;
 }
@@ -157,12 +169,12 @@ function getByPhase(lifecycles, phase) {
 	}
 }
 
-function getDataModel(setup, factsheetName) {
+function getDataModelValues(setup, factsheetType) {
 	if (!setup) {
 		return [];
 	}
-	if (factsheetName) {
-		return _getModelDataValues(setup.settings.dataModel.factSheets[factsheetName]);
+	if (factsheetType) {
+		return _getModelDataValues(setup.settings.dataModel.factSheets[factsheetType]);
 	} else {
 		const set = {};
 		const factsheets = setup.settings.dataModel.factSheets;
@@ -176,24 +188,55 @@ function getDataModel(setup, factsheetName) {
 	}
 }
 
-function _getModelDataValues(factsheetModel) {
-	if (!factsheetModel ||
-		!factsheetModel.fields ||
-		!factsheetModel.fields.lifecycle ||
-		factsheetModel.fields.lifecycle.type !== 'LIFECYCLE' ||
-		!Array.isArray(factsheetModel.fields.lifecycle.values)) {
+function _getModelDataValues(factsheetDataModel) {
+	if (!factsheetDataModel ||
+		!factsheetDataModel.fields ||
+		!factsheetDataModel.fields.lifecycle ||
+		factsheetDataModel.fields.lifecycle.type !== 'LIFECYCLE' ||
+		!Array.isArray(factsheetDataModel.fields.lifecycle.values)) {
 		return [];
 	}
-	return factsheetModel.fields.lifecycle.values;
+	return factsheetDataModel.fields.lifecycle.values;
+}
+
+function translateDataModelValues(setup, dataModelValues, factsheetType) {
+	if (!setup) {
+		return [];
+	}
+	if (!dataModelValues) {
+		dataModelValues = getDataModelValues(setup, factsheetType);
+	}
+	if (factsheetType) {
+		return dataModelValues.map((e) => {
+			return lx.translateFieldValue(factsheetType, 'lifecycle', e);
+		});
+	} else {
+		const set = {};
+		const factsheets = setup.settings.dataModel.factSheets;
+		for (let key in factsheets) {
+			const mdValues = _getModelDataValues(factsheets[key]);
+			mdValues.forEach((e) => {
+				set[e] = lx.translateFieldValue(key, 'lifecycle', e);
+			});
+		}
+		return Utilities.getValues(set);
+	}
 }
 
 export default {
+	DEFAULT_MODEL_PHASE_PLAN: PLAN,
+	DEFAULT_MODEL_PHASE_PHASE_IN: PHASE_IN,
+	DEFAULT_MODEL_PHASE_ACTIVE: ACTIVE,
+	DEFAULT_MODEL_PHASE_PHASE_OUT: PHASE_OUT,
+	DEFAULT_MODEL_PHASE_END_OF_LIFE: END_OF_LIFE,
 	DEFAULT_MODEL: DEFAULT_MODEL,
 	hasLifecycles: hasLifecycles,
 	getLifecycles: getLifecycles,
+	getLifecycleSorter: getLifecycleSorter,
 	getPrevious: getPrevious,
 	getNext: getNext,
 	getByDate: getByDate,
 	getByPhase: getByPhase,
-	getDataModel: getDataModel
+	getDataModelValues: getDataModelValues,
+	translateDataModelValues: translateDataModelValues
 };

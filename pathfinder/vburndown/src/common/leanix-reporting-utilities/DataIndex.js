@@ -27,8 +27,8 @@ import LifecycleUtilities from './LifecycleUtilities';
 class DataIndex {
 
 	constructor(extendDataTypes, lifecycleModel) {
-		this.extendDataTypes = extendDataTypes;
-		this.lifecycleModel = lifecycleModel;
+		this._extendDataTypes = extendDataTypes;
+		this._lifecycleModel = lifecycleModel;
 	}
 
 	putGraphQL(response) {
@@ -37,15 +37,21 @@ class DataIndex {
 		}
 		for (let key in response) {
 			const value = response[key];
-			this[key] = _buildIndex(value, false, this.extendDataTypes, this.lifecycleModel);
+			this[key] = _buildIndex(value, false, this._extendDataTypes, this._lifecycleModel);
 		}
 	}
 
 	putFacetData(key, response) {
-		this[key] = _buildIndex(response, false, this.extendDataTypes, this.lifecycleModel);
+		if (!key) {
+			return;
+		}
+		this[key] = _buildIndex(response, false, this._extendDataTypes, this._lifecycleModel);
 	}
 
 	remove(key) {
+		if (!key) {
+			return;
+		}
 		const index = this[key];
 		if (!index) {
 			return;
@@ -69,7 +75,7 @@ class DataIndex {
 	}
 
 	// TODO rest to TagUtilities
-
+	/*
 	includesTag(node, tagName) {
 		if (!node || !node.tags || !Array.isArray(node.tags)) {
 			return false;
@@ -159,7 +165,7 @@ class DataIndex {
 	getFirstTagID(tagGroupName, tagName) {
 		let tags = this.getTags(tagGroupName, tagName);
 		return tags.length > 0 ? tags[0].id : undefined;
-	}
+	}*/
 }
 
 function _getRelatedFactsheets(node, indexContainingFactsheets, relName, firstOnly) {
@@ -187,32 +193,29 @@ function _buildIndex(data, factsheetIsNested, extendDataTypes, lifecycleModel) {
 		nodes: [],
 		byID: {}
 	};
-	if (!Array.isArray(data.edges)) {
-		return index;
+	if (Array.isArray(data.edges)) {
+		data = data.edges;
 	}
-	data.edges.forEach((e) => {
-		if (!e.node) {
-			return;
+	data.forEach((e) => {
+		if (e.node) {
+			e = e.node;
 		}
-		const node = e.node;
-		let factsheet = node;
-		if (factsheetIsNested && node.factSheet) {
-			factsheet = node.factSheet;
-			delete node.factSheet;
-			node.factsheet = factsheet;
+		let factsheet = e;
+		if (factsheetIsNested && e.factSheet) {
+			factsheet = e.factSheet;
+			delete e.factSheet;
+			e.factsheet = factsheet;
 		}
 		_buildSubIndices(factsheet);
 		if (extendDataTypes) {
 			const lifecycles = LifecycleUtilities.getLifecycles(factsheet, lifecycleModel);
-			if (lifecycles) {
-				factsheet.lifecycle = lifecycles;
-			}
+			factsheet.lifecycle = lifecycles;
 		}
-		index.nodes.push(node);
-		if (!node.id) {
+		index.nodes.push(e);
+		if (!e.id) {
 			return;
 		}
-		index.byID[node.id] = node;
+		index.byID[e.id] = e;
 	});
 	return index;
 }

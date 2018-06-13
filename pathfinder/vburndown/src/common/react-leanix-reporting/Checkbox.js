@@ -22,15 +22,48 @@ SOFTWARE. */
 
 // from https://github.com/leanix/leanix-custom-reports
 
-// TODO rest to TagUtilities
-/*
-const tagGroups = `{tagGroups: allTagGroups(sort: {mode: BY_FIELD, key: "name", order: asc}) {
-		edges { node {
-				id name restrictToFactSheetTypes mode
-				tags { edges { node { id name } } }
-			}}
-		}}`;
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
-export default {
-	tagGroups: tagGroups
-};*/
+class Checkbox extends Component {
+
+	constructor(props) {
+		super(props);
+		this._onChange = this._onChange.bind(this);
+	}
+
+	_onChange(event) {
+		let val = event.target.checked;
+		if (typeof val === 'string') {
+			val = val === 'true';
+		}
+		this.props.onChange(val);
+	}
+
+	render() {
+		return (
+			<div className={ 'checkbox' + (this.props.useSmallerFontSize ? ' small' : '') }>
+				<label htmlFor={this.props.id}>
+					<input type='checkbox'
+						alt={this.props.label}
+						id={this.props.id}
+						name={'Checkbox-' + this.props.id}
+						checked={this.props.value}
+						onChange={this._onChange}
+					/>
+					{this.props.label}
+				</label>
+			</div>
+		);
+	}
+}
+
+Checkbox.propTypes = {
+	id: PropTypes.string.isRequired,
+	label: PropTypes.string.isRequired,
+	onChange: PropTypes.func,
+	value: PropTypes.bool.isRequired,
+	useSmallerFontSize: PropTypes.bool
+};
+
+export default Checkbox;

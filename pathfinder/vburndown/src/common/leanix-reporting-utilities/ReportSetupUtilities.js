@@ -22,15 +22,18 @@ SOFTWARE. */
 
 // from https://github.com/leanix/leanix-custom-reports
 
-// TODO rest to TagUtilities
-/*
-const tagGroups = `{tagGroups: allTagGroups(sort: {mode: BY_FIELD, key: "name", order: asc}) {
-		edges { node {
-				id name restrictToFactSheetTypes mode
-				tags { edges { node { id name } } }
-			}}
-		}}`;
+import Utilities from './Utilities';
+
+function getFactsheetNames(setup) {
+	const result = Object.keys(Utilities.getFrom(setup, 'settings.dataModel.factSheets'));
+	return result.sort();
+}
+
+function getFactsheetFieldModels(setup, factsheet) {
+	return Utilities.getFrom(setup, 'settings.dataModel.factSheets.' + factsheet + '.fields');
+}
 
 export default {
-	tagGroups: tagGroups
-};*/
+	getFactsheetNames: getFactsheetNames,
+	getFactsheetFieldModels: getFactsheetFieldModels
+};

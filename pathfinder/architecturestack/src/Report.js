@@ -161,7 +161,7 @@ class Report extends Component {
 				if (!this.reportState.selectedFactsheetType) {
 					// error, since there is no factsheet type with enough data
 					this._handleError('There is no factsheet type with enough data.');
-				lx.hideSpinner();
+					lx.hideSpinner();
 					return;
 				}
 				lx.hideSpinner();
@@ -220,8 +220,6 @@ class Report extends Component {
 				orientation: 'landscape'
 			},
 			restoreStateCallback: (state) => {
-				console.log('Callback:');
-				console.log(state);
 				const result = this._restoreStateFromFramework(state);
 				if (result) {
 					this._handleRestoreError(result);

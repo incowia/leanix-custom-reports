@@ -1,19 +1,17 @@
 import React, { Component } from 'react';
-import CommonQueries from './common/CommonGraphQLQueries';
-import DataIndex from './common/DataIndex';
-import Utilities from './common/Utilities';
-import DateUtil from './DateUtil';
-import LifecycleUtil from './LifecycleUtil';
-import Chart, { getChartNodeID } from './Chart';
+import ReportLoadingState from './common/leanix-reporting-utilities/ReportLoadingState';
+import DataIndex from './common/leanix-reporting-utilities/DataIndex';
+import ReportSetupUtilities from './common/leanix-reporting-utilities/ReportSetupUtilities';
+import DateUtilities from './common/leanix-reporting-utilities/DateUtilities';
+import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
+import Utilities from './common/leanix-reporting-utilities/Utilities';
+import ReportState from './common/leanix-reporting-utilities/ReportState';
+import ModalDialog from './common/react-leanix-reporting/ModalDialog';
+import SelectField from './common/react-leanix-reporting/SelectField';
+import MultiSelectField from './common/react-leanix-reporting/MultiSelectField';
+import InputField from './common/react-leanix-reporting/InputField';
 
-const PLAN = 'plan';
-const PHASE_IN = 'phaseIn';
-const ACTIVE = 'active';
-const PHASE_OUT = 'phaseOut';
-const END_OF_LIFE = 'endOfLife';
-// DO NOT CHANGE THE ORDER IN THIS ARRAY (code depends on this)!
-const LIFECYCLE_PHASES = [PLAN, PHASE_IN, ACTIVE, PHASE_OUT, END_OF_LIFE];
-const CATEGORIES = _createCategories();
+/*const CATEGORIES = _createCategories();
 const CATEGORY_NAMES = CATEGORIES.map((e) => {
 	return e.name;
 });
@@ -65,176 +63,543 @@ function _createCategories() {
 		lastEnd = monthEnd.clone();
 	}
 	return result;
-}
+}*/
+
+const DATA_SERIES_LIFECYCLES_OPTIONS = []; // will be filled at initReport
+
+const DATA_SERIES_TYPE_BAR_POSITIVE = 'bar+';
+const DATA_SERIES_TYPE_BAR_NEGATIVE = 'bar-';
+const DATA_SERIES_TYPE_LINE_POSITIVE = 'line+';
+const DATA_SERIES_TYPE_LINE_NEGATIVE = 'line-';
+const DATA_SERIES_TYPE_SPLINE_POSITIVE = 'spline+';
+const DATA_SERIES_TYPE_SPLINE_NEGATIVE = 'spline-';
+const DATA_SERIES_TYPE_OPTIONS = [{
+		value: DATA_SERIES_TYPE_BAR_POSITIVE,
+		label: 'Bar positive'
+	}, {
+		value: DATA_SERIES_TYPE_BAR_NEGATIVE,
+		label: 'Bar negative'
+	}, {
+		value: DATA_SERIES_TYPE_LINE_POSITIVE,
+		label: 'Line positive'
+	}, {
+		value: DATA_SERIES_TYPE_LINE_NEGATIVE,
+		label: 'Line negative'
+	}, {
+		value: DATA_SERIES_TYPE_SPLINE_POSITIVE,
+		label: 'Spline positive'
+	}, {
+		value: DATA_SERIES_TYPE_SPLINE_NEGATIVE,
+		label: 'Spline negative'
+	}
+];
+const DATA_SERIES_TYPES = DATA_SERIES_TYPE_OPTIONS.map((e) => {
+	return e.value;
+});
+
+const DATA_SERIES_STACK_LAST = 'last';
+const DATA_SERIES_STACK_FIRST = 'first';
+const DATA_SERIES_STACK_EVERY = 'every';
+const DATA_SERIES_STACK_OPTIONS = [{
+		value: DATA_SERIES_STACK_LAST,
+		label: 'Only last occurrence'
+	}, {
+		value: DATA_SERIES_STACK_FIRST,
+		label: 'Only first occurrence'
+	}, {
+		value: DATA_SERIES_STACK_EVERY,
+		label: 'Every occurrence'
+	}
+];
+const DATA_SERIES_STACKS = DATA_SERIES_STACK_OPTIONS.map((e) => {
+	return e.value;
+});
+
+const DEFAULT_DATA_SERIES = []; // will be filled at initReport
 
 class Report extends Component {
 
 	constructor(props) {
 		super(props);
+		this.index = new DataIndex(true);
+		this.setup = null;
+		this.reportState = new ReportState();
+		this.reportState.prepareRangeValue('selectedStartYearDistance', 1, 5, 1, 3);
+		this.reportState.prepareRangeValue('selectedEndYearDistance', 1, 5, 1, 3);
+		this.configStore = null;
+		// bindings
 		this._initReport = this._initReport.bind(this);
+		this._createConfig = this._createConfig.bind(this);
+		this._handleError = this._handleError.bind(this);
 		this._handleData = this._handleData.bind(this);
+		this._handleConfig = this._handleConfig.bind(this);
+		this._handleFactsheetTypeSelect = this._handleFactsheetTypeSelect.bind(this);
+		this._handleStartYearDistanceInput = this._handleStartYearDistanceInput.bind(this);
+		this._handleEndYearDistanceInput = this._handleEndYearDistanceInput.bind(this);
+		this._handleDataSeriesNameInput = this._handleDataSeriesNameInput.bind(this);
+		this._handleDataSeriesLifecyclesMultiSelect = this._handleDataSeriesLifecyclesMultiSelect.bind(this);
+		this._handleDataSeriesTypeSelect = this._handleDataSeriesTypeSelect.bind(this);
+		this._handleDataSeriesStackSelect = this._handleDataSeriesStackSelect.bind(this);
+		this._handleDataSeriesAddButton = this._handleDataSeriesAddButton.bind(this);
+		this._renderConfigContent = this._renderConfigContent.bind(this);
+		// react state definition
 		this.state = {
-			setup: null,
-			chartData: [],
-			dataRecords: {}
+			loadingState: ReportLoadingState.INIT,
+			showConfigure: false,
+			chartData: []
 		};
 	}
 
 	componentDidMount() {
-		lx.init().then(this._initReport);
+		lx.init().then(this._initReport).catch(this._handleError);
 	}
 
 	_initReport(setup) {
-		lx.ready(this._createConfig(setup));
+		this.setup = setup;
 		lx.showSpinner('Loading data...');
-		this.setState({
-			setup: setup
+		// get factsheet models (only those with a lifecycle field)
+		const factsheetTypes = ReportSetupUtilities.getFactsheetNames(setup).filter((e) => {
+			const fields = ReportSetupUtilities.getFactsheetFieldModels(setup, e);
+			return fields.lifecycle;
 		});
-		// get all tags, then the data
-		lx.executeGraphQL(CommonQueries.tagGroups).then((tagGroups) => {
-			const index = new DataIndex();
-			index.put(tagGroups);
-			const applicationTagId = index.getFirstTagID('Application Type', 'Application');
-			const itTagId = index.getFirstTagID('CostCentre', 'IT');
-			lx.executeGraphQL(this._createQuery(applicationTagId, itTagId)).then((data) => {
-				index.put(data);
-				this._handleData(index, applicationTagId, itTagId);
+		this.reportState.prepareValue('selectedFactsheetType', factsheetTypes, factsheetTypes[0]);
+		// next add soem default dataSeries (some might not be possible, b/c of data model modifications)
+		const lifecycleDataModelValues = LifecycleUtilities.getDataModelValues(setup);
+		const lifecycleDataModelValueTranslations = LifecycleUtilities.translateDataModelValues(setup, lifecycleDataModelValues);
+		lifecycleDataModelValues.forEach((e, i) => {
+			DATA_SERIES_LIFECYCLES_OPTIONS.push({
+				value: e,
+				label: lifecycleDataModelValueTranslations[i]
 			});
 		});
+		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN)) {
+			DEFAULT_DATA_SERIES.push({
+				name: 'In planning stage',
+				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN],
+				type: DATA_SERIES_TYPE_BAR_POSITIVE,
+				stack: DATA_SERIES_STACK_LAST
+			});
+		}
+		const inProductionLifecycles = [];
+		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN)) {
+			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN);
+		}
+		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_ACTIVE)) {
+			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_ACTIVE);
+		}
+		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT)) {
+			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT);
+		}
+		if (inProductionLifecycles.length > 0) {
+			DEFAULT_DATA_SERIES.push({
+				name: 'In production',
+				lifecycles: inProductionLifecycles,
+				type: DATA_SERIES_TYPE_SPLINE_POSITIVE,
+				stack: DATA_SERIES_STACK_EVERY
+			});
+		}
+		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE)) {
+			DEFAULT_DATA_SERIES.push({
+				name: 'Retired',
+				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE],
+				type: DATA_SERIES_TYPE_BAR_NEGATIVE,
+				stack: DATA_SERIES_STACK_FIRST
+			});
+		}
+		this.reportState.prepareValue('selectedDataSeries', (value) => {
+			if (!Array.isArray(value) || value.length < 1) {
+				return false;
+			}
+			const tmp = {}; // used for duplication check
+			for (let i = 0; i < value.length; i++) {
+				const e = value[i];
+				if (!e.name || tmp[e.name]
+					|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
+					|| !DATA_SERIES_TYPES.includes(e.type)
+					|| !DATA_SERIES_STACKS.includes(e.stack)) {
+					return false;
+				}
+				tmp[e.name] = e;
+			}
+			return true;
+		}, DEFAULT_DATA_SERIES);
+		// load default report state
+		this.reportState.reset();
+		// then may restore saved report state
+		const restoreError = this.reportState.restore(setup, true);
+		if (restoreError) {
+			this._handleError(restoreError);
+			lx.hideSpinner();
+			return;
+		}
+		if (!this.reportState.get('selectedFactsheetType')) {
+			// error, since there is no factsheet type with enough data
+			this._handleError('There is no factsheet type with enough data.');
+			lx.hideSpinner();
+			return;
+		}
+		lx.hideSpinner();
+		lx.ready(this._createConfig());
 	}
 
 	_createConfig(setup) {
-		// TODO menuActions
+		const selectedFactsheetType = this.reportState.get('selectedFactsheetType');
 		return {
 			allowEditing: false,
+			allowTableView: false,
+			facets: [{
+				key: selectedFactsheetType,
+				label: lx.translateFactSheetType(selectedFactsheetType, 'plural'),
+				fixedFactSheetType: selectedFactsheetType,
+				attributes: ['id', 'displayName', 'lifecycle { phases { phase startDate } }'],
+				sorting: [{
+						key: 'displayName',
+						mode: 'BY_FIELD',
+						order: 'asc'
+					}
+				],
+				callback: (facetData) => {
+					if (this.state.loadingState === ReportLoadingState.SUCCESSFUL) {
+						this.setState({
+							loadingState: ReportLoadingState.NEW_DATA
+						});
+					}
+					this.index.remove('last');
+					this.index.putFacetData('last', facetData);
+					// get new data and re-render
+					this._handleData();
+				}
+			}],
+			menuActions: {
+				showConfigure: true,
+				configureCallback: () => {
+					if (this.state.loadingState !== ReportLoadingState.SUCCESSFUL) {
+						return;
+					}
+					this.configStore = this.reportState.getAll();
+					this.setState({
+						showConfigure: true
+					});
+				}
+			},
 			export: {
 				autoScale: true,
 				beforeExport: (exportElement) => {
 					console.log(exportElement);
+					return exportElement;
 				},
-				exportElementSelector: '#' + getChartNodeID(),
+				exportElementSelector: '#' + 'getChartNodeID()', // TODO
 				format: 'A4',
 				inputType: 'SVG',
 				orientation: 'landscape'
+			},
+			restoreStateCallback: (state) => {
+				const restoreError = this.reportState.restore(state);
+				if (restoreError) {
+					this._handleError(restoreError);
+					return;
+				}
+				// get new data and re-render
+				this._handleData();
 			}
 		};
 	}
 
-	_createQuery(applicationTagId, itTagId) {
-		const applicationTagIdFilter = applicationTagId ? `, {facetKey: "Application Type", keys: ["${applicationTagId}"]}` : '';
-		const itTagIdFilter = itTagId ? `, {facetKey: "CostCentre", keys: ["${itTagId}"]}` : '';
-		let tagNameDef = 'tags { name }'; // initial assume to get it
-		if (applicationTagIdFilter && itTagId) {
-			tagNameDef = '';
-		}
-		return `{applications: allFactSheets(
-					sort: { mode: BY_FIELD, key: "displayName", order: asc },
-					filter: {facetFilters: [
-						{facetKey: "FactSheetTypes", keys: ["Application"]}
-						${applicationTagIdFilter}
-						${itTagIdFilter}
-					]}
-				) {
-					edges { node {
-						id name ${tagNameDef}
-						...on Application { lifecycle { phases { phase startDate } } }
-					}}
-				}}`;
+	_handleError(err) {
+		console.error(err);
+		this.setState({
+			loadingState: ReportLoadingState.ERROR
+		});
 	}
 
-	_lifecycleModel(phase) {
-		// TODO for VUtil
-		switch (phase) {
-			case PLAN:
-				return PHASE_IN;
-			case PHASE_IN:
-				return ACTIVE;
-			case ACTIVE:
-				return PHASE_OUT;
-			case PHASE_OUT:
-				return END_OF_LIFE;
-			case END_OF_LIFE:
-			default:
+	_handleData() {
+		const chartData = [];
+		// TODO
+		console.log(this.index);
+		console.log(this.reportState);
+		lx.hideSpinner();
+		this.setState({
+			loadingState: ReportLoadingState.SUCCESSFUL,
+			chartData: chartData
+		});
+		this.reportState.publish();
+	}
+
+	_handleConfig(forClose) {
+		if (forClose) {
+			// close or cancel: do not update values
+			return () => {
+				this.configStore = {};
+				this.setState({
+					showConfigure: false
+				});
+			};
+		} else {
+			// OK: update values
+			return () => {
+				const oldSFT = this.reportState.get('selectedFactsheetType');
+				try {
+					this.reportState.update(this.configStore);
+				} catch (err) {
+					 // TODO how to mark error fields?
+					 console.error(err);
+				}
+				this.configStore = {};
+				this.setState({
+					showConfigure: false
+				});
+				if (oldSFT === this.reportState.selectedFactsheetType) {
+					// no need to update report config --> trigger handleData with new config
+					this.handleData();
+					return;
+				}
+				// update report config, this will trigger the facet callback automatically
+				lx.updateConfiguration(this._createConfig());
+			};
+		}
+	}
+
+	_handleFactsheetTypeSelect(option) {
+		if (this.configStore.selectedFactsheetType === option.value) {
+			return;
+		}
+		this.configStore.selectedFactsheetType = option.value;
+		this.forceUpdate();
+	}
+
+	_handleStartYearDistanceInput(value) {
+		const num = parseInt(value, 10);
+		if (this.configStore.selectedStartYearDistance === num) {
+			return;
+		}
+		this.configStore.selectedStartYearDistance = num;
+		this.forceUpdate();
+	}
+
+	_handleEndYearDistanceInput(value) {
+		const num = parseInt(value, 10);
+		if (this.configStore.selectedEndYearDistance === num) {
+			return;
+		}
+		this.configStore.selectedEndYearDistance = num;
+		this.forceUpdate();
+	}
+
+	_handleDataSeriesNameInput(index) {
+		return (value) => {
+			const dataSeries = this.configStore.selectedDataSeries[index];
+			if (dataSeries.name === value) {
 				return;
+			}
+			dataSeries.name = value;
+			this.forceUpdate();
+		};
+	}
+
+	_handleDataSeriesLifecyclesMultiSelect(index) {
+		return (options) => {
+			const dataSeries = this.configStore.selectedDataSeries[index];
+			const tmp = options.map((e) => {
+				return e.value;
+			}).sort(LifecycleUtilities.getLifecycleSorter());
+			if (Utilities.areArraysEqual(dataSeries.lifecycles, tmp, true)) {
+				return;
+			}
+			dataSeries.lifecycles = tmp;
+			this.forceUpdate();
+		};
+	}
+
+	_handleDataSeriesTypeSelect(index) {
+		return (option) => {
+			const dataSeries = this.configStore.selectedDataSeries[index];
+			if (dataSeries.type === option.value) {
+				return;
+			}
+			dataSeries.type = option.value;
+			this.forceUpdate();
+		};
+	}
+
+	_handleDataSeriesStackSelect(index) {
+		return (option) => {
+			const dataSeries = this.configStore.selectedDataSeries[index];
+			if (dataSeries.stack === option.value) {
+				return;
+			}
+			dataSeries.stack = option.value;
+			this.forceUpdate();
+		};
+	}
+
+	_handleDataSeriesRemoveButton(index) {
+		return (event) => {
+			this.configStore.selectedDataSeries.splice(index, 1);
+			this.forceUpdate();
+		};
+	}
+
+	_handleDataSeriesAddButton(event) {
+		this.configStore.selectedDataSeries.push({
+			name: '',
+			lifecycles: [],
+			type: DATA_SERIES_TYPE_BAR_POSITIVE,
+			stack: DATA_SERIES_STACK_EVERY
+		});
+		this.forceUpdate();
+	}
+
+	render() {
+		switch (this.state.loadingState) {
+			case ReportLoadingState.INIT:
+				return this._renderInit();
+			case ReportLoadingState.NEW_DATA:
+				return this._renderLoading();
+			case ReportLoadingState.SUCCESSFUL:
+				return this._renderSuccessful();
+			case ReportLoadingState.ERROR:
+				return this._renderError();
+			default:
+				throw new Error('Unknown loading state: ' + this.state.loadingState);
 		}
 	}
 
-	_createObj(array, keyProperty) {
-		if (!Array.isArray(array) || keyProperty === undefined || keyProperty === null) {
-			return {};
-		}
-		const result = {};
-		array.forEach((e) => {
-			result[e[keyProperty]] = e;
+	_renderInit() {
+		return (
+			<div>
+				{this._renderProcessingStep('Initialise report...')}
+				<div id='content' />
+			</div>
+		);
+	}
+
+	_renderProcessingStep(stepInfo) {
+		return (<h4 className='text-center'>{stepInfo}</h4>);
+	}
+
+	_renderLoading() {
+		return (
+			<div>
+				{this._renderProcessingStep('Loading data...')}
+				<div id='content' />
+			</div>
+		);
+	}
+
+	_renderError() {
+		return (<div id='content' />);
+	}
+
+	_renderSuccessful() {
+		return (
+			<div>
+				<ModalDialog show={this.state.showConfigure}
+					width='800px'
+					title='Configure'
+					content={this._renderConfigContent}
+					onClose={this._handleConfig(true)}
+					onOK={this._handleConfig(false)}
+				/>
+				<div id='content' />
+			</div>
+		);
+	}
+
+	_renderConfigContent() {
+		const factsheetTypeOptions = this.reportState.getAllowedValues('selectedFactsheetType').map((e) => {
+			return {
+				value: e,
+				label: lx.translateFactSheetType(e, 'plural')
+			};
+		});
+		// TODO validation
+		return (
+			<div>
+				<SelectField id='factsheetType' label='Factsheet type'
+					options={factsheetTypeOptions}
+					useSmallerFontSize
+					value={this.configStore.selectedFactsheetType}
+					onChange={this._handleFactsheetTypeSelect} />
+				<div style={{ display: 'inline-block', width: '50%', paddingRight: '0.5em' }}>
+					<InputField id='startYearDistance' label='How many years to look in the past?'
+						type='number' min='1' max='5'
+						useSmallerFontSize
+						value={this.configStore.selectedStartYearDistance.toString()}
+						onChange={this._handleStartYearDistanceInput} />
+				</div>
+				<div style={{ display: 'inline-block', width: '50%', paddingLeft: '0.5em' }}>
+					<InputField id='endYearDistance' label='How many years to look in the future?'
+						type='number' min='1' max='5'
+						useSmallerFontSize
+						value={this.configStore.selectedEndYearDistance.toString()}
+						onChange={this._handleEndYearDistanceInput} />
+				</div>
+				<div className='panel panel-default small'>
+					<div className='panel-heading'>
+						<b>Data series</b>
+					</div>
+					<div className='panel-body'>
+						{this._renderConfigContentDataSeries()}
+					</div>
+					<div className='panel-footer text-right'>
+						<button type='button'
+							className='btn btn-default btn-xs'
+							onClick={this._handleDataSeriesAddButton}
+						>
+							Add another series
+						</button>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	_renderConfigContentDataSeries() {
+		const result = [];
+		this.configStore.selectedDataSeries.forEach((e, i) => {
+			// changes to the last param must be reflected in the _handleDataSeries* methods!
+			result.push(this._renderDataSeries(e, i));
 		});
 		return result;
 	}
 
-	_handleData(index, applicationTagId, itTagId) {
-		const chartData = [
-			CATEGORY_NAMES
-		];
-		LIFECYCLE_PHASES.forEach((e) => {
-			chartData.push([e]);
-		});
-		const dataRecords = {};
-		for (let i = 1; i < CATEGORIES.length; i++) {
-			const category = CATEGORIES[i];
-			const dataRecord = LIFECYCLE_PHASES.reduce((acc, e, j) => {
-				acc[e] = {
-					idx: j + 1,
-					applications: []
-				};
-				return acc;
-			}, {});
-			dataRecords[category.name] = dataRecord;
-			index.applications.nodes.forEach((e) => {
-				if (!applicationTagId && !index.includesTag(e, 'Application')) {
-					return;
-				}
-				if (!itTagId && !index.includesTag(e, 'IT')) {
-					return;
-				}
-				// get lifecycle information, if not present
-				if (!e.lifecycles) {
-					e.lifecycles = this._createObj(LifecycleUtil.getLifecycles(e, this._lifecycleModel), 'name');
-				}
-				// add application if lifecycle phase is in category
-				for (let key in e.lifecycles) {
-					const lifecycle = e.lifecycles[key];
-					// end of life is just a moment, not an interval
-					if (lifecycle.name === END_OF_LIFE && DateUtil.contains(category, lifecycle.start)) {
-						dataRecord[key].applications.push(e);
-					} else if (DateUtil.overlapsWith(category, lifecycle)) {
-						dataRecord[key].applications.push(e);
-					}
-				}
-			});
-			// push values to chart data
-			for (let key in dataRecord) {
-				const v = dataRecord[key];
-				chartData[v.idx].push(v.applications.length);
-			}
-		}
-		lx.hideSpinner();
-		this.setState({
-			chartData: chartData,
-			dataRecords: dataRecords
-		});
-	}
-
-	render() {
-		if (this.state.chartData.length === 0) {
-			return (<h4 className='text-center'>Loading data...</h4>);
-		}
-		console.log(this.state.chartData);
-		console.log(this.state.dataRecords);
+	_renderDataSeries(dataSeries, index) {
 		return (
-			<div>
-				<h3 id='title'>Application Burndown Chart</h3>
-				<Chart
-					categories={CATEGORY_NAMES}
-					data={this.state.chartData} />
+			<div className='form-inline' key={index} style={{ marginBottom: '5px' }}>
+				<InputField id='dataSeriesName' label='Display name'
+					type='text'
+					width='140px'
+					useSmallerFontSize labelReadOnly
+					value={dataSeries.name}
+					onChange={this._handleDataSeriesNameInput(index)} />
+				<div style={{ display: 'inline-block', width: '5px' }} />
+				<MultiSelectField id='dataSeriesLifecycles' label='Lifecycles to use'
+					width='300px'
+					options={DATA_SERIES_LIFECYCLES_OPTIONS}
+					useSmallerFontSize labelReadOnly
+					values={dataSeries.lifecycles}
+					onChange={this._handleDataSeriesLifecyclesMultiSelect(index)} />
+				<div style={{ display: 'inline-block', width: '5px' }} />
+				<SelectField id='dataSeriesType' label='Type'
+					width='110px'
+					options={DATA_SERIES_TYPE_OPTIONS}
+					useSmallerFontSize labelReadOnly
+					value={dataSeries.type}
+					onChange={this._handleDataSeriesTypeSelect(index)} />
+				<div style={{ display: 'inline-block', width: '5px' }} />
+				<SelectField id='dataSeriesStack' label='Stack'
+					width='140px'
+					options={DATA_SERIES_STACK_OPTIONS}
+					useSmallerFontSize labelReadOnly
+					value={dataSeries.stack}
+					onChange={this._handleDataSeriesStackSelect(index)} />
+				<div style={{ display: 'inline-block', width: '5px' }} />
+				<button type='button'
+					className='btn btn-default btn-xs'
+					onClick={this._handleDataSeriesRemoveButton(index)}
+				>
+					<span className='glyphicon glyphicon-trash' aria-hidden='true' />
+				</button>
 			</div>
 		);
 	}

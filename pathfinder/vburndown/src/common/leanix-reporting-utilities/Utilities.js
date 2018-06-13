@@ -37,6 +37,8 @@ function getFrom(obj, path, defaultValue) {
 	return result ? result : defaultValue;
 }
 
+// TODO TableUtilities
+/*
 function createOptionsObj(optionValues) {
 	if (!optionValues || !Array.isArray(optionValues)) {
 		return {};
@@ -47,10 +49,12 @@ function createOptionsObj(optionValues) {
 	}, {});
 }
 
+// TODO TableUtilities
 function createOptionsObjFrom(obj, path) {
 	return createOptionsObj(getFrom(obj, path, []));
-}
+}*/
 
+// TODO ???
 function getKeyToValue(obj, value) {
 	if (!obj) {
 		return;
@@ -62,6 +66,8 @@ function getKeyToValue(obj, value) {
 	}
 }
 
+// TODO VFUtilities
+/*
 function isProductionPhase(lifecycle) {
 	if (!lifecycle || !lifecycle.phase) {
 		return false;
@@ -78,8 +84,10 @@ function isProductionPhase(lifecycle) {
 	}
 }
 
+// TODO VFUtilities
 const marketRE = /^([A-Z]+)_/;
 
+// TODO VFUtilities
 function getMarket(application) {
 	if (!application) {
 		return;
@@ -89,28 +97,148 @@ function getMarket(application) {
 		return;
 	}
 	return m[1]; // first one is the match, followed by group matches
-}
+}*/
 
-function copyObject(obj) {
-	const result = {};
+function getValues(obj) {
 	if (!obj) {
-		return result;
+		return [];
 	}
+	const result = [];
 	for (let key in obj) {
-		result[key] = obj[key];
+		result.push(obj[key]);
 	}
 	return result;
 }
 
-function copyArray(arr) {
+function copyObject(obj, deep) {
+	const result = {};
+	if (!obj) {
+		return result;
+	}
+	if (deep) {
+		for (let key in obj) {
+			const value = obj[key];
+			if (Array.isArray(value)) {
+				result[key] = copyArray(value, deep);
+			} else if (typeof value === 'object') {
+				result[key] = copyObject(value, deep);
+			} else {
+				result[key] = value;
+			}
+		}
+	} else {
+		for (let key in obj) {
+			result[key] = obj[key];
+		}
+	}
+	return result;
+}
+
+function copyArray(arr, deep) {
 	if (!arr) {
 		return [];
 	}
-	return arr.map((e) => {
-		return e;
-	});
+	if (deep) {
+		return arr.map((e) => {
+			if (Array.isArray(e)) {
+				return copyArray(e, deep);
+			} else if (typeof e === 'object') {
+				return copyObject(e, deep);
+			} else {
+				return e;
+			}
+		});
+	} else {
+		return arr.map((e) => {
+			return e;
+		});
+	}
 }
 
+function areObjectsEqual(first, second, deep) {
+	if (first === undefined || first === null || second === undefined || second === null) {
+		return false;
+	}
+	if (first === second) {
+		return true;
+	}
+	if (typeof first !== 'object' || typeof second !== 'object') {
+		return false;
+	}
+	const firstKeys = Object.keys(first);
+	if (!areArraysEqual(firstKeys, Object.keys(second))) {
+		return false;
+	}
+	for (let i = 0; i < firstKeys; i++) {
+		const e1 = firstKeys[i];
+		const v1 = first[e1];
+		const v2 = second[e1];
+		if (!v2) {
+			return false;
+		}
+		if (deep) {
+			if (Array.isArray(v1)) {
+				if (!areArraysEqual(v1, v2, deep)) {
+					return false;
+				}
+			} else if (typeof v1 === 'object') {
+				if (!areObjectsEqual(v1, v2, deep)) {
+					return false;
+				}
+			} else {
+				if (v1 !== v2) {
+					return false;
+				}
+			}
+		} else {
+			if (v1 !== v2) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+function areArraysEqual(first, second, deep) {
+	if (first === undefined || first === null || second === undefined || second === null) {
+		return false;
+	}
+	if (first === second) {
+		return true;
+	}
+	if (!Array.isArray(first) || !Array.isArray(second)) {
+		return false;
+	}
+	if (first.length !== second.length) {
+		return false;
+	}
+	for (let i = 0; i < first.length; i++) {
+		const e1 = first[i];
+		const e2 = second[i];
+		if (deep) {
+			if (Array.isArray(e1)) {
+				if (!areArraysEqual(e1, e2, deep)) {
+					return false;
+				}
+			} else if (typeof e1 === 'object') {
+				if (!areObjectsEqual(e1, e2, deep)) {
+					return false;
+				}
+			} else {
+				if (e1 !== e2) {
+					return false;
+				}
+			}
+		} else {
+			if (e1 !== e2) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+// TODO ???
 function isArrayEmpty(arr, startIdx) {
 	if (!arr) {
 		return true;
@@ -133,12 +261,11 @@ function isArrayEmpty(arr, startIdx) {
 
 export default {
 	getFrom: getFrom,
-	createOptionsObj: createOptionsObj,
-	createOptionsObjFrom: createOptionsObjFrom,
 	getKeyToValue: getKeyToValue,
-	isProductionPhase: isProductionPhase,
-	getMarket: getMarket,
+	getValues: getValues,
 	copyObject: copyObject,
 	copyArray: copyArray,
+	areObjectsEqual: areObjectsEqual,
+	areArraysEqual: areArraysEqual,
 	isArrayEmpty: isArrayEmpty
 };

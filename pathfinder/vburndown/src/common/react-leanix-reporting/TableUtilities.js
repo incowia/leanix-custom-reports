@@ -23,7 +23,7 @@ SOFTWARE. */
 // from https://github.com/leanix/leanix-custom-reports
 
 import React from 'react';
-import Utilities from './Utilities';
+import Utilities from './../leanix-reporting-utilities/Utilities';
 import Link from './Link';
 import LinkList from './LinkList';
 

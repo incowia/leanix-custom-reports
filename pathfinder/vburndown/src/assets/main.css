@@ -1,3 +1,5 @@
+@import "chart.css";
+
 body {
 	margin: 0px;
 	padding: 0px 5px;
@@ -15,12 +17,24 @@ body {
  */
 
 .Select-control, .Select-input {
-	height: 1.6em !important;
+	height: 28px !important;
+	min-width: 40px !important;
 }
 
 .Select-placeholder, .Select-value {
-	line-height: 1.6em !important;
-	top: 0.125em !important;
+	line-height: 18px !important;
+	top: 0.4em !important;
+	margin-top: 0px !important;
+	color: inherit !important;
+}
+
+.Select--multi .Select-value {
+	margin-top: 4px !important;
+}
+
+.Select-value-label, .Select-value-icon {
+	line-height: 1em !important;
+	color: inherit !important;
 }
 
 .Select-arrow-zone {
@@ -53,5 +67,3 @@ body {
 .react-bs-table-tool-bar {
 	margin-bottom: 10px;
 }
-
-@import "chart.css";

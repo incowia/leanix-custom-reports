@@ -22,15 +22,14 @@ SOFTWARE. */
 
 // from https://github.com/leanix/leanix-custom-reports
 
-// TODO rest to TagUtilities
-/*
-const tagGroups = `{tagGroups: allTagGroups(sort: {mode: BY_FIELD, key: "name", order: asc}) {
-		edges { node {
-				id name restrictToFactSheetTypes mode
-				tags { edges { node { id name } } }
-			}}
-		}}`;
+const LOADING_INIT = 0;
+const LOADING_NEW_DATA = 1;
+const LOADING_SUCCESSFUL = 2;
+const LOADING_ERROR = 3;
 
 export default {
-	tagGroups: tagGroups
-};*/
+	INIT: LOADING_INIT,
+	NEW_DATA: LOADING_NEW_DATA,
+	SUCCESSFUL: LOADING_SUCCESSFUL,
+	ERROR: LOADING_ERROR
+};
