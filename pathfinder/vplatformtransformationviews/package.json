@@ -3,7 +3,7 @@
 	"version": "0.0.4",
 	"description": "A report with different views of the platform transformation process.",
 	"engines": {
-		"node": ">=8.11.2"
+		"node": ">=8.11.3"
 	},
 	"leanixReport": {
 		"id": "com.vodafone.vplatformtransformationviews",
@@ -45,8 +45,8 @@
 		"@leanix/reporting": "0.2.3",
 		"bootstrap": "3.3.7",
 		"d3": "4.12.2",
-		"react": "16.3.1",
-		"react-dom": "16.3.1",
+		"react": "16.4.0",
+		"react-dom": "16.4.0",
 		"prop-types": "15.6.1",
 		"react-bootstrap-table": "4.3.1",
 		"react-select": "1.2.1"

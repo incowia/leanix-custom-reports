@@ -4,7 +4,7 @@
 	"description": "Shows lifecyle information of factsheets in a burndown chart.",
 	"private": true,
 	"engines": {
-		"node": ">=8.11.2"
+		"node": ">=8.11.3"
 	},
 	"leanixReport": {
 		"id": "com.leanix.burndown",

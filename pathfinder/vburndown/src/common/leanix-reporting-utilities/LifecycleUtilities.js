@@ -31,40 +31,10 @@ const ACTIVE = 'active';
 const PHASE_OUT = 'phaseOut';
 const END_OF_LIFE = 'endOfLife';
 
-const DEFAULT_MODEL = {
-	phases: [PLAN, PHASE_IN, ACTIVE, PHASE_OUT, END_OF_LIFE],
-	previous: (phase) => {
-		switch (phase) {
-			case END_OF_LIFE:
-				return PHASE_OUT;
-			case PHASE_OUT:
-				return ACTIVE;
-			case ACTIVE:
-				return PHASE_IN;
-			case PHASE_IN:
-				return PLAN;
-			case PLAN:
-			default:
-				return;
-		}
-	},
-	next: (phase) => {
-		switch (phase) {
-			case PLAN:
-				return PHASE_IN;
-			case PHASE_IN:
-				return ACTIVE;
-			case ACTIVE:
-				return PHASE_OUT;
-			case PHASE_OUT:
-				return END_OF_LIFE;
-			case END_OF_LIFE:
-			default:
-				return;
-		}
-	}
-};
+const DEFAULT_MODEL = [PLAN, PHASE_IN, ACTIVE, PHASE_OUT, END_OF_LIFE];
 Object.freeze(DEFAULT_MODEL);
+
+const GRAPHQL_ATTRIBUTE = 'lifecycle { phases { phase startDate } }';
 
 function hasLifecycles(node) {
 	return node && node.lifecycle && node.lifecycle.phases
@@ -72,13 +42,12 @@ function hasLifecycles(node) {
 }
 
 function getLifecycles(node, model) {
-	if (!hasLifecycles(node)) {
+	if (!model || !hasLifecycles(node)) {
 		return [];
 	}
-	model = _getModel(model);
 	const lifecycles = node.lifecycle.phases.map((e) => {
 		return new Lifecycle(_parseDateString(e.startDate), e.phase);
-	}).sort(getLifecycleSorter(model));
+	}).sort(getSorter(model));
 	// set end, previous & next properties
 	lifecycles.forEach((e) => {
 		const previous = getPrevious(lifecycles, e, model);
@@ -94,17 +63,15 @@ function getLifecycles(node, model) {
 	return lifecycles;
 }
 
-function getLifecycleSorter(model) {
-	model = _getModel(model);
+function getSorter(model) {
+	if (!model) {
+		return;
+	}
 	return (first, second) => {
-		const firstIndex = model.phases.indexOf(first.name ? first.name : first);
-		const secondIndex = model.phases.indexOf(second.name ? second.name : second);
+		const firstIndex = model.indexOf(first.name ? first.name : first);
+		const secondIndex = model.indexOf(second.name ? second.name : second);
 		return firstIndex - secondIndex;
 	};
-}
-
-function _getModel(model) {
-	return !model ? DEFAULT_MODEL : model;
 }
 
 function _parseDateString(date) {
@@ -117,15 +84,17 @@ function _parseDateString(date) {
 }
 
 function getPrevious(lifecycles, lifecycle, model) {
-	return _getSeqByPhase(lifecycles, lifecycle, model, 'previous');
+	return _getSeqByPhase(lifecycles, lifecycle, model, _getPreviousPhaseKey);
 }
 
 function getNext(lifecycles, lifecycle, model) {
-	return _getSeqByPhase(lifecycles, lifecycle, model, 'next');
+	return _getSeqByPhase(lifecycles, lifecycle, model, _getNextPhaseKey);
 }
 
-function _getSeqByPhase(lifecycles, lifecycle, model, seqKey) {
-	model = _getModel(model);
+function _getSeqByPhase(lifecycles, lifecycle, model, getPhaseKey) {
+	if (!lifecycles || !model) {
+		return;
+	}
 	if (typeof lifecycle === 'string' || lifecycle instanceof String) {
 		// 'lifecycle' is the name of the phase
 		lifecycle = getByPhase(lifecycles, lifecycle);
@@ -134,15 +103,25 @@ function _getSeqByPhase(lifecycles, lifecycle, model, seqKey) {
 		return;
 	}
 	let lastPhaseKey = lifecycle.name;
-	let p = getByPhase(lifecycles, model[seqKey](lastPhaseKey));
+	let p = getByPhase(lifecycles, getPhaseKey(lastPhaseKey, model));
 	while (!p) {
-		lastPhaseKey = model[seqKey](lastPhaseKey);
+		lastPhaseKey = getPhaseKey(lastPhaseKey, model);
 		if (!lastPhaseKey) {
 			break;
 		}
 		p = getByPhase(lifecycles, lastPhaseKey);
 	}
 	return p;
+}
+
+function _getPreviousPhaseKey(current, model) {
+	const currentIndex = model.indexOf(current);
+	return currentIndex > -1 ? model[currentIndex - 1] : undefined;
+}
+
+function _getNextPhaseKey(current, model) {
+	const currentIndex = model.indexOf(current);
+	return currentIndex > -1 ? model[currentIndex + 1] : undefined;
 }
 
 function getByDate(lifecycles, date) {
@@ -169,23 +148,11 @@ function getByPhase(lifecycles, phase) {
 	}
 }
 
-function getDataModelValues(setup, factsheetType) {
-	if (!setup) {
+function getModel(setup, factsheetType) {
+	if (!setup || !factsheetType) {
 		return [];
 	}
-	if (factsheetType) {
-		return _getModelDataValues(setup.settings.dataModel.factSheets[factsheetType]);
-	} else {
-		const set = {};
-		const factsheets = setup.settings.dataModel.factSheets;
-		for (let key in factsheets) {
-			const mdValues = _getModelDataValues(factsheets[key]);
-			mdValues.forEach((e) => {
-				set[e] = null;
-			});
-		}
-		return Object.keys(set);
-	}
+	return _getModelDataValues(setup.settings.dataModel.factSheets[factsheetType]);
 }
 
 function _getModelDataValues(factsheetDataModel) {
@@ -196,31 +163,19 @@ function _getModelDataValues(factsheetDataModel) {
 		!Array.isArray(factsheetDataModel.fields.lifecycle.values)) {
 		return [];
 	}
-	return factsheetDataModel.fields.lifecycle.values;
+	return Utilities.copyArray(factsheetDataModel.fields.lifecycle.values);
 }
 
-function translateDataModelValues(setup, dataModelValues, factsheetType) {
-	if (!setup) {
+function translateModel(setup, model, factsheetType) {
+	if (!setup || !factsheetType) {
 		return [];
 	}
-	if (!dataModelValues) {
-		dataModelValues = getDataModelValues(setup, factsheetType);
+	if (!model) {
+		model = getModel(setup, factsheetType);
 	}
-	if (factsheetType) {
-		return dataModelValues.map((e) => {
-			return lx.translateFieldValue(factsheetType, 'lifecycle', e);
-		});
-	} else {
-		const set = {};
-		const factsheets = setup.settings.dataModel.factSheets;
-		for (let key in factsheets) {
-			const mdValues = _getModelDataValues(factsheets[key]);
-			mdValues.forEach((e) => {
-				set[e] = lx.translateFieldValue(key, 'lifecycle', e);
-			});
-		}
-		return Utilities.getValues(set);
-	}
+	return model.map((e) => {
+		return lx.translateFieldValue(factsheetType, 'lifecycle', e);
+	});
 }
 
 export default {
@@ -230,13 +185,14 @@ export default {
 	DEFAULT_MODEL_PHASE_PHASE_OUT: PHASE_OUT,
 	DEFAULT_MODEL_PHASE_END_OF_LIFE: END_OF_LIFE,
 	DEFAULT_MODEL: DEFAULT_MODEL,
+	GRAPHQL_ATTRIBUTE: GRAPHQL_ATTRIBUTE,
 	hasLifecycles: hasLifecycles,
 	getLifecycles: getLifecycles,
-	getLifecycleSorter: getLifecycleSorter,
+	getSorter: getSorter,
 	getPrevious: getPrevious,
 	getNext: getNext,
 	getByDate: getByDate,
 	getByPhase: getByPhase,
-	getDataModelValues: getDataModelValues,
-	translateDataModelValues: translateDataModelValues
+	getModel: getModel,
+	translateModel: translateModel
 };

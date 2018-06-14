@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import DataHandler from './DataHandler';
 import ReportLoadingState from './common/leanix-reporting-utilities/ReportLoadingState';
 import DataIndex from './common/leanix-reporting-utilities/DataIndex';
 import ReportSetupUtilities from './common/leanix-reporting-utilities/ReportSetupUtilities';
@@ -65,7 +66,25 @@ function _createCategories() {
 	return result;
 }*/
 
-const DATA_SERIES_LIFECYCLES_OPTIONS = []; // will be filled at initReport
+const X_AXIS_UNIT_MONTHS = 'Months';
+const X_AXIS_UNIT_QUARTERS = 'Quarters';
+const X_AXIS_UNIT_YEARS = 'Years';
+const X_AXIS_UNIT_OPTIONS = [{
+		value: X_AXIS_UNIT_MONTHS,
+		label: X_AXIS_UNIT_MONTHS
+	}, {
+		value: X_AXIS_UNIT_QUARTERS,
+		label: X_AXIS_UNIT_QUARTERS
+	}, {
+		value: X_AXIS_UNIT_YEARS,
+		label: X_AXIS_UNIT_YEARS
+	}
+];
+const X_AXIS_UNITS = X_AXIS_UNIT_OPTIONS.map((e) => {
+	return e.value;
+});
+
+const DATA_SERIES_LIFECYCLES_OPTIONS = []; // will be filled in _createDynamicData
 
 const DATA_SERIES_TYPE_BAR_POSITIVE = 'bar+';
 const DATA_SERIES_TYPE_BAR_NEGATIVE = 'bar-';
@@ -115,26 +134,48 @@ const DATA_SERIES_STACKS = DATA_SERIES_STACK_OPTIONS.map((e) => {
 	return e.value;
 });
 
-const DEFAULT_DATA_SERIES = []; // will be filled at initReport
+const DATA_SERIES_AXIS_Y = 'y';
+const DATA_SERIES_AXIS_Y2 = 'y2';
+const DATA_SERIES_AXIS_OPTIONS = [{
+		value: DATA_SERIES_AXIS_Y,
+		label: 'Y'
+	}, {
+		value: DATA_SERIES_AXIS_Y2,
+		label: 'Y2'
+	}
+];
+const DATA_SERIES_AXES = DATA_SERIES_AXIS_OPTIONS.map((e) => {
+	return e.value;
+});
+
 
 class Report extends Component {
 
 	constructor(props) {
 		super(props);
-		this.index = new DataIndex(true);
-		this.setup = null;
+		this.index = new DataIndex();
+		this.setup = null; // set during initReport
 		this.reportState = new ReportState();
 		this.reportState.prepareRangeValue('selectedStartYearDistance', 1, 5, 1, 3);
 		this.reportState.prepareRangeValue('selectedEndYearDistance', 1, 5, 1, 3);
-		this.configStore = null;
+		this.reportState.prepareValue('selectedXAxisUnit', X_AXIS_UNITS, X_AXIS_UNIT_QUARTERS);
+		this.reportState.prepareValue('selectedYAxisLabel', this._validateLabel, 'Count of transitions');
+		this.reportState.prepareValue('selectedY2AxisLabel', this._validateLabel, 'Count in production');
+		this.configStore = null; // set during opening a configure dialog (see createConfig)
 		// bindings
 		this._initReport = this._initReport.bind(this);
+		this._createDynamicData = this._createDynamicData.bind(this);
+		this._mayCorrectConfigStore = this._mayCorrectConfigStore.bind(this);
 		this._createConfig = this._createConfig.bind(this);
 		this._handleError = this._handleError.bind(this);
 		this._handleData = this._handleData.bind(this);
 		this._handleConfig = this._handleConfig.bind(this);
+		this._closeConfigDialog = this._closeConfigDialog.bind(this);
 		this._handleFactsheetTypeSelect = this._handleFactsheetTypeSelect.bind(this);
 		this._handleStartYearDistanceInput = this._handleStartYearDistanceInput.bind(this);
+		this._handleEndYearDistanceInput = this._handleEndYearDistanceInput.bind(this);
+		this._handleXAxisUnitSelect = this._handleXAxisUnitSelect.bind(this);
+		this._handleY2AxisLabelInput = this._handleY2AxisLabelInput.bind(this);
 		this._handleEndYearDistanceInput = this._handleEndYearDistanceInput.bind(this);
 		this._handleDataSeriesNameInput = this._handleDataSeriesNameInput.bind(this);
 		this._handleDataSeriesLifecyclesMultiSelect = this._handleDataSeriesLifecyclesMultiSelect.bind(this);
@@ -142,12 +183,16 @@ class Report extends Component {
 		this._handleDataSeriesStackSelect = this._handleDataSeriesStackSelect.bind(this);
 		this._handleDataSeriesAddButton = this._handleDataSeriesAddButton.bind(this);
 		this._renderConfigContent = this._renderConfigContent.bind(this);
-		// react state definition
+		// react state definition (init)
 		this.state = {
 			loadingState: ReportLoadingState.INIT,
 			showConfigure: false,
 			chartData: []
 		};
+	}
+
+	_validateLabel(value) {
+		return value && value.length > 0;
 	}
 
 	componentDidMount() {
@@ -157,75 +202,16 @@ class Report extends Component {
 	_initReport(setup) {
 		this.setup = setup;
 		lx.showSpinner('Loading data...');
-		// get factsheet models (only those with a lifecycle field)
+		// get factsheet models, only those with a lifecycle field (important assumption for other functions!)
 		const factsheetTypes = ReportSetupUtilities.getFactsheetNames(setup).filter((e) => {
 			const fields = ReportSetupUtilities.getFactsheetFieldModels(setup, e);
-			return fields.lifecycle;
+			return fields ? fields.lifecycle : false;
 		});
 		this.reportState.prepareValue('selectedFactsheetType', factsheetTypes, factsheetTypes[0]);
-		// next add soem default dataSeries (some might not be possible, b/c of data model modifications)
-		const lifecycleDataModelValues = LifecycleUtilities.getDataModelValues(setup);
-		const lifecycleDataModelValueTranslations = LifecycleUtilities.translateDataModelValues(setup, lifecycleDataModelValues);
-		lifecycleDataModelValues.forEach((e, i) => {
-			DATA_SERIES_LIFECYCLES_OPTIONS.push({
-				value: e,
-				label: lifecycleDataModelValueTranslations[i]
-			});
-		});
-		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN)) {
-			DEFAULT_DATA_SERIES.push({
-				name: 'In planning stage',
-				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN],
-				type: DATA_SERIES_TYPE_BAR_POSITIVE,
-				stack: DATA_SERIES_STACK_LAST
-			});
-		}
-		const inProductionLifecycles = [];
-		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN)) {
-			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN);
-		}
-		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_ACTIVE)) {
-			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_ACTIVE);
-		}
-		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT)) {
-			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT);
-		}
-		if (inProductionLifecycles.length > 0) {
-			DEFAULT_DATA_SERIES.push({
-				name: 'In production',
-				lifecycles: inProductionLifecycles,
-				type: DATA_SERIES_TYPE_SPLINE_POSITIVE,
-				stack: DATA_SERIES_STACK_EVERY
-			});
-		}
-		if (lifecycleDataModelValues.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE)) {
-			DEFAULT_DATA_SERIES.push({
-				name: 'Retired',
-				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE],
-				type: DATA_SERIES_TYPE_BAR_NEGATIVE,
-				stack: DATA_SERIES_STACK_FIRST
-			});
-		}
-		this.reportState.prepareValue('selectedDataSeries', (value) => {
-			if (!Array.isArray(value) || value.length < 1) {
-				return false;
-			}
-			const tmp = {}; // used for duplication check
-			for (let i = 0; i < value.length; i++) {
-				const e = value[i];
-				if (!e.name || tmp[e.name]
-					|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
-					|| !DATA_SERIES_TYPES.includes(e.type)
-					|| !DATA_SERIES_STACKS.includes(e.stack)) {
-					return false;
-				}
-				tmp[e.name] = e;
-			}
-			return true;
-		}, DEFAULT_DATA_SERIES);
+		this._createDynamicData(factsheetTypes[0]); // try'n'catch not needed here
 		// load default report state
 		this.reportState.reset();
-		// then may restore saved report state
+		// then restore saved report state (init)
 		const restoreError = this.reportState.restore(setup, true);
 		if (restoreError) {
 			this._handleError(restoreError);
@@ -238,11 +224,113 @@ class Report extends Component {
 			lx.hideSpinner();
 			return;
 		}
+		// update if needed, b/c of the restore call
+		if (factsheetTypes[0] !== this.reportState.get('selectedFactsheetType')) {
+			this._createDynamicData(this.reportState.get('selectedFactsheetType')); // try'n'catch not needed here
+		}
 		lx.hideSpinner();
 		lx.ready(this._createConfig());
 	}
 
-	_createConfig(setup) {
+	_createDynamicData(factsheetType) {
+		// some data is dynamic and depends on the selected factsheet type
+		// e.g. 'lifecycle' definitions b/c they're factsheet specific
+		const lifecycleModel = LifecycleUtilities.getModel(this.setup, factsheetType);
+		this.index.lifecycleModel = lifecycleModel;
+		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.setup, lifecycleModel, factsheetType);
+		DATA_SERIES_LIFECYCLES_OPTIONS.splice(0); // remove previous elements
+		lifecycleModel.forEach((e, i) => {
+			DATA_SERIES_LIFECYCLES_OPTIONS.push({
+				value: e,
+				label: lifecycleModelTranslations[i]
+			});
+		});
+		console.log(DATA_SERIES_LIFECYCLES_OPTIONS);
+		const defaultDataSeries = [];
+		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN)) {
+			defaultDataSeries.push({
+				name: 'In planning stage',
+				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN],
+				type: DATA_SERIES_TYPE_BAR_POSITIVE,
+				axis: DATA_SERIES_AXIS_Y,
+				stack: DATA_SERIES_STACK_LAST
+			});
+		}
+		const inProductionLifecycles = [];
+		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN)) {
+			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN);
+		}
+		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_ACTIVE)) {
+			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_ACTIVE);
+		}
+		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT)) {
+			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT);
+		}
+		if (inProductionLifecycles.length > 0) {
+			defaultDataSeries.push({
+				name: 'In production',
+				lifecycles: inProductionLifecycles,
+				type: DATA_SERIES_TYPE_SPLINE_POSITIVE,
+				axis: DATA_SERIES_AXIS_Y2,
+				stack: DATA_SERIES_STACK_EVERY
+			});
+		}
+		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE)) {
+			defaultDataSeries.push({
+				name: 'Retired',
+				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE],
+				type: DATA_SERIES_TYPE_BAR_NEGATIVE,
+				axis: DATA_SERIES_AXIS_Y,
+				stack: DATA_SERIES_STACK_FIRST
+			});
+		}
+		if (defaultDataSeries.length === 0) {
+			// no default lifecycle? at least add one made up demo series
+			defaultDataSeries.push({
+				name: 'Demo series',
+				lifecycles: [lifecycleModel[0]],
+				type: DATA_SERIES_TYPE_BAR_POSITIVE,
+				axis: DATA_SERIES_AXIS_Y,
+				stack: DATA_SERIES_STACK_LAST
+			});
+		}
+		this.reportState.prepareValue('selectedDataSeries', (value) => {
+			if (!Array.isArray(value) || value.length < 1) {
+				return false;
+			}
+			const tmp = {}; // used for duplication check
+			for (let i = 0; i < value.length; i++) {
+				const e = value[i];
+				if (!e.name || tmp[e.name]
+					|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
+					|| !DATA_SERIES_TYPES.includes(e.type)
+					|| !DATA_SERIES_AXES.includes(e.axis)
+					|| !DATA_SERIES_STACKS.includes(e.stack)) {
+					return false;
+				}
+				tmp[e.name] = e;
+			}
+			return true;
+		}, defaultDataSeries);
+	}
+
+	_mayCorrectConfigStore() {
+		// only call after _createDynamicData to update factsheet specific things
+		const lifecycleModel = this.index.lifecycleModel;
+		const selectedDataSeries = this.configStore.selectedDataSeries;
+		selectedDataSeries.forEach((e) => {
+			e.lifecycles = e.lifecycles.filter((e2) => {
+				// remove all lifecycles that are not valid for the selected factsheet
+				return lifecycleModel.includes(e2);
+			});
+			if (e.lifecycles.length === 0) {
+				// no lifecycle left, so add a default one from the model
+				e.lifecycles.push(lifecycleModel[0]);
+			}
+		});
+	}
+
+	_createConfig() {
 		const selectedFactsheetType = this.reportState.get('selectedFactsheetType');
 		return {
 			allowEditing: false,
@@ -251,7 +339,7 @@ class Report extends Component {
 				key: selectedFactsheetType,
 				label: lx.translateFactSheetType(selectedFactsheetType, 'plural'),
 				fixedFactSheetType: selectedFactsheetType,
-				attributes: ['id', 'displayName', 'lifecycle { phases { phase startDate } }'],
+				attributes: ['id', 'displayName', LifecycleUtilities.GRAPHQL_ATTRIBUTE],
 				sorting: [{
 						key: 'displayName',
 						mode: 'BY_FIELD',
@@ -264,6 +352,7 @@ class Report extends Component {
 							loadingState: ReportLoadingState.NEW_DATA
 						});
 					}
+					this._closeConfigDialog();
 					this.index.remove('last');
 					this.index.putFacetData('last', facetData);
 					// get new data and re-render
@@ -273,7 +362,7 @@ class Report extends Component {
 			menuActions: {
 				showConfigure: true,
 				configureCallback: () => {
-					if (this.state.loadingState !== ReportLoadingState.SUCCESSFUL) {
+					if (this.state.loadingState !== ReportLoadingState.SUCCESSFUL || this.state.showConfigure) {
 						return;
 					}
 					this.configStore = this.reportState.getAll();
@@ -294,6 +383,13 @@ class Report extends Component {
 				orientation: 'landscape'
 			},
 			restoreStateCallback: (state) => {
+				this._closeConfigDialog();
+				const newFactsheetType = state.selectedFactsheetType;
+				// update if needed
+				if (newFactsheetType !== this.reportState.get('selectedFactsheetType')) {
+					this._createDynamicData(newFactsheetType); // try'n'catch not needed here
+				}
+				// now do the restore call (bookmark)
 				const restoreError = this.reportState.restore(state);
 				if (restoreError) {
 					this._handleError(restoreError);
@@ -313,14 +409,24 @@ class Report extends Component {
 	}
 
 	_handleData() {
-		const chartData = [];
 		// TODO
 		console.log(this.index);
 		console.log(this.reportState);
+		const current = DateUtilities.getCurrent();
+		const xAxisRange = {
+			current: current,
+			start: DateUtilities.minusYears(current, this.reportState.selectedStartYearDistance),
+			end: DateUtilities.plusYears(current, this.reportState.selectedEndYearDistance)
+		};
+		const data = DataHandler.create(
+			this.index.last.nodes,
+			xAxisRange,
+			this.reportState.selectedDataSeries);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: ReportLoadingState.SUCCESSFUL,
-			chartData: chartData
+			chartData: data.chartData,
+			tableData: data.tableData
 		});
 		this.reportState.publish();
 	}
@@ -359,11 +465,19 @@ class Report extends Component {
 		}
 	}
 
+	_closeConfigDialog() {
+		if (this.state.showConfigure) {
+			this._handleConfig(true)();
+		}
+	}
+
 	_handleFactsheetTypeSelect(option) {
 		if (this.configStore.selectedFactsheetType === option.value) {
 			return;
 		}
 		this.configStore.selectedFactsheetType = option.value;
+		this._createDynamicData(option.value); // try'n'catch not needed here
+		this._mayCorrectConfigStore();
 		this.forceUpdate();
 	}
 
@@ -385,6 +499,30 @@ class Report extends Component {
 		this.forceUpdate();
 	}
 
+	_handleXAxisUnitSelect(option) {
+		if (this.configStore.selectedXAxisUnit === option.value) {
+			return;
+		}
+		this.configStore.selectedXAxisUnit = option.value;
+		this.forceUpdate();
+	}
+
+	_handleYAxisLabelInput(value) {
+		if (this.configStore.selectedYAxisLabel === value) {
+			return;
+		}
+		this.configStore.selectedYAxisLabel = value;
+		this.forceUpdate();
+	}
+
+	_handleY2AxisLabelInput(value) {
+		if (this.configStore.selectedY2AxisLabel === value) {
+			return;
+		}
+		this.configStore.selectedY2AxisLabel = value;
+		this.forceUpdate();
+	}
+
 	_handleDataSeriesNameInput(index) {
 		return (value) => {
 			const dataSeries = this.configStore.selectedDataSeries[index];
@@ -401,7 +539,7 @@ class Report extends Component {
 			const dataSeries = this.configStore.selectedDataSeries[index];
 			const tmp = options.map((e) => {
 				return e.value;
-			}).sort(LifecycleUtilities.getLifecycleSorter());
+			}).sort(LifecycleUtilities.getSorter());
 			if (Utilities.areArraysEqual(dataSeries.lifecycles, tmp, true)) {
 				return;
 			}
@@ -428,6 +566,17 @@ class Report extends Component {
 				return;
 			}
 			dataSeries.stack = option.value;
+			this.forceUpdate();
+		};
+	}
+
+	_handleDataSeriesAxisSelect(index) {
+		return (option) => {
+			const dataSeries = this.configStore.selectedDataSeries[index];
+			if (dataSeries.axis === option.value) {
+				return;
+			}
+			dataSeries.axis = option.value;
 			this.forceUpdate();
 		};
 	}
@@ -494,7 +643,7 @@ class Report extends Component {
 		return (
 			<div>
 				<ModalDialog show={this.state.showConfigure}
-					width='800px'
+					width='900px'
 					title='Configure'
 					content={this._renderConfigContent}
 					onClose={this._handleConfig(true)}
@@ -520,25 +669,53 @@ class Report extends Component {
 					useSmallerFontSize
 					value={this.configStore.selectedFactsheetType}
 					onChange={this._handleFactsheetTypeSelect} />
-				<div style={{ display: 'inline-block', width: '50%', paddingRight: '0.5em' }}>
-					<InputField id='startYearDistance' label='How many years to look in the past?'
-						type='number' min='1' max='5'
-						useSmallerFontSize
-						value={this.configStore.selectedStartYearDistance.toString()}
-						onChange={this._handleStartYearDistanceInput} />
+				<div>
+					<div style={{ display: 'inline-block', width: '50%', paddingRight: '5px', verticalAlign: 'top' }}>
+						<InputField id='startYearDistance' label='How many years to look in the past?'
+							type='number' min='1' max='5'
+							useSmallerFontSize
+							value={this.configStore.selectedStartYearDistance.toString()}
+							onChange={this._handleStartYearDistanceInput} />
+					</div>
+					<div style={{ display: 'inline-block', width: '50%', paddingLeft: '5px', verticalAlign: 'top' }}>
+						<InputField id='endYearDistance' label='How many years to look in the future?'
+							type='number' min='1' max='5'
+							useSmallerFontSize
+							value={this.configStore.selectedEndYearDistance.toString()}
+							onChange={this._handleEndYearDistanceInput} />
+					</div>
 				</div>
-				<div style={{ display: 'inline-block', width: '50%', paddingLeft: '0.5em' }}>
-					<InputField id='endYearDistance' label='How many years to look in the future?'
-						type='number' min='1' max='5'
-						useSmallerFontSize
-						value={this.configStore.selectedEndYearDistance.toString()}
-						onChange={this._handleEndYearDistanceInput} />
+				<div>
+					<div style={{ display: 'inline-block', width: '30%', paddingRight: '5px', verticalAlign: 'top' }}>
+						<SelectField id='xAxisUnit' label='X axis unit'
+							options={X_AXIS_UNIT_OPTIONS}
+							useSmallerFontSize
+							value={this.configStore.selectedXAxisUnit}
+							onChange={this._handleXAxisUnitSelect} />
+					</div>
+					<div style={{ display: 'inline-block', width: '35%', paddingLeft: '5px', paddingRight: '5px', verticalAlign: 'top' }}>
+						<InputField id='yAxisLabel' label='Y axis label'
+							type='text'
+							useSmallerFontSize
+							value={this.configStore.selectedYAxisLabel}
+							onChange={this._handleYAxisLabelInput} />
+					</div>
+					<div style={{ display: 'inline-block', width: '35%', paddingLeft: '5px', verticalAlign: 'top' }}>
+						<InputField id='y2AxisLabel' label='Y2 axis label'
+							type='text'
+							useSmallerFontSize
+							value={this.configStore.selectedY2AxisLabel}
+							onChange={this._handleY2AxisLabelInput} />
+					</div>
 				</div>
-				<div className='panel panel-default small'>
+				<div className='panel panel-default small' style={{ marginBottom: '0' }}>
 					<div className='panel-heading'>
 						<b>Data series</b>
 					</div>
-					<div className='panel-body'>
+					<div className='panel-body' style={{
+						overflowY: 'scroll',
+						height: '12em'
+					}}>
 						{this._renderConfigContentDataSeries()}
 					</div>
 					<div className='panel-footer text-right'>
@@ -574,7 +751,7 @@ class Report extends Component {
 					onChange={this._handleDataSeriesNameInput(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
 				<MultiSelectField id='dataSeriesLifecycles' label='Lifecycles to use'
-					width='300px'
+					width='310px'
 					options={DATA_SERIES_LIFECYCLES_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					values={dataSeries.lifecycles}
@@ -587,6 +764,13 @@ class Report extends Component {
 					value={dataSeries.type}
 					onChange={this._handleDataSeriesTypeSelect(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
+				<SelectField id='dataSeriesAxis' label='Y Axis'
+					width='60px'
+					options={DATA_SERIES_AXIS_OPTIONS}
+					useSmallerFontSize labelReadOnly
+					value={dataSeries.axis}
+					onChange={this._handleDataSeriesAxisSelect(index)} />
+				<div style={{ display: 'inline-block', width: '5px' }} />
 				<SelectField id='dataSeriesStack' label='Stack'
 					width='140px'
 					options={DATA_SERIES_STACK_OPTIONS}
@@ -595,7 +779,7 @@ class Report extends Component {
 					onChange={this._handleDataSeriesStackSelect(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
 				<button type='button'
-					className='btn btn-default btn-xs'
+					className='btn btn-link btn-xs'
 					onClick={this._handleDataSeriesRemoveButton(index)}
 				>
 					<span className='glyphicon glyphicon-trash' aria-hidden='true' />

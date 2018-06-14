@@ -10,7 +10,6 @@ import SelectField from './SelectField';
 import TemplateView from './TemplateView';
 import NarrativeView from './NarrativeView';
 import Roadmap from './Roadmap';
-import ProjectRoadmapView from './ProjectRoadmapView';
 
 const LOADING_INIT = 0;
 const LOADING_SUCCESSFUL = 1;
@@ -382,7 +381,7 @@ class Report extends Component {
 	}
 
 	_handleData(index, platformTagId, csmTagId, transformTagId) {
-		console.log(index);
+		//console.log(index);
 		const segments = [];
 		const markets = [];
 		index.markets.nodes.forEach((e) => {
@@ -469,8 +468,8 @@ class Report extends Component {
 		// TODO
 		// TODO old as second, new as first view
 		const projectData = this._getProjectData(index);
-		console.log(projectData);
-		console.log(viewData);
+		//console.log(projectData);
+		//console.log(viewData);
 		lx.hideSpinner();
 		const firstSelectedMarket = marketOptions[0].value; // id of the first market
 		this.setState({
@@ -917,10 +916,16 @@ class Report extends Component {
 			);
 		}
 		if (ViewUtils.isSimplificationObsolescenceView(viewName)) {
+			// the first column is needed b/c of a nasty csv export bug
+			// the csv export throws an error if there is just one column defined
+			// but w/ 2 columns it works, even if one is excluded from view & export
 			return (
 				<BootstrapTable data={this.state.dialogTableData} keyField='id'
 					 striped hover search exportCSV height='300px'
 					 options={{ clearSearch: true }}>
+					<TableHeaderColumn hidden export={false}
+						 dataField='id'
+						>ID</TableHeaderColumn>
 					<TableHeaderColumn
 						 dataField='name'
 						 width='300px'
@@ -936,12 +941,15 @@ class Report extends Component {
 	}
 
 	_renderViewList(market) {
+		// TODO export
+		/*
+			The chosen one can be exported directly (see <a className='btn btn-default btn-xs disabled' href='#' role='button'>...</a> button in the upper right corner).
+		*/
 		return (
 			<div className='panel panel-default'>
 				<div className='panel-heading'>Views</div>
 				<div className='panel-body bg-info text-muted'>
-					Choose a view down below by clicking on it. The chosen one can be exported directly
-					(see <a className='btn btn-default btn-xs disabled' href='#' role='button'>...</a> button in the upper right corner).
+					Choose a view down below by clicking on it.
 				</div>
 				<div className='list-group'>
 					{market.views.map((stack, i) => {
@@ -982,24 +990,15 @@ class Report extends Component {
 			return (<NarrativeView data={this.state.templateViewData.narratives[market.id].list} />);
 		}
 		if (ViewUtils.isProjectRoadmapView(viewName)) {
-			// TODO remove toggle
-			return (
-				<div>
-					<button onClick={() => {
-						this.setState({ showRoadmapData: !this.state.showRoadmapData });
-					}}>{this.state.showRoadmapData ? 'hide' : 'show'}</button>
-					<ProjectRoadmapView showData={this.state.showRoadmapData} data={[]} />
-				</div>
-			);
-		}
-		// TODO remove
-		if (ViewUtils.isProjectRoadmapView2(viewName)) {
 			// TODO
 			// - project roadmap
-			// -> +3 years time frame
-			// -> start ab current quartal
+			const start = new Date(ViewUtils.CURRENT_QUARTER_TIME);
+			const end = new Date(ViewUtils.TODAY_PLUS_3_YEARS_TIME);
 			const chartConfig = {
-				timeSpan: ['2016-01-01', '2019-01-01'],
+				timeSpan: [
+					start.getFullYear() + '-' + this._ensureTwoDigitString(start.getMonth() + 1) + '-' + this._ensureTwoDigitString(start.getDate()),
+					end.getFullYear() + '-' + this._ensureTwoDigitString(end.getMonth() + 1) + '-' + this._ensureTwoDigitString(end.getDate())
+				],
 				gridlinesXaxis: true,
 				gridlinesYaxis: true,
 				infoLabel: 'CSM',
@@ -1012,6 +1011,10 @@ class Report extends Component {
 				config={chartConfig} />);
 		}
 		throw new Error('Unknown showView state: ' + this.state.showView);
+	}
+
+	_ensureTwoDigitString(num) {
+		return num < 10 ? ('0' + num) : num;
 	}
 
 	_renderTemplateView(market, view, stack) {

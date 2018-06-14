@@ -420,9 +420,7 @@ function getMarketViews(index, market) {
 		stacks.push(VIEW_SIMPLIFICATION_OBSOLESCENCE + ' (' + STACK_FIXED + ')');
 	}
 	stacks.push(VIEW_NARRATIVE);
-	stacks.push(VIEW_PROJECT_ROADMAP);
-	// TODO remove
-	stacks.push(VIEW_PROJECT_ROADMAP + ' 2');
+	// TODO stacks.push(VIEW_PROJECT_ROADMAP);
 	return stacks;
 }
 
@@ -480,15 +478,7 @@ function isProjectRoadmapView(viewName) {
 	if (!viewName) {
 		return false;
 	}
-	return viewName.includes(VIEW_PROJECT_ROADMAP) /* TODO remove */ && !viewName.includes('2');
-}
-
-function isProjectRoadmapView2(viewName) {
-	// TODO remove
-	if (!viewName) {
-		return false;
-	}
-	return viewName.includes(VIEW_PROJECT_ROADMAP + ' 2');
+	return viewName.includes(VIEW_PROJECT_ROADMAP);
 }
 
 function getBoxValues(index, platform, boxValueData) {
@@ -829,8 +819,6 @@ export default {
 	isSimplificationObsolescenceView: isSimplificationObsolescenceView,
 	isNarrativeView: isNarrativeView,
 	isProjectRoadmapView: isProjectRoadmapView,
-	// TODO remove
-	isProjectRoadmapView2: isProjectRoadmapView2,
 	getBoxValues: getBoxValues,
 	addSimObsBlockColors: addSimObsBlockColors
 };

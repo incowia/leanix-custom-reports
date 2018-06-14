@@ -26,9 +26,8 @@ import LifecycleUtilities from './LifecycleUtilities';
 
 class DataIndex {
 
-	constructor(extendDataTypes, lifecycleModel) {
-		this._extendDataTypes = extendDataTypes;
-		this._lifecycleModel = lifecycleModel;
+	constructor() {
+		this.lifecycleModel = null;
 	}
 
 	putGraphQL(response) {
@@ -37,7 +36,7 @@ class DataIndex {
 		}
 		for (let key in response) {
 			const value = response[key];
-			this[key] = _buildIndex(value, false, this._extendDataTypes, this._lifecycleModel);
+			this[key] = _buildIndex(value, false, this.lifecycleModel);
 		}
 	}
 
@@ -45,7 +44,7 @@ class DataIndex {
 		if (!key) {
 			return;
 		}
-		this[key] = _buildIndex(response, false, this._extendDataTypes, this._lifecycleModel);
+		this[key] = _buildIndex(response, false, this.lifecycleModel);
 	}
 
 	remove(key) {
@@ -188,7 +187,7 @@ function _getRelatedFactsheets(node, indexContainingFactsheets, relName, firstOn
 	}
 }
 
-function _buildIndex(data, factsheetIsNested, extendDataTypes, lifecycleModel) {
+function _buildIndex(data, factsheetIsNested, lifecycleModel) {
 	const index = {
 		nodes: [],
 		byID: {}
@@ -206,8 +205,8 @@ function _buildIndex(data, factsheetIsNested, extendDataTypes, lifecycleModel) {
 			delete e.factSheet;
 			e.factsheet = factsheet;
 		}
-		_buildSubIndices(factsheet);
-		if (extendDataTypes) {
+		_buildSubIndices(factsheet, lifecycleModel);
+		if (lifecycleModel) {
 			const lifecycles = LifecycleUtilities.getLifecycles(factsheet, lifecycleModel);
 			factsheet.lifecycle = lifecycles;
 		}
@@ -220,13 +219,13 @@ function _buildIndex(data, factsheetIsNested, extendDataTypes, lifecycleModel) {
 	return index;
 }
 
-function _buildSubIndices(node, extendDataTypes, lifecycleModel) {
+function _buildSubIndices(node, lifecycleModel) {
 	for (let key in node) {
 		const attr = node[key];
 		if (!_isRelation(attr)) {
 			continue;
 		}
-		node[key] = _buildIndex(attr, true, extendDataTypes, lifecycleModel);
+		node[key] = _buildIndex(attr, true, lifecycleModel);
 	}
 }
 

@@ -56,6 +56,28 @@ function getTimestamp(date) {
 	}
 }
 
+function plusYears(date, years) {
+	if (years < 1) {
+		return date;
+	}
+	if (!(date instanceof Date)) {
+		date = new Date(date);
+	}
+	date.setFullYear(date.getFullYear() + years);
+	return date.getTime();
+}
+
+function minusYears(date, years) {
+	if (years < 1) {
+		return date;
+	}
+	if (!(date instanceof Date)) {
+		date = new Date(date);
+	}
+	date.setFullYear(date.getFullYear() - years);
+	return date.getTime();
+}
+
 function toInputDateString(date) {
 	const dateObj = typeof date === 'number' || date instanceof Number ? new Date(date) : date;
 	// YYYY-MM-DD
@@ -78,6 +100,8 @@ export default {
 	getInit: getInit,
 	getCurrent: getCurrent,
 	getTimestamp: getTimestamp,
+	plusYears: plusYears,
+	minusYears: minusYears,
 	toInputDateString: toInputDateString,
 	parseInputDateString: parseInputDateString
 };
