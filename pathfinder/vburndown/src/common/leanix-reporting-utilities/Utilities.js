@@ -111,11 +111,14 @@ function getValues(obj) {
 }
 
 function copyObject(obj, deep) {
-	const result = {};
+	let result = {};
 	if (!obj) {
 		return result;
 	}
 	if (deep) {
+		if (typeof obj.copy === 'function') {
+			return obj.copy(deep);
+		}
 		for (let key in obj) {
 			const value = obj[key];
 			if (Array.isArray(value)) {
@@ -127,6 +130,9 @@ function copyObject(obj, deep) {
 			}
 		}
 	} else {
+		if (typeof obj.copy === 'function') {
+			return obj.copy(deep);
+		}
 		for (let key in obj) {
 			result[key] = obj[key];
 		}
