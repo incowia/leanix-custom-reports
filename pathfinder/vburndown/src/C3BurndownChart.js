@@ -74,7 +74,7 @@ class C3BurndownChart {
 	}
 
 	destroy() {
-		this.chart.destroy();
+		this.chart = this.chart.destroy();
 	}
 }
 
