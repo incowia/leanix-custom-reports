@@ -9,6 +9,13 @@ import MultiSelectField from './common/react-leanix-reporting/MultiSelectField';
 import InputField from './common/react-leanix-reporting/InputField';
 import Constants from './Constants';
 
+const DIALOG_WIDTH = '900px';
+const DATA_SERIES_NAME_WIDTH = '140px';
+const DATA_SERIES_LIFECYCLE_WIDTH = '310px';
+const DATA_SERIES_TYPE_WIDTH = '130px';
+const DATA_SERIES_AXIS_WIDTH = '60px';
+const DATA_SERIES_STACK_WIDTH = '130px';
+
 class ConfigureDialog extends Component {
 
 	constructor(props) {
@@ -18,6 +25,8 @@ class ConfigureDialog extends Component {
 		this._handleOnClose = this._handleOnClose.bind(this);
 		this._handleOnOK = this._handleOnOK.bind(this);
 		this._handleFactsheetTypeSelect = this._handleFactsheetTypeSelect.bind(this);
+		this._updateLifecycleVars = this._updateLifecycleVars.bind(this);
+		this._mayCorrectConfigStore = this._mayCorrectConfigStore.bind(this);
 		this._handleStartYearDistanceInput = this._handleStartYearDistanceInput.bind(this);
 		this._handleEndYearDistanceInput = this._handleEndYearDistanceInput.bind(this);
 		this._handleXAxisUnitSelect = this._handleXAxisUnitSelect.bind(this);
@@ -30,7 +39,6 @@ class ConfigureDialog extends Component {
 		this._handleDataSeriesAxisSelect = this._handleDataSeriesAxisSelect.bind(this);
 		this._handleDataSeriesRemoveButton = this._handleDataSeriesRemoveButton.bind(this);
 		this._handleDataSeriesAddButton = this._handleDataSeriesAddButton.bind(this);
-		this._mayCorrectConfigStore = this._mayCorrectConfigStore.bind(this);
 		this._renderContent = this._renderContent.bind(this);
 		this._renderDataSeries = this._renderDataSeries.bind(this);
 		this._renderSingleDataSeries = this._renderSingleDataSeries.bind(this);
@@ -52,8 +60,31 @@ class ConfigureDialog extends Component {
 			return;
 		}
 		this.configStore.selectedFactsheetType = option.value;
-		this.props.onFactsheetTypeChange(option.value);
+		this._updateLifecycleVars(option.value);
+		this._mayCorrectConfigStore();
 		this.forceUpdate();
+	}
+
+	_updateLifecycleVars(factsheetType) {
+		this.lifecycleOptions = Constants.getDataSeriesLifecycleOptions(this.props.setup, factsheetType);
+		this.lifecycleModel = this.lifecycleOptions.map((e) => {
+			return e.value;
+		});
+	}
+
+	_mayCorrectConfigStore() {
+		const lifecycleModel = this.lifecycleModel;
+		const selectedDataSeries = this.configStore.selectedDataSeries;
+		selectedDataSeries.forEach((e) => {
+			e.lifecycles = e.lifecycles.filter((e2) => {
+				// remove all lifecycles that are not valid for the selected factsheet
+				return lifecycleModel.includes(e2);
+			});
+			if (e.lifecycles.length === 0) {
+				// no lifecycle left, so add a default one from the model
+				e.lifecycles.push(lifecycleModel[0]);
+			}
+		});
 	}
 
 	_handleStartYearDistanceInput(value) {
@@ -114,7 +145,7 @@ class ConfigureDialog extends Component {
 			const dataSeries = this.configStore.selectedDataSeries[index];
 			const tmp = options.map((e) => {
 				return e.value;
-			}).sort(LifecycleUtilities.getSorter(this.props.lifecycleModel));
+			}).sort(LifecycleUtilities.getSorter(this.lifecycleModel));
 			if (Utilities.areArraysEqual(dataSeries.lifecycles, tmp, true)) {
 				return;
 			}
@@ -167,7 +198,7 @@ class ConfigureDialog extends Component {
 		// type DataSeries
 		this.configStore.selectedDataSeries.push({
 			name: 'Demo series',
-			lifecycles: [this.props.lifecycleModel[0]],
+			lifecycles: [this.lifecycleModel[0]],
 			type: Constants.DATA_SERIES_TYPE_BAR_POSITIVE,
 			axis: Constants.DATA_SERIES_AXIS_Y,
 			stack: Constants.DATA_SERIES_STACK_EVERY
@@ -175,31 +206,16 @@ class ConfigureDialog extends Component {
 		this.forceUpdate();
 	}
 
-	_mayCorrectConfigStore() {
-		const lifecycleModel = this.props.lifecycleModel;
-		const selectedDataSeries = this.configStore.selectedDataSeries;
-		selectedDataSeries.forEach((e) => {
-			e.lifecycles = e.lifecycles.filter((e2) => {
-				// remove all lifecycles that are not valid for the selected factsheet
-				return lifecycleModel.includes(e2);
-			});
-			if (e.lifecycles.length === 0) {
-				// no lifecycle left, so add a default one from the model
-				e.lifecycles.push(lifecycleModel[0]);
-			}
-		});
-	}
-
 	render() {
 		if (this.props.show) {
 			if (!this.configStore) {
 				this.configStore = this.props.reportState.getAll();
+				this._updateLifecycleVars(this.configStore.selectedFactsheetType);
 			}
-			this._mayCorrectConfigStore();
 		}
 		return (
 			<ModalDialog show={this.props.show}
-				width='900px'
+				width={DIALOG_WIDTH}
 				title='Configure'
 				content={this._renderContent}
 				onClose={this._handleOnClose}
@@ -289,15 +305,15 @@ class ConfigureDialog extends Component {
 		const result = [];
 		result.push((
 			<div key='headings'>
-				<p className='text-center' style={{ display: 'inline-block', width: '140px' }}><b>Display name</b></p>
+				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_NAME_WIDTH }}><b>Display name</b></p>
 				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: '320px' }}><b>Lifecycles to use</b></p>
+				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_LIFECYCLE_WIDTH }}><b>Lifecycles to use</b></p>
 				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: '110px' }}><b>Type</b></p>
+				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_TYPE_WIDTH }}><b>Type</b></p>
 				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: '60px' }}><b>Y Axis</b></p>
+				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_AXIS_WIDTH }}><b>Y Axis</b></p>
 				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: '140px' }}><b>Stack</b></p>
+				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_STACK_WIDTH }}><b>Stack</b></p>
 				<div style={{ display: 'inline-block', width: '5px' }} />
 			</div>
 		));
@@ -313,34 +329,34 @@ class ConfigureDialog extends Component {
 			<div className='form-inline' key={index} style={{ marginBottom: '5px' }}>
 				<InputField id='dataSeriesName' label='Display name'
 					type='text'
-					width='140px'
+					width={DATA_SERIES_NAME_WIDTH}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.name}
 					onChange={this._handleDataSeriesNameInput(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
 				<MultiSelectField id='dataSeriesLifecycles' label='Lifecycles to use'
-					width='320px'
-					options={this.props.lifecycleOptions}
+					width={DATA_SERIES_LIFECYCLE_WIDTH}
+					options={this.lifecycleOptions}
 					useSmallerFontSize labelReadOnly
 					values={dataSeries.lifecycles}
 					onChange={this._handleDataSeriesLifecyclesMultiSelect(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
 				<SelectField id='dataSeriesType' label='Type'
-					width='110px'
+					width={DATA_SERIES_TYPE_WIDTH}
 					options={Constants.DATA_SERIES_TYPE_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.type}
 					onChange={this._handleDataSeriesTypeSelect(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
 				<SelectField id='dataSeriesAxis' label='Y Axis'
-					width='60px'
+					width={DATA_SERIES_AXIS_WIDTH}
 					options={Constants.DATA_SERIES_AXIS_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.axis}
 					onChange={this._handleDataSeriesAxisSelect(index)} />
 				<div style={{ display: 'inline-block', width: '5px' }} />
 				<SelectField id='dataSeriesStack' label='Stack'
-					width='140px'
+					width={DATA_SERIES_STACK_WIDTH}
 					options={Constants.DATA_SERIES_STACK_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.stack}
@@ -359,15 +375,8 @@ class ConfigureDialog extends Component {
 
 ConfigureDialog.propTypes = {
 	show: PropTypes.bool.isRequired,
-	lifecycleModel: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
-	lifecycleOptions: PropTypes.arrayOf(
-		PropTypes.shape({
-			value: PropTypes.string.isRequired,
-			label: PropTypes.string.isRequired
-		}).isRequired
-	).isRequired,
+	setup: PropTypes.object.isRequired,
 	reportState: PropTypes.instanceOf(ReportState).isRequired,
-	onFactsheetTypeChange: PropTypes.func.isRequired,
 	onClose: PropTypes.func.isRequired,
 	onOK: PropTypes.func.isRequired
 };

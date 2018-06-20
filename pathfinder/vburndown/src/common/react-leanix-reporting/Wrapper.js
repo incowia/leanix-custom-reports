@@ -34,14 +34,15 @@ class Wrapper extends Component {
 		super(props);
 		this.getInnerState = this.getInnerState.bind(this);
 		this.getConfig = this.getConfig.bind(this);
+		this.reset = this.reset.bind(this);
 		// some props needs to stay the same during the whole lifecycle of this component,
 		// that's why the wrapper separates its props and creates an own config, which gets passed down
 		const config = {
 			id: props.id
 		};
 		Object.freeze(config);
-		this.config = config;
-		this.innerState = undefined;
+		this._config = config;
+		this._innerState = undefined;
 	}
 
 	componentDidMount() {
@@ -55,21 +56,26 @@ class Wrapper extends Component {
 			return;
 		}
 		const initialInnerState = this.props.onMount(this.getConfig(), divElement);
-		this.innerState = initialInnerState;
+		this._innerState = initialInnerState;
 	}
 
 	componentWillUnmount() {
 		const divElement = ReactDOM.findDOMNode(this);
 		this.props.onWillUnmount(this.getConfig(), this.getInnerState(), divElement);
-		this.innerState = undefined;
+		this._innerState = undefined;
 	}
 
 	getConfig() {
-		return this.config;
+		return this._config;
 	}
 
 	getInnerState() {
-		return this.innerState;
+		return this._innerState;
+	}
+
+	reset() {
+		this.componentWillUnmount();
+		this.componentDidMount();
 	}
 
 	render() {

@@ -148,6 +148,34 @@ function getByPhase(lifecycles, phase) {
 	}
 }
 
+function getLatest(lifecycles) {
+	if (!lifecycles) {
+		return;
+	}
+	let result = lifecycles[0];
+	for (let i = 1; i < lifecycles.length; i++) {
+		const lifecycle = lifecycles[i];
+		if (result.getEnd() <= lifecycle.getEnd()) {
+			result = lifecycle;
+		}
+	}
+	return result;
+}
+
+function getEarliest(lifecycles) {
+	if (!lifecycles) {
+		return;
+	}
+	let result = lifecycles[0];
+	for (let i = 1; i < lifecycles.length; i++) {
+		const lifecycle = lifecycles[i];
+		if (result.getStart() >= lifecycle.getStart()) {
+			result = lifecycle;
+		}
+	}
+	return result;
+}
+
 function getModel(setup, factsheetType) {
 	if (!setup || !factsheetType) {
 		return [];
@@ -193,6 +221,8 @@ export default {
 	getNext: getNext,
 	getByDate: getByDate,
 	getByPhase: getByPhase,
+	getLatest: getLatest,
+	getEarliest: getEarliest,
 	getModel: getModel,
 	translateModel: translateModel
 };

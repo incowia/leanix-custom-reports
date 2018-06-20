@@ -10,62 +10,6 @@ import ReportState from './common/leanix-reporting-utilities/ReportState';
 import ConfigureDialog from './ConfigureDialog';
 import Constants from './Constants';
 
-/*const CATEGORIES = _createCategories();
-const CATEGORY_NAMES = CATEGORIES.map((e) => {
-	return e.name;
-});
-
-function _createCategories() {
-	// create categories in an interval from now - 6 month to now + 6 months
-	const currentMonthStart = DateUtil.setFirstDayOfMonth(DateUtil.getInitDate(), false);
-	const currentMonthEnd = DateUtil.setLastDayOfMonth(DateUtil.getInitDate(), true);
-	const result = [{
-			name: 'time'
-		}
-	];
-	// get previous months
-	let lastStart = currentMonthStart.clone();
-	let lastEnd = currentMonthEnd.clone();
-	for (let i = 6; i > 0; i--) {
-		const monthStart = DateUtil.setPreviousMonth(lastStart);
-		const monthEnd = DateUtil.setPreviousMonth(lastEnd);
-		result[i] = {
-			name: monthStart.format('MMMM Y'),
-			start: DateUtil.setFirstDayOfMonth(monthStart, false),
-			end: DateUtil.setLastDayOfMonth(monthEnd, true)
-		};
-		result[i].range = DateUtil.createRange(result[i].start, result[i].end);
-		lastStart = monthStart.clone();
-		lastEnd = monthEnd.clone();
-	}
-	// add current
-	result.push({
-		name: currentMonthStart.format('MMMM Y'),
-		start: currentMonthStart,
-		end: currentMonthEnd,
-		range: DateUtil.createRange(currentMonthStart, currentMonthEnd)
-	});
-	lastStart = currentMonthStart.clone();
-	lastEnd = currentMonthEnd.clone();
-	// get next months
-	for (let i = 0; i < 6; i++) {
-		const monthStart = DateUtil.setNextMonth(lastStart);
-		const monthEnd = DateUtil.setNextMonth(lastEnd);
-		result.push({
-			name: monthStart.format('MMMM Y'),
-			start: DateUtil.setFirstDayOfMonth(monthStart, false),
-			end: DateUtil.setLastDayOfMonth(monthEnd, true)
-		});
-		const j = result.length - 1;
-		result[j].range = DateUtil.createRange(result[j].start, result[j].end);
-		lastStart = monthStart.clone();
-		lastEnd = monthEnd.clone();
-	}
-	return result;
-}*/
-
-const DATA_SERIES_LIFECYCLES_OPTIONS = []; // will be filled in _createDynamicData
-
 class Report extends Component {
 
 	constructor(props) {
@@ -80,7 +24,8 @@ class Report extends Component {
 		this.reportState.prepareValue('selectedY2AxisLabel', this._validateLabel, 'Count in production');
 		// bindings
 		this._initReport = this._initReport.bind(this);
-		this._createDynamicData = this._createDynamicData.bind(this);
+		this._updateReportState = this._updateReportState.bind(this);
+		this._updateDynamicReportState = this._updateDynamicReportState.bind(this);
 		this._createConfig = this._createConfig.bind(this);
 		this._handleError = this._handleError.bind(this);
 		this._handleData = this._handleData.bind(this);
@@ -111,55 +56,60 @@ class Report extends Component {
 			const fields = ReportSetupUtilities.getFactsheetFieldModels(setup, e);
 			return fields ? fields.lifecycle : false;
 		});
-		this.reportState.prepareValue('selectedFactsheetType', factsheetTypes, factsheetTypes[0]);
-		this._createDynamicData(factsheetTypes[0]); // try'n'catch not needed here
-		// load default report state
-		this.reportState.reset();
-		// then restore saved report state (init)
-		const restoreError = this.reportState.restore(setup, true);
-		if (restoreError) {
-			this._handleError(restoreError);
-			lx.hideSpinner();
-			return;
-		}
-		if (!this.reportState.get('selectedFactsheetType')) {
+		if (!factsheetTypes) {
 			// error, since there is no factsheet type with enough data
 			this._handleError('There is no factsheet type with enough data.');
 			lx.hideSpinner();
 			return;
 		}
-		// update if needed, b/c of the restore call
-		if (factsheetTypes[0] !== this.reportState.get('selectedFactsheetType')) {
-			this._createDynamicData(this.reportState.get('selectedFactsheetType')); // try'n'catch not needed here
+		this.reportState.prepareValue('selectedFactsheetType', factsheetTypes, factsheetTypes[0]);
+		this._updateDynamicReportState(factsheetTypes[0]); // try'n'catch not needed here
+		// load default report state
+		this.reportState.reset();
+		// then restore saved report state (init)
+		if (setup.savedState && setup.savedState.customState) {
+			const updateError = this._updateReportState(setup.savedState.customState);
+			if (updateError) {
+				console.error('Please update the initial report configuration.');
+				this._handleError(updateError);
+				lx.hideSpinner();
+				return;
+			}
 		}
 		lx.hideSpinner();
 		lx.ready(this._createConfig());
 	}
 
-	_createDynamicData(factsheetType) {
+	_updateReportState(newState) {
+		// some validations & default values depends on the factsheet type, therefore
+		// a 2-step update is needed
+		const newFactsheetType = newState.selectedFactsheetType;
+		const oldFactsheetType = this.reportState.get('selectedFactsheetType');
+		if (newFactsheetType !== oldFactsheetType) {
+			try {
+				this.reportState.set('selectedFactsheetType', newFactsheetType);
+			} catch (err) {
+				// saved one is not valid anymore
+				return err;
+			}
+			this._updateDynamicReportState(newFactsheetType);
+		}
+		// now update the other values
+		try {
+			this.reportState.update(newState);
+		} catch (err) {
+			// restore the old factsheet type
+			this.reportState.set('selectedFactsheetType', oldFactsheetType);
+			this._updateDynamicReportState(oldFactsheetType);
+			return err;
+		}
+	}
+
+	_updateDynamicReportState(factsheetType) {
 		// some data is dynamic and depends on the selected factsheet type
 		// e.g. 'lifecycle' definitions b/c they're factsheet specific
 		const lifecycleModel = LifecycleUtilities.getModel(this.setup, factsheetType);
-		if (factsheetType === 'BusinessCapability') {
-			lifecycleModel.splice(0, 1);
-		}
-		if (this.index.lifecycleModel) {
-			// need to update the same instance to ensure updates in configure dialog
-			this.index.lifecycleModel.splice(0); // remove previous elements
-			lifecycleModel.forEach((e) => {
-				this.index.lifecycleModel.push(e);
-			});
-		} else {
-			this.index.lifecycleModel = lifecycleModel;
-		}
-		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.setup, lifecycleModel, factsheetType);
-		DATA_SERIES_LIFECYCLES_OPTIONS.splice(0); // remove previous elements
-		lifecycleModel.forEach((e, i) => {
-			DATA_SERIES_LIFECYCLES_OPTIONS.push({
-				value: e,
-				label: lifecycleModelTranslations[i]
-			});
-		});
+		this.index.lifecycleModel = lifecycleModel;
 		const defaultDataSeries = [];
 		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN)) {
 			// type DataSeries
@@ -212,24 +162,26 @@ class Report extends Component {
 				stack: Constants.DATA_SERIES_STACK_LAST
 			});
 		}
-		this.reportState.prepareValue('selectedDataSeries', (value) => {
-			if (!Array.isArray(value) || value.length < 1) {
+		this.reportState.prepareValue('selectedDataSeries', this._validateDataSeries, defaultDataSeries);
+	}
+
+	_validateDataSeries(value) {
+		if (!Array.isArray(value) || value.length < 1) {
+			return false;
+		}
+		const tmp = {}; // used for duplication check
+		for (let i = 0; i < value.length; i++) {
+			const e = value[i];
+			if (!e.name || tmp[e.name]
+				|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
+				|| !Constants.DATA_SERIES_TYPES.includes(e.type)
+				|| !Constants.DATA_SERIES_AXES.includes(e.axis)
+				|| !Constants.DATA_SERIES_STACKS.includes(e.stack)) {
 				return false;
 			}
-			const tmp = {}; // used for duplication check
-			for (let i = 0; i < value.length; i++) {
-				const e = value[i];
-				if (!e.name || tmp[e.name]
-					|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
-					|| !Constants.DATA_SERIES_TYPES.includes(e.type)
-					|| !Constants.DATA_SERIES_AXES.includes(e.axis)
-					|| !Constants.DATA_SERIES_STACKS.includes(e.stack)) {
-					return false;
-				}
-				tmp[e.name] = e;
-			}
-			return true;
-		}, defaultDataSeries);
+			tmp[e.name] = e;
+		}
+		return true;
 	}
 
 	_createConfig() {
@@ -285,15 +237,10 @@ class Report extends Component {
 			},
 			restoreStateCallback: (state) => {
 				this._closeConfigDialog();
-				const newFactsheetType = state.selectedFactsheetType;
-				// update if needed
-				if (newFactsheetType !== this.reportState.get('selectedFactsheetType')) {
-					this._createDynamicData(newFactsheetType); // try'n'catch not needed here
-				}
-				// now do the restore call (bookmark)
-				const restoreError = this.reportState.restore(state);
-				if (restoreError) {
-					this._handleError(restoreError);
+				const updateError = this._updateReportState(state);
+				if (updateError) {
+					console.error('Please delete this bookmark.');
+					this._handleError(updateError);
 					return;
 				}
 				// get new data and re-render
@@ -311,24 +258,19 @@ class Report extends Component {
 
 	_handleData() {
 		// TODO
-		console.log(this.index);
-		console.log(this.reportState);
-		const current = DateUtilities.getCurrent();
-		const xAxisRange = {
-			current: current,
-			start: DateUtilities.minusYears(current, this.reportState.selectedStartYearDistance),
-			end: DateUtilities.plusYears(current, this.reportState.selectedEndYearDistance)
-		};
-		const data = DataHandler.create(
-			this.index.last.nodes,
-			xAxisRange,
-			this.reportState.selectedDataSeries);
+		const data = DataHandler.create(this.index.last.nodes,
+			this.reportState.get('selectedXAxisUnit'),
+			this.reportState.get('selectedStartYearDistance'),
+			this.reportState.get('selectedEndYearDistance'),
+			this.reportState.get('selectedDataSeries'));
+		console.log(data);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: ReportLoadingState.SUCCESSFUL,
 			chartData: data.chartData,
 			tableData: data.tableData
 		});
+		// publish report state to the framework here, b/c all changes always trigger this method
 		this.reportState.publish();
 	}
 
@@ -340,18 +282,18 @@ class Report extends Component {
 
 	_handleOnOK(newState) {
 		const oldSFT = this.reportState.get('selectedFactsheetType');
-		try {
-			this.reportState.update(newState);
-		} catch (err) {
-			 // TODO how to mark error fields?
-			 console.error(err);
+		const updateError = this._updateReportState(newState);
+		if (updateError) {
+			console.error('Error in Configure dialog.');
+			this._handleError(updateError);
+			return; // TODO how to mark error fields?
 		}
 		this.setState({
 			showConfigure: false
 		});
-		if (oldSFT === this.reportState.selectedFactsheetType) {
-			// no need to update report config --> trigger handleData with new config
-			this.handleData();
+		if (oldSFT === this.reportState.get('selectedFactsheetType')) {
+			// no need to update report config --> trigger _handleData with new config
+			this._handleData();
 			return;
 		}
 		// update report config, this will trigger the facet callback automatically
@@ -410,10 +352,8 @@ class Report extends Component {
 			<div>
 				<ConfigureDialog
 					show={this.state.showConfigure}
-					lifecycleModel={this.index.lifecycleModel}
-					lifecycleOptions={DATA_SERIES_LIFECYCLES_OPTIONS}
+					setup={this.setup}
 					reportState={this.reportState}
-					onFactsheetTypeChange={this._createDynamicData}
 					onClose={this._handleOnClose}
 					onOK={this._handleOnOK}
 				/>

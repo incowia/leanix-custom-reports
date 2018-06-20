@@ -116,9 +116,6 @@ function copyObject(obj, deep) {
 		return result;
 	}
 	if (deep) {
-		if (typeof obj.copy === 'function') {
-			return obj.copy(deep);
-		}
 		for (let key in obj) {
 			const value = obj[key];
 			if (Array.isArray(value)) {
@@ -130,9 +127,6 @@ function copyObject(obj, deep) {
 			}
 		}
 	} else {
-		if (typeof obj.copy === 'function') {
-			return obj.copy(deep);
-		}
 		for (let key in obj) {
 			result[key] = obj[key];
 		}
@@ -244,6 +238,18 @@ function areArraysEqual(first, second, deep) {
 	return true;
 }
 
+function containsAny(first, second) {
+	if (!first || !second) {
+		return false;
+	}
+	for (let i = 0; i < second.length; i++) {
+		if (first.includes(second[i])) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // TODO ???
 function isArrayEmpty(arr, startIdx) {
 	if (!arr) {
@@ -273,5 +279,6 @@ export default {
 	copyArray: copyArray,
 	areObjectsEqual: areObjectsEqual,
 	areArraysEqual: areArraysEqual,
+	containsAny: containsAny,
 	isArrayEmpty: isArrayEmpty
 };

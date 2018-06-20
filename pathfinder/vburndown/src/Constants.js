@@ -1,3 +1,5 @@
+import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
+
 const X_AXIS_UNIT_MONTHS = 'Months';
 const X_AXIS_UNIT_QUARTERS = 'Quarters';
 const X_AXIS_UNIT_YEARS = 'Years';
@@ -22,6 +24,10 @@ const DATA_SERIES_TYPE_LINE_POSITIVE = 'line+';
 const DATA_SERIES_TYPE_LINE_NEGATIVE = 'line-';
 const DATA_SERIES_TYPE_SPLINE_POSITIVE = 'spline+';
 const DATA_SERIES_TYPE_SPLINE_NEGATIVE = 'spline-';
+const DATA_SERIES_TYPE_AREA_POSITIVE = 'area+';
+const DATA_SERIES_TYPE_AREA_NEGATIVE = 'area-';
+const DATA_SERIES_TYPE_AREA_SPLINE_POSITIVE = 'area-spline+';
+const DATA_SERIES_TYPE_AREA_SPLINE_NEGATIVE = 'area-spline-';
 const DATA_SERIES_TYPE_OPTIONS = [{
 		value: DATA_SERIES_TYPE_BAR_POSITIVE,
 		label: 'Bar positive'
@@ -40,6 +46,18 @@ const DATA_SERIES_TYPE_OPTIONS = [{
 	}, {
 		value: DATA_SERIES_TYPE_SPLINE_NEGATIVE,
 		label: 'Spline negative'
+	}, {
+		value: DATA_SERIES_TYPE_AREA_POSITIVE,
+		label: 'Area positive'
+	}, {
+		value: DATA_SERIES_TYPE_AREA_NEGATIVE,
+		label: 'Area negative'
+	}, {
+		value: DATA_SERIES_TYPE_AREA_SPLINE_POSITIVE,
+		label: 'Area Spline positive'
+	}, {
+		value: DATA_SERIES_TYPE_AREA_SPLINE_NEGATIVE,
+		label: 'Area Spline negative'
 	}
 ];
 const DATA_SERIES_TYPES = DATA_SERIES_TYPE_OPTIONS.map((e) => {
@@ -78,6 +96,17 @@ const DATA_SERIES_AXES = DATA_SERIES_AXIS_OPTIONS.map((e) => {
 	return e.value;
 });
 
+function getDataSeriesLifecycleOptions(setup, factsheetType) {
+	const lifecycleModel = LifecycleUtilities.getModel(setup, factsheetType);
+	const lifecycleModelTranslations = LifecycleUtilities.translateModel(setup, lifecycleModel, factsheetType);
+	return lifecycleModel.map((e, i) => {
+		return {
+			value: e,
+			label: lifecycleModelTranslations[i]
+		};
+	});
+}
+
 export default {
 	X_AXIS_UNIT_MONTHS: X_AXIS_UNIT_MONTHS,
 	X_AXIS_UNIT_QUARTERS: X_AXIS_UNIT_QUARTERS,
@@ -90,6 +119,10 @@ export default {
 	DATA_SERIES_TYPE_LINE_NEGATIVE: DATA_SERIES_TYPE_LINE_NEGATIVE,
 	DATA_SERIES_TYPE_SPLINE_POSITIVE: DATA_SERIES_TYPE_SPLINE_POSITIVE,
 	DATA_SERIES_TYPE_SPLINE_NEGATIVE: DATA_SERIES_TYPE_SPLINE_NEGATIVE,
+	DATA_SERIES_TYPE_AREA_POSITIVE: DATA_SERIES_TYPE_AREA_POSITIVE,
+	DATA_SERIES_TYPE_AREA_NEGATIVE: DATA_SERIES_TYPE_AREA_NEGATIVE,
+	DATA_SERIES_TYPE_AREA_SPLINE_POSITIVE: DATA_SERIES_TYPE_AREA_SPLINE_POSITIVE,
+	DATA_SERIES_TYPE_AREA_SPLINE_NEGATIVE: DATA_SERIES_TYPE_AREA_SPLINE_NEGATIVE,
 	DATA_SERIES_TYPE_OPTIONS: DATA_SERIES_TYPE_OPTIONS,
 	DATA_SERIES_TYPES: DATA_SERIES_TYPES,
 	DATA_SERIES_STACK_LAST: DATA_SERIES_STACK_LAST,
@@ -100,5 +133,6 @@ export default {
 	DATA_SERIES_AXIS_Y: DATA_SERIES_AXIS_Y,
 	DATA_SERIES_AXIS_Y2: DATA_SERIES_AXIS_Y2,
 	DATA_SERIES_AXIS_OPTIONS: DATA_SERIES_AXIS_OPTIONS,
-	DATA_SERIES_AXES: DATA_SERIES_AXES
+	DATA_SERIES_AXES: DATA_SERIES_AXES,
+	getDataSeriesLifecycleOptions: getDataSeriesLifecycleOptions
 };

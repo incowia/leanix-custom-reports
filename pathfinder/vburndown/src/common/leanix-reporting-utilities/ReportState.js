@@ -36,7 +36,7 @@ class ReportState {
 		if (!key) {
 			return;
 		}
-		if (allowedValues && (!Array.isArray(allowedValues) && typeof allowedValues !== 'function')) {
+		if (!Array.isArray(allowedValues) && typeof allowedValues !== 'function') {
 			throw 'Allowed values must be contained in an array or it must be a function.';
 		}
 		this._values[key] = allowedValues;
@@ -120,26 +120,6 @@ class ReportState {
 		}
 	}
 
-	restore(newState, fromSetup) {
-		if (!newState) {
-			return;
-		}
-		// extract from setup?
-		if (fromSetup) {
-			if (newState.savedState && newState.savedState.customState) {
-				newState = newState.savedState.customState;
-			} else {
-				return;
-			}
-		}
-		try {
-			this.update(newState);
-		} catch (err) {
-			// error happens because the bookmark contains values that are no longer supported
-			throw err + ' Please delete this bookmark.';
-		}
-	}
-
 	publish() {
 		lx.publishState(this._state);
 	}
@@ -147,6 +127,7 @@ class ReportState {
 
 function _checkValue(key, allowedValues, value) {
 	// TODO function should response w/ a detailed error msg if something is wrong
+	// TODO value formatter?
 	if (allowedValues && (Array.isArray(allowedValues) ? !allowedValues.includes(value) : !allowedValues(value))) {
 		throw 'Given value "' + JSON.stringify(value) + '" is not allowed for key "' + key + '".';
 	}

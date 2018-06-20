@@ -30,8 +30,8 @@ class DateRange {
 		this.start = DateUtilities.getTimestamp(start);
 		this.end = DateUtilities.getTimestamp(end);
 		_check(this);
-		this.startInclusive = startInclusive;
-		this.endInclusive = endInclusive;
+		this.startInclusive = !!startInclusive;
+		this.endInclusive = !!endInclusive;
 	}
 
 	getStart() {
@@ -39,8 +39,7 @@ class DateRange {
 	}
 
 	getEnd() {
-		// Number.MAX_SAFE_INTEGER (note: not supported in IE11)
-		return this.end ? this.end : 9007199254740991;
+		return this.end ? this.end : DateUtilities.MAX_TIMESTAMP;
 	}
 
 	getLength() {
