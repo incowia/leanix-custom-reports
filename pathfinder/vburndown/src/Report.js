@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import DataHandler from './DataHandler';
 import ReportLoadingState from './common/leanix-reporting-utilities/ReportLoadingState';
 import DataIndex from './common/leanix-reporting-utilities/DataIndex';
@@ -7,7 +8,9 @@ import DateUtilities from './common/leanix-reporting-utilities/DateUtilities';
 import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportState from './common/leanix-reporting-utilities/ReportState';
+import TableUtilities from './common/react-leanix-reporting/TableUtilities';
 import ConfigureDialog from './ConfigureDialog';
+import BurndownChart from './BurndownChart';
 import Constants from './Constants';
 
 class Report extends Component {
@@ -21,7 +24,7 @@ class Report extends Component {
 		this.reportState.prepareRangeValue('selectedEndYearDistance', 1, 5, 1, 3);
 		this.reportState.prepareValue('selectedXAxisUnit', Constants.X_AXIS_UNITS, Constants.X_AXIS_UNIT_QUARTERS);
 		this.reportState.prepareValue('selectedYAxisLabel', this._validateLabel, 'Count of transitions');
-		this.reportState.prepareValue('selectedY2AxisLabel', this._validateLabel, 'Count in production');
+		this.reportState.prepareValue('selectedY2AxisLabel', this._validateOptionalLabel, 'Count in production');
 		// bindings
 		this._initReport = this._initReport.bind(this);
 		this._updateReportState = this._updateReportState.bind(this);
@@ -31,17 +34,25 @@ class Report extends Component {
 		this._handleData = this._handleData.bind(this);
 		this._handleOnClose = this._handleOnClose.bind(this);
 		this._handleOnOK = this._handleOnOK.bind(this);
-		this._closeConfigDialog = this._closeConfigDialog.bind(this);
+		this._handleColumnClick = this._handleColumnClick.bind(this);
+		this._resetUI = this._resetUI.bind(this);
 		// react state definition (init)
 		this.state = {
 			loadingState: ReportLoadingState.INIT,
 			showConfigure: false,
-			chartData: []
+			chartData: null,
+			tableData: null,
+			xAxis: null,
+			selectedTable: null
 		};
 	}
 
 	_validateLabel(value) {
 		return value && value.length > 0;
+	}
+
+	_validateOptionalLabel(value) {
+		return value !== undefined && value !== null;
 	}
 
 	componentDidMount() {
@@ -206,7 +217,7 @@ class Report extends Component {
 							loadingState: ReportLoadingState.NEW_DATA
 						});
 					}
-					this._closeConfigDialog();
+					this._resetUI();
 					this.index.remove('last');
 					this.index.putFacetData('last', facetData);
 					// get new data and re-render
@@ -228,15 +239,16 @@ class Report extends Component {
 				autoScale: true,
 				beforeExport: (exportElement) => {
 					console.log(exportElement);
+					// TODO select svg directly
 					return exportElement;
 				},
-				exportElementSelector: '#' + 'getChartNodeID()', // TODO
+				exportElementSelector: '#chart',
 				format: 'A4',
-				inputType: 'SVG',
+				inputType: 'HTML',
 				orientation: 'landscape'
 			},
 			restoreStateCallback: (state) => {
-				this._closeConfigDialog();
+				this._resetUI();
 				const updateError = this._updateReportState(state);
 				if (updateError) {
 					console.error('Please delete this bookmark.');
@@ -257,18 +269,20 @@ class Report extends Component {
 	}
 
 	_handleData() {
-		// TODO
+		console.log(this.reportState.getAll());
 		const data = DataHandler.create(this.index.last.nodes,
 			this.reportState.get('selectedXAxisUnit'),
 			this.reportState.get('selectedStartYearDistance'),
 			this.reportState.get('selectedEndYearDistance'),
-			this.reportState.get('selectedDataSeries'));
+			this.reportState.get('selectedDataSeries'),
+			this.index.lifecycleModel);
 		console.log(data);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: ReportLoadingState.SUCCESSFUL,
 			chartData: data.chartData,
-			tableData: data.tableData
+			tableData: data.tableData,
+			xAxis: data.xAxis
 		});
 		// publish report state to the framework here, b/c all changes always trigger this method
 		this.reportState.publish();
@@ -276,7 +290,8 @@ class Report extends Component {
 
 	_handleOnClose() {
 		this.setState({
-			showConfigure: false
+			showConfigure: false,
+			selectedTable: null
 		});
 	}
 
@@ -300,10 +315,14 @@ class Report extends Component {
 		lx.updateConfiguration(this._createConfig());
 	}
 
-	_closeConfigDialog() {
-		if (this.state.showConfigure) {
-			this._handleOnClose();
-		}
+	_handleColumnClick(dateIntervalName) {
+		this.setState({
+			selectedTable: dateIntervalName
+		});
+	}
+
+	_resetUI() {
+		this._handleOnClose();
 	}
 
 	render() {
@@ -348,6 +367,8 @@ class Report extends Component {
 	}
 
 	_renderSuccessful() {
+		const factsheetType = this.reportState.get('selectedFactsheetType');
+		const factsheetName = lx.translateFactSheetType(factsheetType, 'plural');
 		return (
 			<div>
 				<ConfigureDialog
@@ -357,9 +378,92 @@ class Report extends Component {
 					onClose={this._handleOnClose}
 					onOK={this._handleOnOK}
 				/>
-				<div id='content' />
+				{this._renderProcessingStep('Burndown: ' + factsheetName)}
+				<div id='chart'>
+					<BurndownChart
+						data={this.state.chartData}
+						dataSeries={this.reportState.get('selectedDataSeries')}
+						labels={{
+							xAxis: this.reportState.get('selectedXAxisUnit'),
+							yAxis: this.reportState.get('selectedYAxisLabel'),
+							y2Axis: this.reportState.get('selectedY2AxisLabel')
+						}}
+						onColumnClick={this._handleColumnClick} />
+				</div>
+				{this._renderTable(factsheetType, factsheetName)}
 			</div>
 		);
+	}
+
+	_renderTable(factsheetType, factsheetName) {
+		if (!this.state.selectedTable) {
+			return this._renderProcessingStep(
+				'Click on a data point to see an overview of which '
+				+ factsheetName
+				+ ' were counted.');
+		}
+		const tableData = this.state.tableData[this.state.selectedTable];
+		return (
+			<div>
+				{this._renderProcessingStep(factsheetName + ' for ' + this.state.selectedTable)}
+				<BootstrapTable data={tableData} keyField='id'
+					striped condensed hover maxHeight='300px'
+				>
+					{this._renderTableColumns(factsheetType)}
+				</BootstrapTable>
+			</div>
+		);
+	}
+
+	_renderTableColumns(factsheetType) {
+		const lifecycleModel = this.index.lifecycleModel;
+		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.setup, lifecycleModel, factsheetType);
+		/* TODO
+			{
+				0: '',
+				1: '',
+				2: '',
+				...
+				n: ''
+			}
+		*/
+		const tableColumns = [(
+				<TableHeaderColumn key='name' dataSort
+					dataField='name'
+					dataAlign='left'
+					dataFormat={TableUtilities.formatLinkFactsheet(this.setup)}
+					formatExtraData={{ type: factsheetType, id: 'id' }}
+					filter={TableUtilities.textFilter}
+				>Name</TableHeaderColumn>
+			), (
+				<TableHeaderColumn key='dataSeries'
+					dataField='dataSeries'
+					dataAlign='left'
+					dataFormat={TableUtilities.formatArray}
+					formatExtraData='<br/>'
+					filter={TableUtilities.textFilter}
+				>In data series</TableHeaderColumn>
+			), (
+				<TableHeaderColumn key='current' dataSort
+					dataField='current'
+					dataAlign='left'
+					dataFormat={TableUtilities.formatEnum}
+					formatExtraData={{}}
+					filter={TableUtilities.selectFilter({})}
+				>Current phase</TableHeaderColumn>
+			)
+		];
+		return tableColumns.concat(lifecycleModel.map((phase, i) => {
+			return (
+				<TableHeaderColumn key={phase}
+					dataField={phase}
+					headerAlign='left'
+					dataAlign='right'
+					dataFormat={TableUtilities.formatDate}
+					filter={TableUtilities.dateFilter}
+				>{lifecycleModelTranslations[i]}</TableHeaderColumn>
+			);
+		}));
 	}
 }
 

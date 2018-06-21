@@ -4,7 +4,7 @@
 
 #chart {
 	width: 90%;
-	height: 450px;
+	max-height: 400px;
 	margin: 0 auto;
 }
 

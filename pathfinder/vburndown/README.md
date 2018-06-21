@@ -1,6 +1,6 @@
 # Burndown
 
-Shows lifecyle information of factsheets in a burndown chart.
+Shows lifecycle information of factsheets in a burndown chart.
 
 ## Table of Contents
 

@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import Wrapper from './common/react-leanix-reporting/Wrapper';
 import C3BurndownChart from './C3BurndownChart';
+import Constants from './Constants';
 
 const COMPONENT_ID = 'burndown-chart';
 
@@ -15,7 +16,11 @@ class BurndownChart extends Component {
 	}
 
 	_handleOnMount(config, div) {
-		const instance = new C3BurndownChart(div, this.props.data, this.props.dataSeries);
+		const instance = new C3BurndownChart(div,
+			this.props.data,
+			this.props.dataSeries,
+			this.props.labels,
+			this.props.onColumnClick);
 		return {
 			instance: instance
 		};
@@ -47,14 +52,32 @@ class BurndownChart extends Component {
 BurndownChart.propTypes = {
 	data: PropTypes.arrayOf(
 		PropTypes.arrayOf(
-			// TODO
-			PropTypes.string.isRequired
+			PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
 		).isRequired
 	).isRequired,
 	dataSeries: PropTypes.arrayOf(
-		// TODO
-		PropTypes.string.isRequired
+		PropTypes.shape({
+			name: PropTypes.string.isRequired,
+			axis: PropTypes.oneOf([Constants.DATA_SERIES_AXIS_Y, Constants.DATA_SERIES_AXIS_Y2]).isRequired,
+			type: PropTypes.oneOf([
+				Constants.DATA_SERIES_TYPE_BAR_POSITIVE,
+				Constants.DATA_SERIES_TYPE_BAR_NEGATIVE,
+				Constants.DATA_SERIES_TYPE_LINE_POSITIVE,
+				Constants.DATA_SERIES_TYPE_LINE_NEGATIVE,
+				Constants.DATA_SERIES_TYPE_SPLINE_POSITIVE,
+				Constants.DATA_SERIES_TYPE_SPLINE_NEGATIVE,
+				Constants.DATA_SERIES_TYPE_AREA_POSITIVE,
+				Constants.DATA_SERIES_TYPE_AREA_NEGATIVE,
+				Constants.DATA_SERIES_TYPE_AREA_SPLINE_POSITIVE,
+				Constants.DATA_SERIES_TYPE_AREA_SPLINE_NEGATIVE
+			]).isRequired
+		}).isRequired
 	).isRequired,
+	labels: PropTypes.shape({
+		xAxis: PropTypes.string.isRequired,
+		yAxis: PropTypes.string.isRequired,
+		y2Axis: PropTypes.string
+	}).isRequired,
 	onColumnClick: PropTypes.func.isRequired
 };
 
