@@ -8,12 +8,18 @@ import Constants from './Constants';
 function create(nodes, unit, startYearDistance, endYearDistance, dataSeries, lifecycleModel) {
 	const xAxis = _createXAxisVars(unit, startYearDistance, endYearDistance);
 	const dateIntervals = _createDateIntervals(xAxis);
+	const current = dateIntervals.findIndex((e) => {
+		return e.range.contains(xAxis.current);
+	});
 	const categories = dateIntervals.map((e) => {
 		return e.name;
 	});
 	const tableData = {};
 	dateIntervals.forEach((e) => {
 		tableData[e.name] = {};
+		dataSeries.forEach((e2) => {
+			tableData[e.name][e2.name] = {};
+		});
 	});
 	const chartData = [
 		['time'].concat(categories)
@@ -37,42 +43,39 @@ function create(nodes, unit, startYearDistance, endYearDistance, dataSeries, lif
 			filteredNodes.forEach((node) => {
 				if (_countIf(node, dateInterval, dataSerie)) {
 					value++;
-					let tableDataValue = tableData[dateInterval.name][node.id];
+					let tableDataValue = tableData[dateInterval.name][dataSerie.name][node.id];
 					if (!tableDataValue) {
-						tableDataValue = {
-							node: node,
-							dataSeries: {}
-						};
-						tableData[dateInterval.name][node.id] = tableDataValue;
+						tableDataValue = node;
+						tableData[dateInterval.name][dataSerie.name][node.id] = tableDataValue;
 					}
-					tableDataValue.dataSeries[dataSerie.name] = dataSerie;
 				}
 			});
 			dataSeriesValues.push(inverseValues && value !== 0 ? -value : value);
 		});
 	});
 	for (let key in tableData) {
-		tableData[key] = Utilities.getValues(tableData[key]).sort((first, second) => {
-			return first.node.displayName.localeCompare(second.node.displayName);
-		}).map((e) => {
-			const currentLifecycle = LifecycleUtilities.getByDate(e.node.lifecycle, DateUtilities.getCurrent());
-			const result = {
-				id: e.node.id,
-				name: e.node.displayName,
-				dataSeries: Object.keys(e.dataSeries).sort(),
-				current: currentLifecycle ? currentLifecycle.name : null
-			};
-			lifecycleModel.forEach((phase) => {
-				const lifecycle = LifecycleUtilities.getByPhase(e.node.lifecycle, phase);
-				result[phase] = !lifecycle ? null : new Date(lifecycle.getStart());
+		for (let key2 in tableData[key]) {
+			tableData[key][key2] = Utilities.getValues(tableData[key][key2]).sort((first, second) => {
+				return first.displayName.localeCompare(second.displayName);
+			}).map((e) => {
+				const currentLifecycle = LifecycleUtilities.getByDate(e.lifecycle, DateUtilities.getCurrent());
+				const result = {
+					id: e.id,
+					name: e.displayName,
+					current: currentLifecycle ? currentLifecycle.name : null
+				};
+				lifecycleModel.forEach((phase) => {
+					const lifecycle = LifecycleUtilities.getByPhase(e.lifecycle, phase);
+					result[phase] = !lifecycle ? null : new Date(lifecycle.getStart());
+				});
+				return result;
 			});
-			return result;
-		});
+		}
 	}
 	return {
-		xAxis: xAxis,
 		chartData: chartData,
-		tableData: tableData
+		tableData: tableData,
+		current: current
 	};
 }
 
@@ -80,22 +83,22 @@ function _countIf(node, dateInterval, dataSeries) {
 	const nodeLifecycles = node.lifecycle.filter((e) => {
 		return dataSeries.lifecycles.includes(e.name);
 	});
-	switch (dataSeries.stack) {
-		case Constants.DATA_SERIES_STACK_LAST:
+	switch (dataSeries.count) {
+		case Constants.DATA_SERIES_COUNT_LAST:
 			const latestNodeLifecycle = DateRangeUtilities.getLatest(nodeLifecycles);
 			// please note: lifecycle.getEnd() is exclusive!
 			return dateInterval.range.contains(latestNodeLifecycle.getEnd() - 1);
-		case Constants.DATA_SERIES_STACK_FIRST:
+		case Constants.DATA_SERIES_COUNT_FIRST:
 			const earliestNodeLifecycle = DateRangeUtilities.getEarliest(nodeLifecycles);
 			// please note: lifecycle.getStart() is inclusive!
 			return dateInterval.range.contains(earliestNodeLifecycle.getStart());
-		case Constants.DATA_SERIES_STACK_EVERY:
+		case Constants.DATA_SERIES_COUNT_EVERY:
 			return nodeLifecycles.some((e) => {
 				return dateInterval.range.overlaps(e);
 			});
 			break;
 		default:
-			throw 'Unknown stack: ' + dataSeries.stack;
+			throw 'Unknown count: ' + dataSeries.count;
 	}
 }
 

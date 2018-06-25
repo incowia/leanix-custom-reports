@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
-import TableUtilities from './common/TableUtilities';
+import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
+import TableUtilities from './common/react-leanix-reporting/TableUtilities';
 
 class Table extends Component {
 
@@ -12,81 +13,67 @@ class Table extends Component {
 	render() {
 		return (
 			<BootstrapTable data={this.props.data} keyField='id'
-				 striped hover search exportCSV
-				 pagination ignoreSinglePage
-				 options={{ clearSearch: true }}>
-				<TableHeaderColumn dataSort
-					 dataField='appMapL1Name'
-					 dataAlign='left'
-					 dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
-					 formatExtraData={{ type: 'BusinessCapability', id: 'appMapL1Id' }}
-					 csvHeader='appmap-L1'
-					 filter={TableUtilities.textFilter}
-					>AppMap L1</TableHeaderColumn>
-				<TableHeaderColumn dataSort
-					 dataField='appMapL2Name'
-					 dataAlign='left'
-					 dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
-					 formatExtraData={{ type: 'BusinessCapability', id: 'appMapL2Id' }}
-					 csvHeader='appmap-L2'
-					 filter={TableUtilities.textFilter}
-					>AppMap L2</TableHeaderColumn>
-				<TableHeaderColumn dataSort
-					 dataField='bcaL1Name'
-					 dataAlign='left'
-					 dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
-					 formatExtraData={{ type: 'BusinessCapability', id: 'bcaL1Id' }}
-					 csvHeader='bca-L1'
-					 filter={TableUtilities.textFilter}
-					>BCA L1</TableHeaderColumn>
-				<TableHeaderColumn dataSort
-					 dataField='bcaL2Name'
-					 dataAlign='left'
-					 dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
-					 formatExtraData={{ type: 'BusinessCapability', id: 'bcaL2Id' }}
-					 csvHeader='bca-L2'
-					 filter={TableUtilities.textFilter}
-					>BCA L2</TableHeaderColumn>
-				<TableHeaderColumn dataSort
-					 dataField='bcaL3Name'
-					 dataAlign='left'
-					 dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
-					 formatExtraData={{ type: 'BusinessCapability', id: 'bcaL3Id' }}
-					 csvHeader='bca-L3'
-					 filter={TableUtilities.textFilter}
-					>BCA L3</TableHeaderColumn>
-				<TableHeaderColumn dataSort
-					 dataField='bcaL4Name'
-					 dataAlign='left'
-					 dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
-					 formatExtraData={{ type: 'BusinessCapability', id: 'bcaL4Id' }}
-					 csvHeader='bca-L4'
-					 filter={TableUtilities.textFilter}
-					>BCA L4</TableHeaderColumn>
+				striped condensed hover maxHeight='300px'
+			>
+				{this._renderTableColumns(this.props.factsheetType)}
 			</BootstrapTable>
 		);
+	}
+
+	_renderTableColumns() {
+		const lifecycleModel = this.props.lifecycleModel;
+		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.props.setup, lifecycleModel, this.props.factsheetType);
+		/* TODO
+			{
+				0: '',
+				1: '',
+				2: '',
+				...
+				n: ''
+			}
+		*/
+		const tableColumns = [(
+				<TableHeaderColumn key='name' dataSort
+					dataField='name'
+					dataAlign='left'
+					dataFormat={TableUtilities.formatLinkFactsheet(this.props.setup)}
+					formatExtraData={{ type: this.props.factsheetType, id: 'id' }}
+					filter={TableUtilities.textFilter}
+				>Name</TableHeaderColumn>
+			), (
+				<TableHeaderColumn key='current' dataSort
+					dataField='current'
+					dataAlign='left'
+					dataFormat={TableUtilities.formatEnum}
+					formatExtraData={{}}
+					filter={TableUtilities.selectFilter({})}
+				>Current phase</TableHeaderColumn>
+			)
+		];
+		return tableColumns.concat(lifecycleModel.map((phase, i) => {
+			return (
+				<TableHeaderColumn key={phase}
+					dataField={phase}
+					headerAlign='left'
+					dataAlign='right'
+					dataFormat={TableUtilities.formatDate}
+					filter={TableUtilities.dateFilter}
+				>{lifecycleModelTranslations[i]}</TableHeaderColumn>
+			);
+		}));
 	}
 }
 
 Table.propTypes = {
 	data: PropTypes.arrayOf(
 		PropTypes.shape({
-			id: PropTypes.string.isRequired,
-			appMapL1Id: PropTypes.string.isRequired,
-			appMapL1Name: PropTypes.string.isRequired,
-			appMapL2Id: PropTypes.string,
-			appMapL2Name: PropTypes.string,
-			bcaL1Id: PropTypes.string.isRequired,
-			bcaL1Name: PropTypes.string.isRequired,
-			bcaL2Id: PropTypes.string,
-			bcaL2Name: PropTypes.string,
-			bcaL3Id: PropTypes.string,
-			bcaL3Name: PropTypes.string,
-			bcaL4Id: PropTypes.string,
-			bcaL4Name: PropTypes.string
+			name: PropTypes.string.isRequired,
+			current: PropTypes.string.isRequired
 		}).isRequired
 	).isRequired,
-	setup: PropTypes.object
+	setup: PropTypes.object.isRequired,
+	lifecycleModel: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+	factsheetType: PropTypes.string.isRequired
 };
 
 export default Table;

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import Utilities from './common/leanix-reporting-utilities/Utilities';
 import Wrapper from './common/react-leanix-reporting/Wrapper';
 import C3BurndownChart from './C3BurndownChart';
 import Constants from './Constants';
@@ -20,10 +21,41 @@ class BurndownChart extends Component {
 			this.props.data,
 			this.props.dataSeries,
 			this.props.labels,
-			this.props.onColumnClick);
+			this.props.current,
+			this.props.onClick);
 		return {
 			instance: instance
 		};
+	}
+
+	shouldComponentUpdate(nextProps, nextState) {
+		// rendering a chart is expensive, so just do the update call in 'componentDidUpdate' if needed
+		if (this.props.current !== nextProps.current) {
+			return true;
+		}
+		if (this.props.labels.xAxis !== nextProps.labels.xAxis
+			|| this.props.labels.yAxis !== nextProps.labels.yAxis
+			|| this.props.labels.y2Axis !== nextProps.labels.y2Axis) {
+			return true;
+		}
+		const dataSeriesChanged = this.props.dataSeries.length !== nextProps.dataSeries.length ? true : this.props.dataSeries.some((currentDataSeries, i) => {
+			const nextDataSeries = nextProps.dataSeries[i];
+			return currentDataSeries.name !== nextDataSeries.name
+				|| currentDataSeries.axis !== nextDataSeries.axis
+				|| currentDataSeries.type !== nextDataSeries.type;
+		});
+		if (dataSeriesChanged) {
+			return true;
+		}
+		const currentData = this.props.data;
+		const nextData = nextProps.data;
+		if (currentData.length !== nextData.length) {
+			return true;
+		}
+		return currentData.some((currentE, i) => {
+			const nextE = nextData[i];
+			return !Utilities.areArraysEqual(currentE, nextE);
+		});
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {
@@ -55,22 +87,12 @@ BurndownChart.propTypes = {
 			PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
 		).isRequired
 	).isRequired,
+	current: PropTypes.number.isRequired,
 	dataSeries: PropTypes.arrayOf(
 		PropTypes.shape({
 			name: PropTypes.string.isRequired,
-			axis: PropTypes.oneOf([Constants.DATA_SERIES_AXIS_Y, Constants.DATA_SERIES_AXIS_Y2]).isRequired,
-			type: PropTypes.oneOf([
-				Constants.DATA_SERIES_TYPE_BAR_POSITIVE,
-				Constants.DATA_SERIES_TYPE_BAR_NEGATIVE,
-				Constants.DATA_SERIES_TYPE_LINE_POSITIVE,
-				Constants.DATA_SERIES_TYPE_LINE_NEGATIVE,
-				Constants.DATA_SERIES_TYPE_SPLINE_POSITIVE,
-				Constants.DATA_SERIES_TYPE_SPLINE_NEGATIVE,
-				Constants.DATA_SERIES_TYPE_AREA_POSITIVE,
-				Constants.DATA_SERIES_TYPE_AREA_NEGATIVE,
-				Constants.DATA_SERIES_TYPE_AREA_SPLINE_POSITIVE,
-				Constants.DATA_SERIES_TYPE_AREA_SPLINE_NEGATIVE
-			]).isRequired
+			axis: PropTypes.oneOf(Constants.DATA_SERIES_AXES).isRequired,
+			type: PropTypes.oneOf(Constants.DATA_SERIES_TYPES).isRequired
 		}).isRequired
 	).isRequired,
 	labels: PropTypes.shape({
@@ -78,7 +100,7 @@ BurndownChart.propTypes = {
 		yAxis: PropTypes.string.isRequired,
 		y2Axis: PropTypes.string
 	}).isRequired,
-	onColumnClick: PropTypes.func.isRequired
+	onClick: PropTypes.func.isRequired
 };
 
 export default BurndownChart;

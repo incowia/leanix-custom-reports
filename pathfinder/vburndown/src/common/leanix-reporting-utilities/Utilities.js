@@ -250,6 +250,15 @@ function containsAny(first, second) {
 	return false;
 }
 
+function swap(array, first, second) {
+	if (!array) {
+		return;
+	}
+	const tmp = array[first];
+	array[first] = array[second];
+	array[second] = tmp;
+}
+
 // TODO ???
 function isArrayEmpty(arr, startIdx) {
 	if (!arr) {
@@ -280,5 +289,6 @@ export default {
 	areObjectsEqual: areObjectsEqual,
 	areArraysEqual: areArraysEqual,
 	containsAny: containsAny,
+	swap: swap,
 	isArrayEmpty: isArrayEmpty
 };

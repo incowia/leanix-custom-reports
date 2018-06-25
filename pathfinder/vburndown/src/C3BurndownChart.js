@@ -1,11 +1,12 @@
 import c3 from 'c3';
+import Constants from './Constants';
 
 class C3BurndownChart {
 
-	constructor(div, data, dataSeries, labels, onColumnClick) {
+	constructor(div, data, dataSeries, labels, currentCategory, onClick) {
 		this._data = data;
-		this._onColumnClick = onColumnClick;
-		this.chart = this._create(div, data, dataSeries, labels);
+		this._onClick = onClick;
+		this.chart = this._create(div, data, dataSeries, labels, currentCategory);
 		// bindings
 		this._handleOnClick = this._handleOnClick.bind(this);
 		this.destroy = this.destroy.bind(this);
@@ -14,12 +15,11 @@ class C3BurndownChart {
 	_handleOnClick() {
 		const self = this;
 		return (data, element) => {
-			self._onColumnClick(self._data[0][data.index + 1]);
+			self._onClick(self._data[0][data.index + 1], data.id);
 		};
 	}
 
-	_create(div, data, dataSeries, labels) {
-		// TODO region: current
+	_create(div, data, dataSeries, labels, currentCategory) {
 		const chartConfig = {
 			bindto: div,
 			data: {
@@ -44,6 +44,11 @@ class C3BurndownChart {
 				},
 				onclick: this._handleOnClick()
 			},
+			regions: [{
+					// -0.5 & +0.5 for alignment
+					axis: 'x', start: currentCategory - 0.5, end: currentCategory + 0.5, class: 'chart-current-column'
+				}
+			],
 			axis: {
 				x: {
 					type: 'category',
@@ -95,31 +100,34 @@ class C3BurndownChart {
 			const type = dataSerie.type.substring(0, dataSerie.type.length - 1);
 			const inverseValue = dataSerie.type.endsWith('-');
 			chartConfig.data.types[dataSerie.name] = type;
+			// build the groups by type & axis
 			let groupPairs = groups[type];
-			// TODO diff between y axes!
 			if (!groupPairs) {
-				groupPairs = {
-					positive: [],
-					negative: []
-				};
+				groupPairs = Constants.DATA_SERIES_AXES.reduce((acc, e) => {
+					acc[e] = {
+						positive: [],
+						negative: []
+					};
+					return acc;
+				}, {});
 				groups[type] = groupPairs;
 			}
-			groups[type][inverseValue ? 'negative' : 'positive'].push(dataSerie.name);
+			groups[type][dataSerie.axis][inverseValue ? 'negative' : 'positive'].push(dataSerie.name);
 		});
 		const chartGroups = [];
+		const shouldAxisBeCentered = {};
 		for (let type in groups) {
-			const groupPairs = groups[type];
-			if (!groupPairs.positive || !groupPairs.negative) {
-				continue;
+			for (let axis in groups[type]) {
+				const groupPairs = groups[type][axis];
+				if (!groupPairs.positive || !groupPairs.negative) {
+					continue;
+				}
+				const length = Math.min(groupPairs.positive.length, groupPairs.negative.length);
+				for (let i = 0; i < length; i++) {
+					chartGroups.push([groupPairs.positive[i], groupPairs.negative[i]]);
+					shouldAxisBeCentered[axis] = true;
+				}
 			}
-			const length = Math.min(groupPairs.positive.length, groupPairs.negative.length);
-			for (let i = 0; i < length; i++) {
-				chartGroups.push([groupPairs.positive[i], groupPairs.negative[i]]);
-			}
-		}
-		if (chartGroups) {
-			chartConfig.data.groups = chartGroups;
-			// TODO chartConfig.axis.y.center = 0
 		}
 		if (labels.y2Axis.length > 0) {
 			chartConfig.axis.y2 = {
@@ -132,6 +140,15 @@ class C3BurndownChart {
 					outer: false
 				}
 			};
+			if (shouldAxisBeCentered.y2) {
+				chartConfig.axis.y2.center = 0;
+			}
+		}
+		if (chartGroups) {
+			chartConfig.data.groups = chartGroups;
+			if (shouldAxisBeCentered.y) {
+				chartConfig.axis.y.center = 0;
+			}
 		}
 		return c3.generate(chartConfig);
 	}

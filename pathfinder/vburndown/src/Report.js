@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import DataHandler from './DataHandler';
 import ReportLoadingState from './common/leanix-reporting-utilities/ReportLoadingState';
 import DataIndex from './common/leanix-reporting-utilities/DataIndex';
@@ -8,9 +7,10 @@ import DateUtilities from './common/leanix-reporting-utilities/DateUtilities';
 import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportState from './common/leanix-reporting-utilities/ReportState';
-import TableUtilities from './common/react-leanix-reporting/TableUtilities';
 import ConfigureDialog from './ConfigureDialog';
 import BurndownChart from './BurndownChart';
+import Table from './Table';
+import DataSeries from './DataSeries';
 import Constants from './Constants';
 
 class Report extends Component {
@@ -34,7 +34,7 @@ class Report extends Component {
 		this._handleData = this._handleData.bind(this);
 		this._handleOnClose = this._handleOnClose.bind(this);
 		this._handleOnOK = this._handleOnOK.bind(this);
-		this._handleColumnClick = this._handleColumnClick.bind(this);
+		this._handleOnClick = this._handleOnClick.bind(this);
 		this._resetUI = this._resetUI.bind(this);
 		// react state definition (init)
 		this.state = {
@@ -42,7 +42,6 @@ class Report extends Component {
 			showConfigure: false,
 			chartData: null,
 			tableData: null,
-			xAxis: null,
 			selectedTable: null
 		};
 	}
@@ -123,14 +122,7 @@ class Report extends Component {
 		this.index.lifecycleModel = lifecycleModel;
 		const defaultDataSeries = [];
 		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN)) {
-			// type DataSeries
-			defaultDataSeries.push({
-				name: 'In planning stage',
-				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_PLAN],
-				type: Constants.DATA_SERIES_TYPE_BAR_POSITIVE,
-				axis: Constants.DATA_SERIES_AXIS_Y,
-				stack: Constants.DATA_SERIES_STACK_LAST
-			});
+			defaultDataSeries.push(DataSeries.createInPlanningStage());
 		}
 		const inProductionLifecycles = [];
 		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_IN)) {
@@ -143,35 +135,14 @@ class Report extends Component {
 			inProductionLifecycles.push(LifecycleUtilities.DEFAULT_MODEL_PHASE_PHASE_OUT);
 		}
 		if (inProductionLifecycles.length > 0) {
-			// type DataSeries
-			defaultDataSeries.push({
-				name: 'In production',
-				lifecycles: inProductionLifecycles,
-				type: Constants.DATA_SERIES_TYPE_SPLINE_POSITIVE,
-				axis: Constants.DATA_SERIES_AXIS_Y2,
-				stack: Constants.DATA_SERIES_STACK_EVERY
-			});
+			defaultDataSeries.push(DataSeries.createInProduction(inProductionLifecycles));
 		}
 		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE)) {
-			// type DataSeries
-			defaultDataSeries.push({
-				name: 'Retired',
-				lifecycles: [LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE],
-				type: Constants.DATA_SERIES_TYPE_BAR_NEGATIVE,
-				axis: Constants.DATA_SERIES_AXIS_Y,
-				stack: Constants.DATA_SERIES_STACK_FIRST
-			});
+			defaultDataSeries.push(DataSeries.createRetired());
 		}
 		if (defaultDataSeries.length === 0) {
 			// no default lifecycle? at least add one made up demo series
-			// type DataSeries
-			defaultDataSeries.push({
-				name: 'Demo series',
-				lifecycles: [lifecycleModel[0]],
-				type: Constants.DATA_SERIES_TYPE_BAR_POSITIVE,
-				axis: Constants.DATA_SERIES_AXIS_Y,
-				stack: Constants.DATA_SERIES_STACK_LAST
-			});
+			defaultDataSeries.push(DataSeries.createDemo(lifecycleModel));
 		}
 		this.reportState.prepareValue('selectedDataSeries', this._validateDataSeries, defaultDataSeries);
 	}
@@ -187,7 +158,7 @@ class Report extends Component {
 				|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
 				|| !Constants.DATA_SERIES_TYPES.includes(e.type)
 				|| !Constants.DATA_SERIES_AXES.includes(e.axis)
-				|| !Constants.DATA_SERIES_STACKS.includes(e.stack)) {
+				|| !Constants.DATA_SERIES_COUNTS.includes(e.count)) {
 				return false;
 			}
 			tmp[e.name] = e;
@@ -282,7 +253,7 @@ class Report extends Component {
 			loadingState: ReportLoadingState.SUCCESSFUL,
 			chartData: data.chartData,
 			tableData: data.tableData,
-			xAxis: data.xAxis
+			current: data.current
 		});
 		// publish report state to the framework here, b/c all changes always trigger this method
 		this.reportState.publish();
@@ -290,8 +261,7 @@ class Report extends Component {
 
 	_handleOnClose() {
 		this.setState({
-			showConfigure: false,
-			selectedTable: null
+			showConfigure: false
 		});
 	}
 
@@ -304,7 +274,8 @@ class Report extends Component {
 			return; // TODO how to mark error fields?
 		}
 		this.setState({
-			showConfigure: false
+			showConfigure: false,
+			selectedTable: null
 		});
 		if (oldSFT === this.reportState.get('selectedFactsheetType')) {
 			// no need to update report config --> trigger _handleData with new config
@@ -315,14 +286,20 @@ class Report extends Component {
 		lx.updateConfiguration(this._createConfig());
 	}
 
-	_handleColumnClick(dateIntervalName) {
+	_handleOnClick(dateIntervalName, dataSeriesName) {
 		this.setState({
-			selectedTable: dateIntervalName
+			selectedTable: {
+				dateIntervalName: dateIntervalName,
+				dataSeriesName: dataSeriesName
+			}
 		});
 	}
 
 	_resetUI() {
-		this._handleOnClose();
+		this.setState({
+			showConfigure: false,
+			selectedTable: null
+		});
 	}
 
 	render() {
@@ -382,13 +359,14 @@ class Report extends Component {
 				<div id='chart'>
 					<BurndownChart
 						data={this.state.chartData}
+						current={this.state.current}
 						dataSeries={this.reportState.get('selectedDataSeries')}
 						labels={{
 							xAxis: this.reportState.get('selectedXAxisUnit'),
 							yAxis: this.reportState.get('selectedYAxisLabel'),
 							y2Axis: this.reportState.get('selectedY2AxisLabel')
 						}}
-						onColumnClick={this._handleColumnClick} />
+						onClick={this._handleOnClick} />
 				</div>
 				{this._renderTable(factsheetType, factsheetName)}
 			</div>
@@ -402,68 +380,17 @@ class Report extends Component {
 				+ factsheetName
 				+ ' were counted.');
 		}
-		const tableData = this.state.tableData[this.state.selectedTable];
+		const tableData = this.state.tableData[this.state.selectedTable.dateIntervalName][this.state.selectedTable.dataSeriesName];
 		return (
 			<div>
-				{this._renderProcessingStep(factsheetName + ' for ' + this.state.selectedTable)}
-				<BootstrapTable data={tableData} keyField='id'
-					striped condensed hover maxHeight='300px'
-				>
-					{this._renderTableColumns(factsheetType)}
-				</BootstrapTable>
+				{this._renderProcessingStep(factsheetName + ' for "' + this.state.selectedTable.dateIntervalName + '" in "' + this.state.selectedTable.dataSeriesName + '"')}
+				<Table data={tableData}
+					setup={this.setup}
+					lifecycleModel={this.index.lifecycleModel}
+					factsheetType={factsheetType}
+				/>
 			</div>
 		);
-	}
-
-	_renderTableColumns(factsheetType) {
-		const lifecycleModel = this.index.lifecycleModel;
-		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.setup, lifecycleModel, factsheetType);
-		/* TODO
-			{
-				0: '',
-				1: '',
-				2: '',
-				...
-				n: ''
-			}
-		*/
-		const tableColumns = [(
-				<TableHeaderColumn key='name' dataSort
-					dataField='name'
-					dataAlign='left'
-					dataFormat={TableUtilities.formatLinkFactsheet(this.setup)}
-					formatExtraData={{ type: factsheetType, id: 'id' }}
-					filter={TableUtilities.textFilter}
-				>Name</TableHeaderColumn>
-			), (
-				<TableHeaderColumn key='dataSeries'
-					dataField='dataSeries'
-					dataAlign='left'
-					dataFormat={TableUtilities.formatArray}
-					formatExtraData='<br/>'
-					filter={TableUtilities.textFilter}
-				>In data series</TableHeaderColumn>
-			), (
-				<TableHeaderColumn key='current' dataSort
-					dataField='current'
-					dataAlign='left'
-					dataFormat={TableUtilities.formatEnum}
-					formatExtraData={{}}
-					filter={TableUtilities.selectFilter({})}
-				>Current phase</TableHeaderColumn>
-			)
-		];
-		return tableColumns.concat(lifecycleModel.map((phase, i) => {
-			return (
-				<TableHeaderColumn key={phase}
-					dataField={phase}
-					headerAlign='left'
-					dataAlign='right'
-					dataFormat={TableUtilities.formatDate}
-					filter={TableUtilities.dateFilter}
-				>{lifecycleModelTranslations[i]}</TableHeaderColumn>
-			);
-		}));
 	}
 }
 

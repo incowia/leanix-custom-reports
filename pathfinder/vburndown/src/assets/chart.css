@@ -4,8 +4,11 @@
 
 #chart {
 	width: 90%;
-	max-height: 400px;
 	margin: 0 auto;
+}
+
+.chart-current-column {
+	fill: red
 }
 
 .c3-line {
