@@ -33,29 +33,13 @@ class BurndownChart extends Component {
 		if (this.props.current !== nextProps.current) {
 			return true;
 		}
-		if (this.props.labels.xAxis !== nextProps.labels.xAxis
-			|| this.props.labels.yAxis !== nextProps.labels.yAxis
-			|| this.props.labels.y2Axis !== nextProps.labels.y2Axis) {
+		if (!Utilities.areObjectsEqual(this.props.labels, nextProps.labels)) {
 			return true;
 		}
-		const dataSeriesChanged = this.props.dataSeries.length !== nextProps.dataSeries.length ? true : this.props.dataSeries.some((currentDataSeries, i) => {
-			const nextDataSeries = nextProps.dataSeries[i];
-			return currentDataSeries.name !== nextDataSeries.name
-				|| currentDataSeries.axis !== nextDataSeries.axis
-				|| currentDataSeries.type !== nextDataSeries.type;
-		});
-		if (dataSeriesChanged) {
+		if (!Utilities.areArraysEqual(this.props.dataSeries, nextProps.dataSeries)) {
 			return true;
 		}
-		const currentData = this.props.data;
-		const nextData = nextProps.data;
-		if (currentData.length !== nextData.length) {
-			return true;
-		}
-		return currentData.some((currentE, i) => {
-			const nextE = nextData[i];
-			return !Utilities.areArraysEqual(currentE, nextE);
-		});
+		return !Utilities.areArraysEqual(this.props.data, nextProps.data, true);
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {

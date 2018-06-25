@@ -166,9 +166,6 @@ function areObjectsEqual(first, second, deep) {
 		return false;
 	}
 	const firstKeys = Object.keys(first);
-	if (!areArraysEqual(firstKeys, Object.keys(second))) {
-		return false;
-	}
 	for (let i = 0; i < firstKeys; i++) {
 		const e1 = firstKeys[i];
 		const v1 = first[e1];
