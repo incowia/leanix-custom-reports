@@ -392,6 +392,9 @@ class ConfigureDialog extends Component {
 				<button type='button'
 					className='btn btn-link btn-xs'
 					onClick={this._handleDataSeriesRemoveButton(index)}
+					style={{
+						visibility: first && last ? 'hidden' : 'visible'
+					}}
 				>
 					<span className='glyphicon glyphicon-trash' aria-hidden='true' />
 				</button>
