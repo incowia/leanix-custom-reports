@@ -377,6 +377,7 @@ class ConfigureDialog extends Component {
 					style={{
 						visibility: last ? 'hidden' : 'visible'
 					}}
+					title='Move this data series down.'
 				>
 					<span className='glyphicon glyphicon-chevron-down' aria-hidden='true' />
 				</button>
@@ -386,6 +387,7 @@ class ConfigureDialog extends Component {
 					style={{
 						visibility: first ? 'hidden' : 'visible'
 					}}
+					title='Move this data series up.'
 				>
 					<span className='glyphicon glyphicon-chevron-up' aria-hidden='true' />
 				</button>
@@ -395,6 +397,7 @@ class ConfigureDialog extends Component {
 					style={{
 						visibility: first && last ? 'hidden' : 'visible'
 					}}
+					title='Delete this data series.'
 				>
 					<span className='glyphicon glyphicon-trash' aria-hidden='true' />
 				</button>
