@@ -75,7 +75,7 @@ COLOR_MAP[WHITE.name] = WHITE.cssColor;
 COLOR_MAP[BLUE.name] = BLUE.cssColor;
 COLOR_MAP[PINK.name] = PINK.cssColor;
 
-const FALLBACK_COLOR = WHITE.cssColor;
+const FALLBACK_COLOR = WHITE;
 
 const VALID_COLORS = Object.keys(COLOR_MAP).join('|');
 
@@ -130,6 +130,9 @@ const LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW = [{
 	}, {
 		color: RED.cssColor,
 		text: 'There is a >=50% gap between the current and target # of applications'
+	}, {
+		color: WHITE.cssColor,
+		text: 'Not specific to the view'
 	}
 ];
 const LEGEND_SIMPLIFICATION_OBSOLESCENCE_VIEW_ADDITIONAL = {
@@ -759,7 +762,7 @@ function addSimObsBlockColors(blockColors, areaData, isIntegration) {
 			const current = values.current.length;
 			const target = values.target.length;
 			const diff = Math.abs(current - target) / current;
-			let colorCode = GREEN;
+			let colorCode = current === 0 && target === 0 ? FALLBACK_COLOR : GREEN;
 			if (diff >= 0.5) {
 				colorCode = RED;
 			} else if (diff > 0.25) {
@@ -786,14 +789,14 @@ class ColorScheme {
 			number = 0;
 		}
 		if (!id) {
-			return FALLBACK_COLOR;
+			return FALLBACK_COLOR.cssColor;
 		}
 		const platform = this._mapping[id];
 		if (!platform) {
-			return FALLBACK_COLOR;
+			return FALLBACK_COLOR.cssColor;
 		}
 		const color = platform[number];
-		return !color ? FALLBACK_COLOR : color;
+		return !color ? FALLBACK_COLOR.cssColor : color;
 	}
 }
 
