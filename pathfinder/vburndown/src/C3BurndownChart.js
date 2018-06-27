@@ -86,7 +86,7 @@ class C3BurndownChart {
 					anchor: 'top-right',
 					x: 20,
 					y: 0,
-					step: 3
+					step: Math.min(dataSeries.length, 3)
 				}
 			},
 			zoom: {

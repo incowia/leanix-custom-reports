@@ -35,8 +35,8 @@ function createInProduction(inProductionLifecycles) {
 		Constants.DATA_SERIES_COUNT_EVERY);
 }
 
-function createRetired() {
-	return create('Retired',
+function createRetiring() {
+	return create('Retiring',
 		[LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE],
 		Constants.DATA_SERIES_TYPE_BAR_NEGATIVE,
 		Constants.DATA_SERIES_AXIS_Y,
@@ -48,5 +48,5 @@ export default {
 	createDemo: createDemo,
 	createInPlanningStage: createInPlanningStage,
 	createInProduction: createInProduction,
-	createRetired: createRetired
+	createRetiring: createRetiring
 };

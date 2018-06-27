@@ -26,8 +26,6 @@ import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 
-// TODO add prop & logic for Resize Events
-
 class Wrapper extends Component {
 
 	constructor(props) {

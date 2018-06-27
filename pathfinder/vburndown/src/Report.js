@@ -138,7 +138,7 @@ class Report extends Component {
 			defaultDataSeries.push(DataSeries.createInProduction(inProductionLifecycles));
 		}
 		if (lifecycleModel.includes(LifecycleUtilities.DEFAULT_MODEL_PHASE_END_OF_LIFE)) {
-			defaultDataSeries.push(DataSeries.createRetired());
+			defaultDataSeries.push(DataSeries.createRetiring());
 		}
 		if (defaultDataSeries.length === 0) {
 			// no default lifecycle? at least add one made up demo series
@@ -209,12 +209,10 @@ class Report extends Component {
 			export: {
 				autoScale: true,
 				beforeExport: (exportElement) => {
-					console.log(exportElement);
-					// TODO select svg directly
-					return exportElement;
+					return exportElement.find('svg').parent();
 				},
 				exportElementSelector: '#chart',
-				format: 'A4',
+				format: 'a4',
 				inputType: 'HTML',
 				orientation: 'landscape'
 			},
@@ -321,26 +319,26 @@ class Report extends Component {
 		return (
 			<div>
 				{this._renderProcessingStep('Initialise report...')}
-				<div id='content' />
+				<div id='chart' />
 			</div>
 		);
 	}
 
 	_renderProcessingStep(stepInfo) {
-		return (<h4 className='text-center'>{stepInfo}</h4>);
+		return (<h4 className='text-center' dangerouslySetInnerHTML={{ __html: stepInfo }} />);
 	}
 
 	_renderLoading() {
 		return (
 			<div>
 				{this._renderProcessingStep('Loading data...')}
-				<div id='content' />
+				<div id='chart' />
 			</div>
 		);
 	}
 
 	_renderError() {
-		return (<div id='content' />);
+		return (<div id='chart' />);
 	}
 
 	_renderSuccessful() {
@@ -374,16 +372,17 @@ class Report extends Component {
 	}
 
 	_renderTable(factsheetType, factsheetName) {
-		if (!this.state.selectedTable) {
+		const selectedTable = this.state.selectedTable;
+		if (!selectedTable) {
 			return this._renderProcessingStep(
-				'Click on a data point to see an overview of which '
+				'Click on a <i class="text-info">data point</i> to see an overview of which '
 				+ factsheetName
 				+ ' were counted.');
 		}
-		const tableData = this.state.tableData[this.state.selectedTable.dateIntervalName][this.state.selectedTable.dataSeriesName];
+		const tableData = this.state.tableData[selectedTable.dateIntervalName][selectedTable.dataSeriesName];
 		return (
 			<div>
-				{this._renderProcessingStep(factsheetName + ' for "' + this.state.selectedTable.dateIntervalName + '" in "' + this.state.selectedTable.dataSeriesName + '"')}
+				{this._renderProcessingStep(factsheetName + ' for <i class="text-info">' + selectedTable.dateIntervalName + '</i> in <i class="text-info">' + selectedTable.dataSeriesName + '</i>')}
 				<Table data={tableData}
 					setup={this.setup}
 					lifecycleModel={this.index.lifecycleModel}

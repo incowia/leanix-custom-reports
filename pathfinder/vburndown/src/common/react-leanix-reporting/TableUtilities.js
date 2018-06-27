@@ -34,6 +34,10 @@ const OVERFLOW_CELL_STYLE = {
 	overflow: 'auto'
 };
 
+const DEFAULT_DATE_FORMATTER = new Intl.DateTimeFormat(window.navigator.language, {
+	year: 'numeric', month: '2-digit', day: '2-digit'
+});
+
 function formatLinkFactsheet(setup) {
 	const baseUrl = Utilities.getFrom(setup, 'settings.baseUrl');
 	return (cell, row, extraData) => {
@@ -58,13 +62,13 @@ function formatLinkArrayFactsheets(setup) {
 		return (
 			<div style={OVERFLOW_CELL_STYLE}>
 				<LinkList links={
-					cell.reduce((arr, e, i) => {
-						arr.push({
+					cell.reduce((acc, e, i) => {
+						acc.push({
 							link: baseUrl + '/factsheet/' + extraData.type + '/' + row[extraData.id][i],
 							target: '_blank',
 							text: e
 						});
-						return arr;
+						return acc;
 				}, [])}
 				delimiter={extraData.delimiter} />
 			</div>
@@ -115,17 +119,21 @@ function formatOptionalText(cell, row, formatRaw) {
 	);
 }
 
-function formatDate(cell, row) {
-	if (!cell) {
-		return '';
-	}
-	return (
-		<span style={{ paddingRight: '10%' }}>
-			{_formatDate(cell, '-', false)}
-		</span>
-	);
+function formatDate(formatter) {
+	return (cell, row) => {
+		if (!cell) {
+			return '';
+		}
+		return (
+			<span style={{ paddingRight: '10%' }}>
+				{formatter ? formatter(cell) : DEFAULT_DATE_FORMATTER.format(cell)}
+			</span>
+		);
+	};
 }
 
+// TODO check excel compability for csv export
+/*
 function _formatDate(date, delimiter, reverse) {
 	if (reverse) {
 		return date.getFullYear() + delimiter
@@ -139,7 +147,7 @@ function _formatDate(date, delimiter, reverse) {
 
 function _formatDateNumber(n) {
 	return n < 10 ? '0' + n : n;
-}
+}*/
 
 function formatArray(cell, row, delimiter) {
 	let result = '';
@@ -163,11 +171,13 @@ function formatArray(cell, row, delimiter) {
 
 /* formatting functions for the csv export */
 
-function csvFormatDate(cell, row) {
-	if (!cell) {
-		return '';
-	}
-	return _formatDate(cell, '-', true);
+function csvFormatDate(formatter) {
+	return (cell, row) => {
+		if (!cell) {
+			return '';
+		}
+		return formatter ? formatter(cell) : DEFAULT_DATE_FORMATTER.format(cell);
+	};
 }
 
 /* pre-defined filter objects */
@@ -203,7 +213,7 @@ const numberFilter = {
 
 function options(props, propName, componentName) {
 	const options = props[propName];
-	if (options !== null && typeof options === 'object' && checkKeysAndValues(options)) {
+	if (options !== null && typeof options === 'object' && _checkKeysAndValues(options)) {
 		// test passes successfully
 		return;
 	}
@@ -212,11 +222,11 @@ function options(props, propName, componentName) {
 	);
 }
 
-const intRegExp = /^\d+$/;
+const INT_REGEXP = /^\d+$/;
 
-function checkKeysAndValues(options) {
+function _checkKeysAndValues(options) {
 	for (let key in options) {
-		if (!intRegExp.test(key)) {
+		if (!INT_REGEXP.test(key)) {
 			return false;
 		}
 		const value = options[key];
@@ -234,7 +244,7 @@ function idArray(namesPropName) {
 		if (names && ids
 			 && Array.isArray(names) && Array.isArray(ids)
 			 && names.length === ids.length
-			 && isStringArray(ids)) {
+			 && _isStringArray(ids)) {
 			// test passes successfully
 			return;
 		}
@@ -244,7 +254,7 @@ function idArray(namesPropName) {
 	};
 }
 
-function isStringArray(arr) {
+function _isStringArray(arr) {
 	for (let i = 0; i < arr.length; i++) {
 		const e = arr[i];
 		if (typeof e !== 'string' && !(e instanceof String)) {

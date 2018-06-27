@@ -100,7 +100,16 @@ function minusYears(date, years) {
 }
 
 function getPreviousMonth(date) {
-	// TODO
+	date = _getDate(date);
+	if (date === undefined || date === null) {
+		return;
+	}
+	const oldDay = date.getDate();
+	date.setDate(2);
+	date.setMonth(date.getMonth() - 1);
+	_setAdjustedDay(date, oldDay);
+	_normalize(date, false);
+	return date.getTime();
 }
 
 function getNextMonth(date) {
@@ -148,7 +157,17 @@ function _getAdjustedDay(month, day) {
 }
 
 function getPreviousQuarter(date) {
-	// TODO
+	date = _getDate(date);
+	if (date === undefined || date === null) {
+		return;
+	}
+	const oldDay = date.getDate();
+	const currentQuarterMonth = _getQuarterStartMonth(date.getMonth());
+	date.setDate(2);
+	date.setMonth(currentQuarterMonth - 3);
+	_setAdjustedDay(date, oldDay);
+	_normalize(date, false);
+	return date.getTime();
 }
 
 function getNextQuarter(date) {

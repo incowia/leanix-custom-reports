@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
+import Utilities from './common/leanix-reporting-utilities/Utilities';
 import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
 import TableUtilities from './common/react-leanix-reporting/TableUtilities';
 
@@ -13,7 +14,7 @@ class Table extends Component {
 	render() {
 		return (
 			<BootstrapTable data={this.props.data} keyField='id'
-				striped condensed hover maxHeight='300px'
+				striped condensed hover maxHeight='300px' pagination
 			>
 				{this._renderTableColumns(this.props.factsheetType)}
 			</BootstrapTable>
@@ -23,15 +24,7 @@ class Table extends Component {
 	_renderTableColumns() {
 		const lifecycleModel = this.props.lifecycleModel;
 		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.props.setup, lifecycleModel, this.props.factsheetType);
-		/* TODO
-			{
-				0: '',
-				1: '',
-				2: '',
-				...
-				n: ''
-			}
-		*/
+		const currentEnum = Utilities.associate(lifecycleModel, lifecycleModelTranslations);
 		const tableColumns = [(
 				<TableHeaderColumn key='name' dataSort
 					dataField='name'
@@ -45,8 +38,8 @@ class Table extends Component {
 					dataField='current'
 					dataAlign='left'
 					dataFormat={TableUtilities.formatEnum}
-					formatExtraData={{}}
-					filter={TableUtilities.selectFilter({})}
+					formatExtraData={currentEnum}
+					filter={TableUtilities.selectFilter(currentEnum)}
 				>Current phase</TableHeaderColumn>
 			)
 		];
@@ -56,7 +49,7 @@ class Table extends Component {
 					dataField={phase}
 					headerAlign='left'
 					dataAlign='right'
-					dataFormat={TableUtilities.formatDate}
+					dataFormat={TableUtilities.formatDate()}
 					filter={TableUtilities.dateFilter}
 				>{lifecycleModelTranslations[i]}</TableHeaderColumn>
 			);

@@ -141,7 +141,7 @@ function _createDateIntervals(xAxis) {
 			const diffMonths = (new Date(xAxis.end).getFullYear() - tmpStart.getFullYear()) * 12 + 1;
 			for (let i = 0; i < diffMonths; i++) {
 				result.push({
-					name: tmpStart.getFullYear() + ' ' + (tmpStart.getMonth() + 1),
+					name: tmpStart.getFullYear() + ' / ' + (tmpStart.getMonth() + 1),
 					range: new DateRange(tmpStart, tmpEnd, true, false)
 				});
 				tmpStart = new Date(DateUtilities.getNextMonth(tmpStart));
@@ -153,7 +153,7 @@ function _createDateIntervals(xAxis) {
 			const diffQuarters = (new Date(xAxis.end).getFullYear() - tmpStart.getFullYear()) * 4 + 1;
 			for (let i = 0; i < diffQuarters; i++) {
 				result.push({
-					name: tmpStart.getFullYear() + ' ' + DateUtilities.getQuarterString(tmpStart),
+					name: tmpStart.getFullYear() + ' / ' + DateUtilities.getQuarterString(tmpStart),
 					range: new DateRange(tmpStart, tmpEnd, true, false)
 				});
 				tmpStart = new Date(DateUtilities.getNextQuarter(tmpStart));
