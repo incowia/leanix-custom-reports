@@ -60,8 +60,10 @@ class Table extends Component {
 Table.propTypes = {
 	data: PropTypes.arrayOf(
 		PropTypes.shape({
+			id: PropTypes.string.isRequired,
 			name: PropTypes.string.isRequired,
 			current: PropTypes.string.isRequired
+			// phase fields are dynamic, so no chance to check them here, so just believe
 		}).isRequired
 	).isRequired,
 	setup: PropTypes.object.isRequired,

@@ -238,14 +238,12 @@ class Report extends Component {
 	}
 
 	_handleData() {
-		console.log(this.reportState.getAll());
 		const data = DataHandler.create(this.index.last.nodes,
 			this.reportState.get('selectedXAxisUnit'),
 			this.reportState.get('selectedStartYearDistance'),
 			this.reportState.get('selectedEndYearDistance'),
 			this.reportState.get('selectedDataSeries'),
 			this.index.lifecycleModel);
-		console.log(data);
 		lx.hideSpinner();
 		this.setState({
 			loadingState: ReportLoadingState.SUCCESSFUL,

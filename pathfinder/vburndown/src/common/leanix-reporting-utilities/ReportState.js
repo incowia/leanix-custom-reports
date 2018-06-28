@@ -64,7 +64,7 @@ class ReportState {
 			return;
 		}
 		const value = this._state[key];
-		return !value ? this._defaultValues[key] : value;
+		return value === undefined || value === null ? this._defaultValues[key] : value;
 	}
 
 	getAllowedValues(key) {
@@ -121,7 +121,7 @@ class ReportState {
 	}
 
 	publish() {
-		lx.publishState(this._state);
+		lx.publishState(this.getAll());
 	}
 }
 

@@ -222,13 +222,8 @@ function options(props, propName, componentName) {
 	);
 }
 
-const INT_REGEXP = /^\d+$/;
-
 function _checkKeysAndValues(options) {
 	for (let key in options) {
-		if (!INT_REGEXP.test(key)) {
-			return false;
-		}
 		const value = options[key];
 		if (typeof value !== 'string' && !(value instanceof String)) {
 			return false;

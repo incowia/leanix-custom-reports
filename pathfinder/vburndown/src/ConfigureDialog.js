@@ -12,7 +12,7 @@ import Constants from './Constants';
 
 const DIALOG_WIDTH = '950px';
 const DATA_SERIES_NAME_WIDTH = '140px';
-const DATA_SERIES_LIFECYCLE_WIDTH = '310px';
+const DATA_SERIES_LIFECYCLE_WIDTH = '325px';
 const DATA_SERIES_TYPE_WIDTH = '130px';
 const DATA_SERIES_AXIS_WIDTH = '60px';
 const DATA_SERIES_COUNT_WIDTH = '130px';
