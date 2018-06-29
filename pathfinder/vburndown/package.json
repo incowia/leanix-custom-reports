@@ -1,6 +1,6 @@
 {
 	"name": "burndown",
-	"version": "2.0.5",
+	"version": "2.0.6",
 	"description": "Shows lifecycle information of factsheets in a burndown chart.",
 	"private": true,
 	"engines": {

@@ -94,9 +94,13 @@ class C3BurndownChart {
 			}
 		};
 		const groups = {};
+		let useY2 = false;
 		dataSeries.forEach((dataSerie) => {
 			chartConfig.data.names[dataSerie.name] = dataSerie.name;
 			chartConfig.data.axes[dataSerie.name] = dataSerie.axis;
+			if (dataSerie.axis === Constants.DATA_SERIES_AXIS_Y2) {
+				useY2 = true;
+			}
 			const type = dataSerie.type.substring(0, dataSerie.type.length - 1);
 			const inverseValue = dataSerie.type.endsWith('-');
 			chartConfig.data.types[dataSerie.name] = type;
@@ -129,17 +133,19 @@ class C3BurndownChart {
 				}
 			}
 		}
-		if (labels.y2Axis.length > 0) {
+		if (useY2) {
 			chartConfig.axis.y2 = {
 				show: true,
-				label: {
-					text: labels.y2Axis,
-					position: 'outer-middle'
-				},
 				tick: {
 					outer: false
 				}
 			};
+			if (labels.y2Axis.length > 0) {
+				chartConfig.axis.y2.label = {
+					text: labels.y2Axis,
+					position: 'outer-middle'
+				};
+			}
 			if (shouldAxisBeCentered.y2) {
 				chartConfig.axis.y2.center = 0;
 			}

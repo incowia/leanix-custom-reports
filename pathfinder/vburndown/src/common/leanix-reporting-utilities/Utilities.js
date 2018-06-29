@@ -256,17 +256,6 @@ function swap(array, first, second) {
 	array[second] = tmp;
 }
 
-function associate(keys, values) {
-	if (!keys) {
-		return {};
-	}
-	const result = {};
-	keys.forEach((e, i) => {
-		result[e] = values[i];
-	});
-	return result;
-}
-
 // TODO ???
 /*
 function isArrayEmpty(arr, startIdx) {
@@ -298,6 +287,5 @@ export default {
 	areObjectsEqual: areObjectsEqual,
 	areArraysEqual: areArraysEqual,
 	containsAny: containsAny,
-	swap: swap,
-	associate: associate
+	swap: swap
 };

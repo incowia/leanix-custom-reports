@@ -152,10 +152,10 @@ function getModel(setup, factsheetType) {
 	if (!setup || !factsheetType) {
 		return [];
 	}
-	return _getModelDataValues(setup.settings.dataModel.factSheets[factsheetType]);
+	return _getModelValues(setup.settings.dataModel.factSheets[factsheetType]);
 }
 
-function _getModelDataValues(factsheetDataModel) {
+function _getModelValues(factsheetDataModel) {
 	if (!factsheetDataModel ||
 		!factsheetDataModel.fields ||
 		!factsheetDataModel.fields.lifecycle ||
@@ -166,16 +166,14 @@ function _getModelDataValues(factsheetDataModel) {
 	return Utilities.copyArray(factsheetDataModel.fields.lifecycle.values);
 }
 
-function translateModel(setup, model, factsheetType) {
-	if (!setup || !factsheetType) {
-		return [];
+function translateModel(model, factsheetType) {
+	if (!model || !factsheetType) {
+		return {};
 	}
-	if (!model) {
-		model = getModel(setup, factsheetType);
-	}
-	return model.map((e) => {
-		return lx.translateFieldValue(factsheetType, 'lifecycle', e);
-	});
+	return model.reduce((acc, e) => {
+		acc[e] = lx.translateFieldValue(factsheetType, 'lifecycle', e);
+		return acc;
+	}, {});
 }
 
 export default {

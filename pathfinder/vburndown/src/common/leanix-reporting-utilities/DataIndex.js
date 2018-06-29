@@ -58,21 +58,6 @@ class DataIndex {
 		delete this[key];
 	}
 
-	getRelatedFactsheets(node, key, relName, firstOnly) {
-		if (!node || !node.id || !key || !this[key] || !relName) {
-			return firstOnly ? undefined : [];
-		}
-		return _getRelatedFactsheets(node, this[key], relName, firstOnly);
-	}
-
-	getParent(node, key) {
-		return this.getRelatedFactsheets(node, key, 'relToParent', true);
-	}
-
-	getChildren(node, key) {
-		return this.getRelatedFactsheets(node, key, 'relToChild', false);
-	}
-
 	// TODO rest to TagUtilities
 	/*
 	includesTag(node, tagName) {
@@ -165,26 +150,6 @@ class DataIndex {
 		let tags = this.getTags(tagGroupName, tagName);
 		return tags.length > 0 ? tags[0].id : undefined;
 	}*/
-}
-
-function _getRelatedFactsheets(node, indexContainingFactsheets, relName, firstOnly) {
-	const subIndex = node[relName];
-	if (!subIndex) {
-		return;
-	}
-	if (firstOnly) {
-		const relObj = subIndex.nodes[0];
-		if (!relObj) {
-			return;
-		}
-		return indexContainingFactsheets.byID[relObj.factsheet.id];
-	} else {
-		const result = [];
-		subIndex.nodes.forEach((e) => {
-			result.push(indexContainingFactsheets.byID[e.factsheet.id]);
-		});
-		return result;
-	}
 }
 
 function _buildIndex(data, factsheetIsNested, lifecycleModel) {

@@ -23,8 +23,7 @@ class Table extends Component {
 
 	_renderTableColumns() {
 		const lifecycleModel = this.props.lifecycleModel;
-		const lifecycleModelTranslations = LifecycleUtilities.translateModel(this.props.setup, lifecycleModel, this.props.factsheetType);
-		const currentEnum = Utilities.associate(lifecycleModel, lifecycleModelTranslations);
+		const lifecycleModelTranslations = LifecycleUtilities.translateModel(lifecycleModel, this.props.factsheetType);
 		const tableColumns = [(
 				<TableHeaderColumn key='name' dataSort
 					dataField='name'
@@ -38,8 +37,8 @@ class Table extends Component {
 					dataField='current'
 					dataAlign='left'
 					dataFormat={TableUtilities.formatEnum}
-					formatExtraData={currentEnum}
-					filter={TableUtilities.selectFilter(currentEnum)}
+					formatExtraData={lifecycleModelTranslations}
+					filter={TableUtilities.selectFilter(lifecycleModelTranslations)}
 				>Current phase</TableHeaderColumn>
 			)
 		];
@@ -51,7 +50,7 @@ class Table extends Component {
 					dataAlign='right'
 					dataFormat={TableUtilities.formatDate()}
 					filter={TableUtilities.dateFilter}
-				>{lifecycleModelTranslations[i]}</TableHeaderColumn>
+				>{lifecycleModelTranslations[phase]}</TableHeaderColumn>
 			);
 		}));
 	}

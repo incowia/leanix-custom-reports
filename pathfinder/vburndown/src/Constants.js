@@ -98,11 +98,11 @@ const DATA_SERIES_AXES = DATA_SERIES_AXIS_OPTIONS.map((e) => {
 
 function getDataSeriesLifecycleOptions(setup, factsheetType) {
 	const lifecycleModel = LifecycleUtilities.getModel(setup, factsheetType);
-	const lifecycleModelTranslations = LifecycleUtilities.translateModel(setup, lifecycleModel, factsheetType);
+	const lifecycleModelTranslations = LifecycleUtilities.translateModel(lifecycleModel, factsheetType);
 	return lifecycleModel.map((e, i) => {
 		return {
 			value: e,
-			label: lifecycleModelTranslations[i]
+			label: lifecycleModelTranslations[e]
 		};
 	});
 }
