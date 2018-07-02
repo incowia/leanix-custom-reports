@@ -11,8 +11,9 @@ import DataSeries from './DataSeries';
 import Constants from './Constants';
 
 const DIALOG_WIDTH = '950px';
+const SPACER_WIDTH = '5px';
 const DATA_SERIES_NAME_WIDTH = '140px';
-const DATA_SERIES_LIFECYCLE_WIDTH = '325px';
+const DATA_SERIES_LIFECYCLE_WIDTH = '320px';
 const DATA_SERIES_TYPE_WIDTH = '130px';
 const DATA_SERIES_AXIS_WIDTH = '60px';
 const DATA_SERIES_COUNT_WIDTH = '130px';
@@ -235,7 +236,7 @@ class ConfigureDialog extends Component {
 	}
 
 	_renderContent() {
-		const factsheetTypeOptions = this.props.reportState.getAllowedValues('selectedFactsheetType').map((e) => {
+		const factsheetTypeOptions = this.props.factsheetTypes.map((e) => {
 			return {
 				value: e,
 				label: lx.translateFactSheetType(e, 'plural')
@@ -245,28 +246,28 @@ class ConfigureDialog extends Component {
 		return (
 			<div>
 				<div>
-					<div style={{ display: 'inline-block', width: '20%', paddingRight: '5px', verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '20%', paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<SelectField id='factsheetType' label='Factsheet type'
 							options={factsheetTypeOptions}
 							useSmallerFontSize
 							value={this.configStore.selectedFactsheetType}
 							onChange={this._handleFactsheetTypeSelect} />
 					</div>
-					<div style={{ display: 'inline-block', width: '30%', paddingLeft: '5px', paddingRight: '5px', verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '30%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='startYearDistance' label='How many years to look in the past?'
 							type='number' min='1' max='5'
 							useSmallerFontSize
 							value={this.configStore.selectedStartYearDistance.toString()}
 							onChange={this._handleStartYearDistanceInput} />
 					</div>
-					<div style={{ display: 'inline-block', width: '30%', paddingLeft: '5px', paddingRight: '5px', verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '30%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='endYearDistance' label='How many years to look in the future?'
 							type='number' min='1' max='5'
 							useSmallerFontSize
 							value={this.configStore.selectedEndYearDistance.toString()}
 							onChange={this._handleEndYearDistanceInput} />
 					</div>
-					<div style={{ display: 'inline-block', width: '20%', paddingLeft: '5px', verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '20%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<SelectField id='xAxisUnit' label='X axis unit'
 							options={Constants.X_AXIS_UNIT_OPTIONS}
 							useSmallerFontSize
@@ -275,14 +276,14 @@ class ConfigureDialog extends Component {
 					</div>
 				</div>
 				<div>
-					<div style={{ display: 'inline-block', width: '50%', paddingRight: '5px', verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '50%', paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='yAxisLabel' label='Y axis label'
 							type='text'
 							useSmallerFontSize
 							value={this.configStore.selectedYAxisLabel}
 							onChange={this._handleYAxisLabelInput} />
 					</div>
-					<div style={{ display: 'inline-block', width: '50%', paddingLeft: '5px', verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '50%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='y2AxisLabel' label='Y2 axis label'
 							type='text'
 							useSmallerFontSize
@@ -294,7 +295,10 @@ class ConfigureDialog extends Component {
 					<div className='panel-heading'>
 						<b>Data series</b>
 					</div>
-					<div className='panel-body'>
+					<div className='panel-body' style={{
+						paddingRight: '0px',
+						paddingBottom: '0px'
+					}}>
 						{this._renderDataSeries()}
 					</div>
 					<div className='panel-footer text-right'>
@@ -311,66 +315,74 @@ class ConfigureDialog extends Component {
 	}
 
 	_renderDataSeries() {
-		const result = [];
-		result.push((
-			<div key='headings'>
-				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_NAME_WIDTH }}><b>Display name</b></p>
-				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_LIFECYCLE_WIDTH }}><b>Lifecycles to use</b></p>
-				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_TYPE_WIDTH }}><b>Type</b></p>
-				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_AXIS_WIDTH }}><b>Y Axis</b></p>
-				<div style={{ display: 'inline-block', width: '5px' }} />
-				<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_COUNT_WIDTH }}><b>Count</b></p>
-				<div style={{ display: 'inline-block', width: '5px' }} />
+		const dataSeriesStyle = {
+			paddingBottom: '15px'
+		};
+		if (this.configStore.selectedDataSeries.length > 5) {
+			dataSeriesStyle.maxHeight = '200px';
+			dataSeriesStyle.overflowY = 'scroll'
+		}
+		return (
+			<div>
+				<div>
+					<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_NAME_WIDTH }}><b>Display name</b></p>
+					<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
+					<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_LIFECYCLE_WIDTH }}><b>Lifecycles to use</b></p>
+					<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
+					<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_TYPE_WIDTH }}><b>Type</b></p>
+					<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
+					<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_AXIS_WIDTH }}><b>Y Axis</b></p>
+					<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
+					<p className='text-center' style={{ display: 'inline-block', width: DATA_SERIES_COUNT_WIDTH }}><b>Count</b></p>
+					<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
+				</div>
+				<div style={dataSeriesStyle}>
+					{this.configStore.selectedDataSeries.map((e, i, array) => {
+						return this._renderSingleDataSeries(e, i, i === 0, i === array.length - 1);
+					})}
+				</div>
 			</div>
-		));
-		this.configStore.selectedDataSeries.forEach((e, i, array) => {
-			// changes to the second param must be reflected in the _handleDataSeries* methods!
-			result.push(this._renderSingleDataSeries(e, i, i === 0, i === array.length - 1));
-		});
-		return result;
+		);
 	}
 
 	_renderSingleDataSeries(dataSeries, index, first, last) {
 		return (
-			<div className='form-inline' key={index} style={{ marginBottom: '5px' }}>
+			<div className='form-inline' key={index} style={{ marginBottom: SPACER_WIDTH }}>
 				<InputField id='dataSeriesName' label='Display name'
 					type='text'
 					width={DATA_SERIES_NAME_WIDTH}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.name}
 					onChange={this._handleDataSeriesNameInput(index)} />
-				<div style={{ display: 'inline-block', width: '5px' }} />
+				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<MultiSelectField id='dataSeriesLifecycles' label='Lifecycles to use'
 					width={DATA_SERIES_LIFECYCLE_WIDTH}
 					options={this.lifecycleOptions}
 					useSmallerFontSize labelReadOnly
 					values={dataSeries.lifecycles}
 					onChange={this._handleDataSeriesLifecyclesMultiSelect(index)} />
-				<div style={{ display: 'inline-block', width: '5px' }} />
+				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<SelectField id='dataSeriesType' label='Type'
 					width={DATA_SERIES_TYPE_WIDTH}
 					options={Constants.DATA_SERIES_TYPE_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.type}
 					onChange={this._handleDataSeriesTypeSelect(index)} />
-				<div style={{ display: 'inline-block', width: '5px' }} />
+				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<SelectField id='dataSeriesAxis' label='Y Axis'
 					width={DATA_SERIES_AXIS_WIDTH}
 					options={Constants.DATA_SERIES_AXIS_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.axis}
 					onChange={this._handleDataSeriesAxisSelect(index)} />
-				<div style={{ display: 'inline-block', width: '5px' }} />
+				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<SelectField id='dataSeriesCount' label='Count'
 					width={DATA_SERIES_COUNT_WIDTH}
 					options={Constants.DATA_SERIES_COUNT_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.count}
 					onChange={this._handleDataSeriesCountSelect(index)} />
-				<div style={{ display: 'inline-block', width: '5px' }} />
+				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<button type='button'
 					className='btn btn-link btn-xs'
 					onClick={this._handleDataSeriesDownButton(index)}
@@ -410,6 +422,7 @@ ConfigureDialog.propTypes = {
 	show: PropTypes.bool.isRequired,
 	setup: PropTypes.object.isRequired,
 	reportState: PropTypes.instanceOf(ReportState).isRequired,
+	factsheetTypes: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 	onClose: PropTypes.func.isRequired,
 	onOK: PropTypes.func.isRequired
 };

@@ -19,6 +19,7 @@ class Report extends Component {
 		super(props);
 		this.index = new DataIndex();
 		this.setup = null; // set during initReport
+		this.factsheetTypes = null; // set during initReport
 		this.reportState = new ReportState();
 		this.reportState.prepareRangeValue('selectedStartYearDistance', 1, 5, 1, 3);
 		this.reportState.prepareRangeValue('selectedEndYearDistance', 1, 5, 1, 3);
@@ -62,18 +63,18 @@ class Report extends Component {
 		this.setup = setup;
 		lx.showSpinner('Loading data...');
 		// get factsheet models, only those with a lifecycle field (important assumption for other functions!)
-		const factsheetTypes = ReportSetupUtilities.getFactsheetNames(setup).filter((e) => {
+		this.factsheetTypes = ReportSetupUtilities.getFactsheetNames(setup).filter((e) => {
 			const fields = ReportSetupUtilities.getFactsheetFieldModels(setup, e);
 			return fields ? fields.lifecycle : false;
 		});
-		if (!factsheetTypes) {
+		if (!this.factsheetTypes) {
 			// error, since there is no factsheet type with enough data
 			this._handleError('There is no factsheet type with enough data.');
 			lx.hideSpinner();
 			return;
 		}
-		this.reportState.prepareValue('selectedFactsheetType', factsheetTypes, factsheetTypes[0]);
-		this._updateDynamicReportState(factsheetTypes[0]); // try'n'catch not needed here
+		this.reportState.prepareValue('selectedFactsheetType', this.factsheetTypes, this.factsheetTypes[0]);
+		this._updateDynamicReportState(this.factsheetTypes[0]); // try'n'catch not needed here
 		// load default report state
 		this.reportState.reset();
 		// then restore saved report state (init)
@@ -348,6 +349,7 @@ class Report extends Component {
 					show={this.state.showConfigure}
 					setup={this.setup}
 					reportState={this.reportState}
+					factsheetTypes={this.factsheetTypes}
 					onClose={this._handleOnClose}
 					onOK={this._handleOnOK}
 				/>

@@ -32,6 +32,8 @@ class ReportState {
 		this._state = {};
 	}
 
+	// TODO TypeUtilities
+	// TODO allowedValues must be a function only
 	prepareValue(key, allowedValues, defaultValue) {
 		if (!key) {
 			return;
@@ -65,13 +67,6 @@ class ReportState {
 		}
 		const value = this._state[key];
 		return value === undefined || value === null ? this._defaultValues[key] : value;
-	}
-
-	getAllowedValues(key) {
-		if (!key || !this._values[key]) {
-			return [];
-		}
-		return this._values[key];
 	}
 
 	getAll() {

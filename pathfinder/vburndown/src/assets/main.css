@@ -36,6 +36,7 @@ body {
 .Select-value-label, .Select-value-icon {
 	line-height: 1em !important;
 	color: inherit !important;
+	padding: 2px 5px !important;
 }
 
 .Select-arrow-zone {
