@@ -56,7 +56,10 @@ class ConfigureDialog extends Component {
 	_handleOnOK() {
 		const tmp = this.configStore;
 		this.configStore = null;
-		this.props.onOK(tmp);
+		if (!this.props.onOK(tmp)) {
+			// dialog will not be closed, therefore preserve current configStore
+			this.configStore = tmp;
+		}
 	}
 
 	_handleFactsheetTypeSelect(option) {
@@ -243,6 +246,7 @@ class ConfigureDialog extends Component {
 			};
 		});
 		// TODO validation
+		const errors = this.props.errors ? this.props.errors : {};
 		return (
 			<div>
 				<div>
@@ -251,28 +255,32 @@ class ConfigureDialog extends Component {
 							options={factsheetTypeOptions}
 							useSmallerFontSize
 							value={this.configStore.selectedFactsheetType}
-							onChange={this._handleFactsheetTypeSelect} />
+							onChange={this._handleFactsheetTypeSelect}
+							hasError={errors.selectedFactsheetType ? true : false} />
 					</div>
 					<div style={{ display: 'inline-block', width: '30%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='startYearDistance' label='How many years to look in the past?'
 							type='number' min='1' max='5'
 							useSmallerFontSize
 							value={this.configStore.selectedStartYearDistance.toString()}
-							onChange={this._handleStartYearDistanceInput} />
+							onChange={this._handleStartYearDistanceInput}
+							hasError={errors.selectedStartYearDistance ? true : false} />
 					</div>
 					<div style={{ display: 'inline-block', width: '30%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='endYearDistance' label='How many years to look in the future?'
 							type='number' min='1' max='5'
 							useSmallerFontSize
 							value={this.configStore.selectedEndYearDistance.toString()}
-							onChange={this._handleEndYearDistanceInput} />
+							onChange={this._handleEndYearDistanceInput}
+							hasError={errors.selectedEndYearDistance ? true : false} />
 					</div>
 					<div style={{ display: 'inline-block', width: '20%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<SelectField id='xAxisUnit' label='X axis unit'
 							options={Constants.X_AXIS_UNIT_OPTIONS}
 							useSmallerFontSize
 							value={this.configStore.selectedXAxisUnit}
-							onChange={this._handleXAxisUnitSelect} />
+							onChange={this._handleXAxisUnitSelect}
+							hasError={errors.selectedXAxisUnit ? true : false} />
 					</div>
 				</div>
 				<div>
@@ -281,17 +289,19 @@ class ConfigureDialog extends Component {
 							type='text'
 							useSmallerFontSize
 							value={this.configStore.selectedYAxisLabel}
-							onChange={this._handleYAxisLabelInput} />
+							onChange={this._handleYAxisLabelInput}
+							hasError={errors.selectedYAxisLabel ? true : false} />
 					</div>
 					<div style={{ display: 'inline-block', width: '50%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='y2AxisLabel' label='Y2 axis label'
 							type='text'
 							useSmallerFontSize
 							value={this.configStore.selectedY2AxisLabel}
-							onChange={this._handleY2AxisLabelInput} />
+							onChange={this._handleY2AxisLabelInput}
+							hasError={errors.selectedY2AxisLabel ? true : false} />
 					</div>
 				</div>
-				<div className='panel panel-default small' style={{ marginBottom: '0' }}>
+				<div className={ 'panel panel-default small' + (errors.selectedDataSeries ? ' panel-danger' : '') } style={{ marginBottom: '0' }}>
 					<div className='panel-heading'>
 						<b>Data series</b>
 					</div>
@@ -299,7 +309,7 @@ class ConfigureDialog extends Component {
 						paddingRight: '0px',
 						paddingBottom: '0px'
 					}}>
-						{this._renderDataSeries()}
+						{this._renderDataSeries(errors.selectedDataSeries)}
 					</div>
 					<div className='panel-footer text-right'>
 						<button type='button'
@@ -314,7 +324,7 @@ class ConfigureDialog extends Component {
 		);
 	}
 
-	_renderDataSeries() {
+	_renderDataSeries(errors) {
 		const dataSeriesStyle = {
 			paddingBottom: '15px'
 		};
@@ -322,6 +332,7 @@ class ConfigureDialog extends Component {
 			dataSeriesStyle.maxHeight = '200px';
 			dataSeriesStyle.overflowY = 'scroll'
 		}
+		// TODO support errors
 		return (
 			<div>
 				<div>
@@ -424,7 +435,8 @@ ConfigureDialog.propTypes = {
 	reportState: PropTypes.instanceOf(ReportState).isRequired,
 	factsheetTypes: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
 	onClose: PropTypes.func.isRequired,
-	onOK: PropTypes.func.isRequired
+	onOK: PropTypes.func.isRequired,
+	errors: PropTypes.object
 };
 
 export default ConfigureDialog;

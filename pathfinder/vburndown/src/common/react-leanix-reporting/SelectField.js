@@ -43,8 +43,8 @@ class SelectField extends Component {
 			style.width = this.props.width;
 		}
 		return (
-			<div className={ 'form-group' + (this.props.useSmallerFontSize ? ' small' : '') } style={style}>
-				<label htmlFor={this.props.id} className={this.props.labelReadOnly ? 'sr-only' : ''}>
+			<div className={ 'form-group' + (this.props.useSmallerFontSize ? ' small' : '') + (this.props.hasError ? ' has-error' : '') } style={style}>
+				<label htmlFor={this.props.id} className={'control-label' + (this.props.labelReadOnly ? ' sr-only' : '') }>
 					{this.props.label}
 				</label>
 				<Select
@@ -83,7 +83,8 @@ SelectField.propTypes = {
 	value: PropTypes.string,
 	useSmallerFontSize: PropTypes.bool,
 	labelReadOnly: PropTypes.bool,
-	width: PropTypes.string
+	width: PropTypes.string,
+	hasError: PropTypes.bool
 };
 
 export default SelectField;

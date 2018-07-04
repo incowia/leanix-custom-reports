@@ -42,7 +42,7 @@ class Checkbox extends Component {
 
 	render() {
 		return (
-			<div className={ 'checkbox' + (this.props.useSmallerFontSize ? ' small' : '') }>
+			<div className={ 'checkbox' + (this.props.useSmallerFontSize ? ' small' : '') + (this.props.hasError ? ' has-error' : '') }>
 				<label htmlFor={this.props.id}>
 					<input type='checkbox'
 						alt={this.props.label}
@@ -63,7 +63,8 @@ Checkbox.propTypes = {
 	label: PropTypes.string.isRequired,
 	onChange: PropTypes.func,
 	value: PropTypes.bool.isRequired,
-	useSmallerFontSize: PropTypes.bool
+	useSmallerFontSize: PropTypes.bool,
+	hasError: PropTypes.bool
 };
 
 export default Checkbox;

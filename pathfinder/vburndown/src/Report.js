@@ -5,6 +5,7 @@ import DataIndex from './common/leanix-reporting-utilities/DataIndex';
 import ReportSetupUtilities from './common/leanix-reporting-utilities/ReportSetupUtilities';
 import DateUtilities from './common/leanix-reporting-utilities/DateUtilities';
 import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
+import TypeUtilities from './common/leanix-reporting-utilities/TypeUtilities';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportState from './common/leanix-reporting-utilities/ReportState';
 import ConfigureDialog from './ConfigureDialog';
@@ -23,13 +24,14 @@ class Report extends Component {
 		this.reportState = new ReportState();
 		this.reportState.prepareRangeValue('selectedStartYearDistance', 1, 5, 1, 3);
 		this.reportState.prepareRangeValue('selectedEndYearDistance', 1, 5, 1, 3);
-		this.reportState.prepareValue('selectedXAxisUnit', Constants.X_AXIS_UNITS, Constants.X_AXIS_UNIT_QUARTERS);
-		this.reportState.prepareValue('selectedYAxisLabel', this._validateLabel, 'Count of transitions');
-		this.reportState.prepareValue('selectedY2AxisLabel', this._validateOptionalLabel, 'Count in production');
+		this.reportState.prepareArrayValue('selectedXAxisUnit', Constants.X_AXIS_UNITS, Constants.X_AXIS_UNIT_QUARTERS);
+		this.reportState.prepareStringValue('selectedYAxisLabel', 'Count of transitions');
+		this.reportState.prepareOptionalStringValue('selectedY2AxisLabel', 'Count in production');
 		// bindings
 		this._initReport = this._initReport.bind(this);
 		this._updateReportState = this._updateReportState.bind(this);
 		this._updateDynamicReportState = this._updateDynamicReportState.bind(this);
+		this._validateDataSeries = this._validateDataSeries.bind(this);
 		this._createConfig = this._createConfig.bind(this);
 		this._handleError = this._handleError.bind(this);
 		this._handleData = this._handleData.bind(this);
@@ -43,16 +45,9 @@ class Report extends Component {
 			showConfigure: false,
 			chartData: null,
 			tableData: null,
-			selectedTable: null
+			selectedTable: null,
+			configureErrors: null
 		};
-	}
-
-	_validateLabel(value) {
-		return value && value.length > 0;
-	}
-
-	_validateOptionalLabel(value) {
-		return value !== undefined && value !== null;
 	}
 
 	componentDidMount() {
@@ -73,7 +68,7 @@ class Report extends Component {
 			lx.hideSpinner();
 			return;
 		}
-		this.reportState.prepareValue('selectedFactsheetType', this.factsheetTypes, this.factsheetTypes[0]);
+		this.reportState.prepareArrayValue('selectedFactsheetType', this.factsheetTypes, this.factsheetTypes[0]);
 		this._updateDynamicReportState(this.factsheetTypes[0]); // try'n'catch not needed here
 		// load default report state
 		this.reportState.reset();
@@ -81,7 +76,11 @@ class Report extends Component {
 		if (setup.savedState && setup.savedState.customState) {
 			const updateError = this._updateReportState(setup.savedState.customState);
 			if (updateError) {
-				console.error('Please update the initial report configuration.');
+				/*
+				 if the bookmark is the 'default' one and it contains invalids, then
+				 there will be no chance to edit the report configuration --> problem? how to fix?
+				*/
+				console.error('Bookmark contains invalid configuration values, please delete.');
 				this._handleError(updateError);
 				lx.hideSpinner();
 				return;
@@ -92,7 +91,7 @@ class Report extends Component {
 	}
 
 	_updateReportState(newState) {
-		// some validations & default values depends on the factsheet type, therefore
+		// some validations & default values depend on the factsheet type, therefore
 		// a 2-step update is needed
 		const newFactsheetType = newState.selectedFactsheetType;
 		const oldFactsheetType = this.reportState.get('selectedFactsheetType');
@@ -148,23 +147,96 @@ class Report extends Component {
 		this.reportState.prepareValue('selectedDataSeries', this._validateDataSeries, defaultDataSeries);
 	}
 
-	_validateDataSeries(value) {
+	_validateDataSeries(value, key) {
+		// TODO move to DataSeries
+		// TODO rework
+		const errors = [];
+		errors.key = key;
+		errors.value = value;
 		if (!Array.isArray(value) || value.length < 1) {
-			return false;
+			errors.message = 'Provided value must be a non-empty array.';
+			return errors;
 		}
-		const tmp = {}; // used for duplication check
+		const set = {}; // used for duplication check
+		const duplicates = [];
+		const dataSeriesErrors = [];
 		for (let i = 0; i < value.length; i++) {
-			const e = value[i];
-			if (!e.name || tmp[e.name]
-				|| !Array.isArray(e.lifecycles) || e.lifecycles.length < 1
-				|| !Constants.DATA_SERIES_TYPES.includes(e.type)
-				|| !Constants.DATA_SERIES_AXES.includes(e.axis)
-				|| !Constants.DATA_SERIES_COUNTS.includes(e.count)) {
-				return false;
+			const dataSeries = value[i];
+			const dataSeriesError = [];
+			if (!TypeUtilities.isString(dataSeries.name) || dataSeries.name.length < 1) {
+				dataSeriesError.push({
+					path: TypeUtilities.toString(i) + '.name',
+					message: 'Each data series needs a display name.'
+				});
 			}
-			tmp[e.name] = e;
+			if (set[dataSeries.name]) {
+				duplicates.push({
+					index: i,
+					dataSeries: dataSeries
+				});
+			} else {
+				set[dataSeries.name] = {
+					index: i,
+					dataSeries: dataSeries
+				};
+			}
+			if (!Array.isArray(dataSeries.lifecycles) || dataSeries.lifecycles.length < 1) {
+				dataSeriesError.push({
+					path: TypeUtilities.toString(i) + '.lifecycles',
+					message: 'Each data series needs at least one lifecycle phase.'
+				});
+			} else {
+				const lifecycleErrors = [];
+				for (let j = 0; j < dataSeries.lifecycles.length; j++) {
+					const phase = dataSeries.lifecycles[j];
+					if (!TypeUtilities.isString(phase) || !this.index.lifecycleModel.includes(phase)) {
+						lifecycleErrors.push({
+							path: TypeUtilities.toString(i) + '.lifecycles' + '.' + TypeUtilities.toString(j),
+							message: 'Provided lifecycle phase must be one of ' + this.index.lifecycleModel.join(', ') + '.'
+						});
+					}
+				}
+				dataSeriesError.push(lifecycleErrors);
+			}
+			if (!Constants.DATA_SERIES_TYPES.includes(dataSeries.type)) {
+				dataSeriesError.push({
+					path: TypeUtilities.toString(i) + '.type',
+					message: 'Provided type must be one of ' + Constants.DATA_SERIES_TYPES.join(', ') + '.'
+				});
+			}
+			if (!Constants.DATA_SERIES_AXES.includes(dataSeries.axis)) {
+				dataSeriesError.push({
+					path: TypeUtilities.toString(i) + '.axis',
+					message: 'Provided Y axis must be one of ' + Constants.DATA_SERIES_AXES.join(', ') + '.'
+				});
+			}
+			if (!Constants.DATA_SERIES_COUNTS.includes(dataSeries.count)) {
+				dataSeriesError.push({
+					path: TypeUtilities.toString(i) + '.count',
+					message: 'Provided count method must be one of ' + Constants.DATA_SERIES_COUNTS.join(', ') + '.'
+				});
+			}
+			dataSeriesErrors.push(dataSeriesError);
 		}
-		return true;
+		errors.push(dataSeriesErrors);
+		if (duplicates) {
+			duplicates.forEach((e) => {
+				if (set[e.dataSeries.name]) {
+					errors.push({
+						path: TypeUtilities.toString(set[e.dataSeries.name].index) + '.name',
+						message: 'Each data series needs an unique display name.'
+					});
+					delete set[e.dataSeries.name];
+				}
+				errors.push({
+					path: TypeUtilities.toString(e.index) + '.name',
+					message: 'Each data series needs an unique display name.'
+				});
+			});
+		}
+		if (errors.length > 0) {
+			return errors;
+		}
 	}
 
 	_createConfig() {
@@ -221,7 +293,7 @@ class Report extends Component {
 				this._resetUI();
 				const updateError = this._updateReportState(state);
 				if (updateError) {
-					console.error('Please delete this bookmark.');
+					console.error('Bookmark contains invalid configuration values, please delete.');
 					this._handleError(updateError);
 					return;
 				}
@@ -258,7 +330,8 @@ class Report extends Component {
 
 	_handleOnClose() {
 		this.setState({
-			showConfigure: false
+			showConfigure: false,
+			configureErrors: null
 		});
 	}
 
@@ -266,21 +339,24 @@ class Report extends Component {
 		const oldSFT = this.reportState.get('selectedFactsheetType');
 		const updateError = this._updateReportState(newState);
 		if (updateError) {
-			console.error('Error in Configure dialog.');
-			this._handleError(updateError);
-			return; // TODO how to mark error fields?
+			this.setState({
+				configureErrors: updateError
+			});
+			return false;
 		}
 		this.setState({
 			showConfigure: false,
-			selectedTable: null
+			selectedTable: null,
+			configureErrors: null
 		});
 		if (oldSFT === this.reportState.get('selectedFactsheetType')) {
 			// no need to update report config --> trigger _handleData with new config
 			this._handleData();
-			return;
+			return true;
 		}
 		// update report config, this will trigger the facet callback automatically
 		lx.updateConfiguration(this._createConfig());
+		return true;
 	}
 
 	_handleOnClick(dateIntervalName, dataSeriesName) {
@@ -295,7 +371,8 @@ class Report extends Component {
 	_resetUI() {
 		this.setState({
 			showConfigure: false,
-			selectedTable: null
+			selectedTable: null,
+			configureErrors: null
 		});
 	}
 
@@ -352,6 +429,7 @@ class Report extends Component {
 					factsheetTypes={this.factsheetTypes}
 					onClose={this._handleOnClose}
 					onOK={this._handleOnOK}
+					errors={this.state.configureErrors}
 				/>
 				{this._renderProcessingStep('Burndown: ' + factsheetName)}
 				<div id='chart'>

@@ -40,12 +40,16 @@ body {
 }
 
 .Select-arrow-zone {
-	padding-top: 0.4em;
+	padding-top: 0.4em !important;
 }
 
 .Select-option {
-	padding-top: 0.4em;
-	padding-bottom: 0.4em;
+	padding-top: 0.4em !important;
+	padding-bottom: 0.4em !important;
+}
+
+.has-error .Select-control {
+	border-color: #a94442 !important;
 }
 
 /*

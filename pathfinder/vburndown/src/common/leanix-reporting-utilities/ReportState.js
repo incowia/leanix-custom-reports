@@ -23,42 +23,127 @@ SOFTWARE. */
 // from https://github.com/leanix/leanix-custom-reports
 
 import Utilities from './Utilities';
+import TypeUtilities from './TypeUtilities';
 
 class ReportState {
 
 	constructor() {
 		this._defaultValues = {};
-		this._values = {};
+		this._validators = {};
 		this._state = {};
 	}
 
-	// TODO TypeUtilities
-	// TODO allowedValues must be a function only
-	prepareValue(key, allowedValues, defaultValue) {
+	prepareValue(key, validator, defaultValue) {
 		if (!key) {
 			return;
 		}
-		if (!Array.isArray(allowedValues) && typeof allowedValues !== 'function') {
-			throw 'Allowed values must be contained in an array or it must be a function.';
+		if (typeof validator !== 'function') {
+			throw 'Validator must be a function.';
 		}
-		this._values[key] = allowedValues;
-		_checkValue(key, allowedValues, defaultValue);
+		this._validators[key] = validator;
+		_checkValue(key, validator, defaultValue);
 		this._defaultValues[key] = defaultValue;
 		// also set one for the state
-		this._state[key] = undefined;
+		const currentValue = this._state[key];
+		if (currentValue !== undefined && currentValue !== null) {
+			// is the previous value still valid? if so, leave it
+			try {
+				_checkValue(key, validator, currentValue);
+			} catch (err) {
+				// previous value not valid, so reset it
+				this._state[key] = undefined;
+			}
+		} else {
+			this._state[key] = undefined;
+		}
 	}
 
 	prepareBooleanValue(key, defaultValue) {
-		this.prepareValue(key, [true, false], defaultValue);
+		this.prepareValue(key, (v) => {
+			if (!TypeUtilities.isBoolean(v)) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be a boolean.'
+				};
+			}
+		}, defaultValue);
 	}
 
 	prepareRangeValue(key, min, max, steps, defaultValue) {
-		const range = [];
-		for (let i = min; i < max; i = i + steps) {
-			range.push(i);
-		}
-		range.push(max);
-		this.prepareValue(key, range, defaultValue);
+		this.prepareValue(key, (v) => {
+			if (!TypeUtilities.isNumber(v)) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be a number.'
+				};
+			}
+			if (v < min) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be greater than or equal to ' + min + '.'
+				};
+			}
+			if (v > max) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be lower than or equal to ' + max + '.'
+				};
+			}
+			if (v % steps > 0) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be a multiple of ' + steps + '.'
+				};
+			}
+		}, defaultValue);
+	}
+
+	prepareArrayValue(key, array, defaultValue) {
+		this.prepareValue(key, (v) => {
+			if (!array.includes(v)) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be one of ' + array.join(', ') + '.'
+				};
+			}
+		}, defaultValue);
+	}
+
+	prepareStringValue(key, defaultValue) {
+		this.prepareValue(key, (v) => {
+			if (!TypeUtilities.isString(v)) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be a string.'
+				};
+			}
+			if (v.length < 1) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be a non-empty string.'
+				};
+			}
+		}, defaultValue);
+	}
+
+	prepareOptionalStringValue(key, defaultValue) {
+		this.prepareValue(key, (v) => {
+			if (!TypeUtilities.isString(v)) {
+				return {
+					key: key,
+					value: v,
+					message: 'Provided value must be a string.'
+				};
+			}
+		}, defaultValue);
 	}
 
 	get(key) {
@@ -88,8 +173,8 @@ class ReportState {
 		if (!key) {
 			return;
 		}
-		const values = this._values[key];
-		_checkValue(key, values, value);
+		const validator = this._validators[key];
+		_checkValue(key, validator, value);
 		return _setValue(this._state, key, value);
 	}
 
@@ -98,9 +183,17 @@ class ReportState {
 			return;
 		}
 		// first check all values before updating anything
+		const errors = {};
 		for (let key in obj) {
-			const values = this._values[key];
-			_checkValue(key, values, obj[key]);
+			const validator = this._validators[key];
+			try {
+				_checkValue(key, validator, obj[key]);
+			} catch (err) {
+				errors[err.key] = err;
+			}
+		}
+		if (Object.keys(errors).length > 0) {
+			throw errors;
 		}
 		const oldValues = {};
 		for (let key in obj) {
@@ -120,11 +213,12 @@ class ReportState {
 	}
 }
 
-function _checkValue(key, allowedValues, value) {
-	// TODO function should response w/ a detailed error msg if something is wrong
-	// TODO value formatter?
-	if (allowedValues && (Array.isArray(allowedValues) ? !allowedValues.includes(value) : !allowedValues(value))) {
-		throw 'Given value "' + JSON.stringify(value) + '" is not allowed for key "' + key + '".';
+function _checkValue(key, validator, value) {
+	if (validator) {
+		const error = validator(value, key);
+		if (error) {
+			throw error;
+		}
 	}
 }
 
