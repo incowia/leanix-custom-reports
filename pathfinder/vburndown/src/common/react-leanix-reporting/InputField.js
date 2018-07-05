@@ -59,7 +59,17 @@ class InputField extends Component {
 					min={this.props.min ? this.props.min : ''}
 					max={this.props.max ? this.props.max : ''}
 				/>
+				{this._renderHelpText()}
 			</div>
+		);
+	}
+
+	_renderHelpText() {
+		if (!this.props.helpText) {
+			return null;
+		}
+		return (
+			<span className='help-block'>{this.props.helpText}</span>
 		);
 	}
 }
@@ -76,7 +86,8 @@ InputField.propTypes = {
 	min: PropTypes.string,
 	max: PropTypes.string,
 	width: PropTypes.string,
-	hasError: PropTypes.bool
+	hasError: PropTypes.bool,
+	helpText: PropTypes.string
 };
 
 export default InputField;

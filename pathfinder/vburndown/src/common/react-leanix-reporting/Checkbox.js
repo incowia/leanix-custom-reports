@@ -53,7 +53,17 @@ class Checkbox extends Component {
 					/>
 					{this.props.label}
 				</label>
+				{this._renderHelpText()}
 			</div>
+		);
+	}
+
+	_renderHelpText() {
+		if (!this.props.helpText) {
+			return null;
+		}
+		return (
+			<span className='help-block'>{this.props.helpText}</span>
 		);
 	}
 }
@@ -64,7 +74,8 @@ Checkbox.propTypes = {
 	onChange: PropTypes.func,
 	value: PropTypes.bool.isRequired,
 	useSmallerFontSize: PropTypes.bool,
-	hasError: PropTypes.bool
+	hasError: PropTypes.bool,
+	helpText: PropTypes.string
 };
 
 export default Checkbox;

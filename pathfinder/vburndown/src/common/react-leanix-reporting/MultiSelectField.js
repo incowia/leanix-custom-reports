@@ -62,7 +62,17 @@ class MultiSelectField extends Component {
 					disabled={this.props.options.length < 1}
 					value={this.props.values}
 					onChange={this._onChange} />
+				{this._renderHelpText()}
 			</div>
+		);
+	}
+
+	_renderHelpText() {
+		if (!this.props.helpText) {
+			return null;
+		}
+		return (
+			<span className='help-block'>{this.props.helpText}</span>
 		);
 	}
 }
@@ -82,7 +92,8 @@ MultiSelectField.propTypes = {
 	labelReadOnly: PropTypes.bool,
 	placeholder: PropTypes.string,
 	width: PropTypes.string,
-	hasError: PropTypes.bool
+	hasError: PropTypes.bool,
+	helpText: PropTypes.string
 };
 
 export default MultiSelectField;

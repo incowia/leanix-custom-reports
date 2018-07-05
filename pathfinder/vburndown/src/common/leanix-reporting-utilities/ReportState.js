@@ -41,14 +41,14 @@ class ReportState {
 			throw 'Validator must be a function.';
 		}
 		this._validators[key] = validator;
-		_checkValue(key, validator, defaultValue);
+		_checkValue(key, validator, defaultValue, this);
 		this._defaultValues[key] = defaultValue;
 		// also set one for the state
 		const currentValue = this._state[key];
 		if (currentValue !== undefined && currentValue !== null) {
 			// is the previous value still valid? if so, leave it
 			try {
-				_checkValue(key, validator, currentValue);
+				_checkValue(key, validator, currentValue, this);
 			} catch (err) {
 				// previous value not valid, so reset it
 				this._state[key] = undefined;
@@ -59,89 +59,68 @@ class ReportState {
 	}
 
 	prepareBooleanValue(key, defaultValue) {
-		this.prepareValue(key, (v) => {
+		this.prepareValue(key, (v, k) => {
 			if (!TypeUtilities.isBoolean(v)) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be a boolean.'
-				};
+				return 'Provided value must be a boolean.';
 			}
 		}, defaultValue);
 	}
 
 	prepareRangeValue(key, min, max, steps, defaultValue) {
-		this.prepareValue(key, (v) => {
-			if (!TypeUtilities.isNumber(v)) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be a number.'
-				};
+		this.prepareValue(key, (v, k) => {
+			if (!TypeUtilities.isNumber(v) || Number.isNaN(v)) {
+				return 'Provided value must be a number.';
 			}
 			if (v < min) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be greater than or equal to ' + min + '.'
-				};
+				return 'Provided value must be greater than or equal to ' + min + '.';
 			}
 			if (v > max) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be lower than or equal to ' + max + '.'
-				};
+				return 'Provided value must be lower than or equal to ' + max + '.';
 			}
 			if (v % steps > 0) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be a multiple of ' + steps + '.'
-				};
+				return 'Provided value must be a multiple of ' + steps + '.';
 			}
 		}, defaultValue);
 	}
 
-	prepareArrayValue(key, array, defaultValue) {
-		this.prepareValue(key, (v) => {
+	prepareEnumValue(key, array, defaultValue) {
+		this.prepareValue(key, (v, k) => {
 			if (!array.includes(v)) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be one of ' + array.join(', ') + '.'
-				};
+				return 'Provided value must be one of ' + array.join(', ') + '.';
 			}
 		}, defaultValue);
 	}
 
 	prepareStringValue(key, defaultValue) {
-		this.prepareValue(key, (v) => {
-			if (!TypeUtilities.isString(v)) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be a string.'
-				};
-			}
-			if (v.length < 1) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be a non-empty string.'
-				};
+		this.prepareValue(key, (v, k) => {
+			if (!TypeUtilities.isString(v) || v.trim().length < 1) {
+				return 'Provided value must be a non-empty string.';
 			}
 		}, defaultValue);
 	}
 
 	prepareOptionalStringValue(key, defaultValue) {
-		this.prepareValue(key, (v) => {
+		this.prepareValue(key, (v, k) => {
 			if (!TypeUtilities.isString(v)) {
-				return {
-					key: key,
-					value: v,
-					message: 'Provided value must be a string.'
-				};
+				return 'Provided value must be a string.';
+			}
+		}, defaultValue);
+	}
+
+	prepareRegExpValue(key, regExp, defaultValue, errorMessage) {
+		this.prepareValue(key, (v, k) => {
+			const str = TypeUtilities.toString(v).trim();
+			if (!regExp.test(str)) {
+				return errorMessage;
+			}
+		}, defaultValue);
+	}
+
+	prepareOptionalRegExpValue(key, regExp, defaultValue, errorMessage) {
+		this.prepareValue(key, (v, k) => {
+			const str = TypeUtilities.toString(v).trim();
+			if (str.length > 0 && !regExp.test(str)) {
+				return errorMessage;
 			}
 		}, defaultValue);
 	}
@@ -174,7 +153,7 @@ class ReportState {
 			return;
 		}
 		const validator = this._validators[key];
-		_checkValue(key, validator, value);
+		_checkValue(key, validator, value, this);
 		return _setValue(this._state, key, value);
 	}
 
@@ -187,9 +166,9 @@ class ReportState {
 		for (let key in obj) {
 			const validator = this._validators[key];
 			try {
-				_checkValue(key, validator, obj[key]);
+				_checkValue(key, validator, obj[key], this);
 			} catch (err) {
-				errors[err.key] = err;
+				errors[key] = err;
 			}
 		}
 		if (Object.keys(errors).length > 0) {
@@ -213,9 +192,9 @@ class ReportState {
 	}
 }
 
-function _checkValue(key, validator, value) {
+function _checkValue(key, validator, value, state) {
 	if (validator) {
-		const error = validator(value, key);
+		const error = validator(value, key, state);
 		if (error) {
 			throw error;
 		}

@@ -5,7 +5,6 @@ import DataIndex from './common/leanix-reporting-utilities/DataIndex';
 import ReportSetupUtilities from './common/leanix-reporting-utilities/ReportSetupUtilities';
 import DateUtilities from './common/leanix-reporting-utilities/DateUtilities';
 import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
-import TypeUtilities from './common/leanix-reporting-utilities/TypeUtilities';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportState from './common/leanix-reporting-utilities/ReportState';
 import ConfigureDialog from './ConfigureDialog';
@@ -21,17 +20,19 @@ class Report extends Component {
 		this.index = new DataIndex();
 		this.setup = null; // set during initReport
 		this.factsheetTypes = null; // set during initReport
+		this.factsheetTypeOptions = null; // set during initReport
 		this.reportState = new ReportState();
 		this.reportState.prepareRangeValue('selectedStartYearDistance', 1, 5, 1, 3);
 		this.reportState.prepareRangeValue('selectedEndYearDistance', 1, 5, 1, 3);
-		this.reportState.prepareArrayValue('selectedXAxisUnit', Constants.X_AXIS_UNITS, Constants.X_AXIS_UNIT_QUARTERS);
-		this.reportState.prepareStringValue('selectedYAxisLabel', 'Count of transitions');
-		this.reportState.prepareOptionalStringValue('selectedY2AxisLabel', 'Count in production');
+		this.reportState.prepareEnumValue('selectedXAxisUnit', Constants.X_AXIS_UNITS, Constants.X_AXIS_UNIT_QUARTERS);
+		this.reportState.prepareRegExpValue('selectedYAxisLabel', DataSeries.LABEL_AND_NAME_REGEXP,
+			'Count of transitions', 'Provided value must be a non-empty alphanumeric string.');
+		this.reportState.prepareOptionalRegExpValue('selectedY2AxisLabel', DataSeries.LABEL_AND_NAME_REGEXP,
+			'Count in production', 'Provided value must be an alphanumeric string.');
 		// bindings
 		this._initReport = this._initReport.bind(this);
 		this._updateReportState = this._updateReportState.bind(this);
 		this._updateDynamicReportState = this._updateDynamicReportState.bind(this);
-		this._validateDataSeries = this._validateDataSeries.bind(this);
 		this._createConfig = this._createConfig.bind(this);
 		this._handleError = this._handleError.bind(this);
 		this._handleData = this._handleData.bind(this);
@@ -68,7 +69,13 @@ class Report extends Component {
 			lx.hideSpinner();
 			return;
 		}
-		this.reportState.prepareArrayValue('selectedFactsheetType', this.factsheetTypes, this.factsheetTypes[0]);
+		this.factsheetTypeOptions = this.factsheetTypes.map((e) => {
+			return {
+				value: e,
+				label: lx.translateFactSheetType(e, 'plural')
+			};
+		});
+		this.reportState.prepareEnumValue('selectedFactsheetType', this.factsheetTypes, this.factsheetTypes[0]);
 		this._updateDynamicReportState(this.factsheetTypes[0]); // try'n'catch not needed here
 		// load default report state
 		this.reportState.reset();
@@ -144,99 +151,7 @@ class Report extends Component {
 			// no default lifecycle? at least add one made up demo series
 			defaultDataSeries.push(DataSeries.createDemo(lifecycleModel));
 		}
-		this.reportState.prepareValue('selectedDataSeries', this._validateDataSeries, defaultDataSeries);
-	}
-
-	_validateDataSeries(value, key) {
-		// TODO move to DataSeries
-		// TODO rework
-		const errors = [];
-		errors.key = key;
-		errors.value = value;
-		if (!Array.isArray(value) || value.length < 1) {
-			errors.message = 'Provided value must be a non-empty array.';
-			return errors;
-		}
-		const set = {}; // used for duplication check
-		const duplicates = [];
-		const dataSeriesErrors = [];
-		for (let i = 0; i < value.length; i++) {
-			const dataSeries = value[i];
-			const dataSeriesError = [];
-			if (!TypeUtilities.isString(dataSeries.name) || dataSeries.name.length < 1) {
-				dataSeriesError.push({
-					path: TypeUtilities.toString(i) + '.name',
-					message: 'Each data series needs a display name.'
-				});
-			}
-			if (set[dataSeries.name]) {
-				duplicates.push({
-					index: i,
-					dataSeries: dataSeries
-				});
-			} else {
-				set[dataSeries.name] = {
-					index: i,
-					dataSeries: dataSeries
-				};
-			}
-			if (!Array.isArray(dataSeries.lifecycles) || dataSeries.lifecycles.length < 1) {
-				dataSeriesError.push({
-					path: TypeUtilities.toString(i) + '.lifecycles',
-					message: 'Each data series needs at least one lifecycle phase.'
-				});
-			} else {
-				const lifecycleErrors = [];
-				for (let j = 0; j < dataSeries.lifecycles.length; j++) {
-					const phase = dataSeries.lifecycles[j];
-					if (!TypeUtilities.isString(phase) || !this.index.lifecycleModel.includes(phase)) {
-						lifecycleErrors.push({
-							path: TypeUtilities.toString(i) + '.lifecycles' + '.' + TypeUtilities.toString(j),
-							message: 'Provided lifecycle phase must be one of ' + this.index.lifecycleModel.join(', ') + '.'
-						});
-					}
-				}
-				dataSeriesError.push(lifecycleErrors);
-			}
-			if (!Constants.DATA_SERIES_TYPES.includes(dataSeries.type)) {
-				dataSeriesError.push({
-					path: TypeUtilities.toString(i) + '.type',
-					message: 'Provided type must be one of ' + Constants.DATA_SERIES_TYPES.join(', ') + '.'
-				});
-			}
-			if (!Constants.DATA_SERIES_AXES.includes(dataSeries.axis)) {
-				dataSeriesError.push({
-					path: TypeUtilities.toString(i) + '.axis',
-					message: 'Provided Y axis must be one of ' + Constants.DATA_SERIES_AXES.join(', ') + '.'
-				});
-			}
-			if (!Constants.DATA_SERIES_COUNTS.includes(dataSeries.count)) {
-				dataSeriesError.push({
-					path: TypeUtilities.toString(i) + '.count',
-					message: 'Provided count method must be one of ' + Constants.DATA_SERIES_COUNTS.join(', ') + '.'
-				});
-			}
-			dataSeriesErrors.push(dataSeriesError);
-		}
-		errors.push(dataSeriesErrors);
-		if (duplicates) {
-			duplicates.forEach((e) => {
-				if (set[e.dataSeries.name]) {
-					errors.push({
-						path: TypeUtilities.toString(set[e.dataSeries.name].index) + '.name',
-						message: 'Each data series needs an unique display name.'
-					});
-					delete set[e.dataSeries.name];
-				}
-				errors.push({
-					path: TypeUtilities.toString(e.index) + '.name',
-					message: 'Each data series needs an unique display name.'
-				});
-			});
-		}
-		if (errors.length > 0) {
-			return errors;
-		}
+		this.reportState.prepareValue('selectedDataSeries', DataSeries.validate(LifecycleUtilities.translateModel(lifecycleModel, factsheetType)), defaultDataSeries);
 	}
 
 	_createConfig() {
@@ -426,7 +341,7 @@ class Report extends Component {
 					show={this.state.showConfigure}
 					setup={this.setup}
 					reportState={this.reportState}
-					factsheetTypes={this.factsheetTypes}
+					factsheetTypes={this.factsheetTypeOptions}
 					onClose={this._handleOnClose}
 					onOK={this._handleOnOK}
 					errors={this.state.configureErrors}

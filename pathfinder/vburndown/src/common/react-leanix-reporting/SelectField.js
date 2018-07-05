@@ -64,7 +64,17 @@ class SelectField extends Component {
 					disabled={this.props.options.length < 1}
 					value={this.props.value}
 					onChange={this._onChange} />
+				{this._renderHelpText()}
 			</div>
+		);
+	}
+
+	_renderHelpText() {
+		if (!this.props.helpText) {
+			return null;
+		}
+		return (
+			<span className='help-block'>{this.props.helpText}</span>
 		);
 	}
 }
@@ -84,7 +94,8 @@ SelectField.propTypes = {
 	useSmallerFontSize: PropTypes.bool,
 	labelReadOnly: PropTypes.bool,
 	width: PropTypes.string,
-	hasError: PropTypes.bool
+	hasError: PropTypes.bool,
+	helpText: PropTypes.string
 };
 
 export default SelectField;

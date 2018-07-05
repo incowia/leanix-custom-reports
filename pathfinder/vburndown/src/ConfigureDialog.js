@@ -239,24 +239,18 @@ class ConfigureDialog extends Component {
 	}
 
 	_renderContent() {
-		const factsheetTypeOptions = this.props.factsheetTypes.map((e) => {
-			return {
-				value: e,
-				label: lx.translateFactSheetType(e, 'plural')
-			};
-		});
-		// TODO validation
 		const errors = this.props.errors ? this.props.errors : {};
 		return (
 			<div>
 				<div>
 					<div style={{ display: 'inline-block', width: '20%', paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<SelectField id='factsheetType' label='Factsheet type'
-							options={factsheetTypeOptions}
+							options={this.props.factsheetTypes}
 							useSmallerFontSize
 							value={this.configStore.selectedFactsheetType}
 							onChange={this._handleFactsheetTypeSelect}
-							hasError={errors.selectedFactsheetType ? true : false} />
+							hasError={errors.selectedFactsheetType ? true : false}
+							helpText={errors.selectedFactsheetType} />
 					</div>
 					<div style={{ display: 'inline-block', width: '30%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='startYearDistance' label='How many years to look in the past?'
@@ -264,7 +258,8 @@ class ConfigureDialog extends Component {
 							useSmallerFontSize
 							value={this.configStore.selectedStartYearDistance.toString()}
 							onChange={this._handleStartYearDistanceInput}
-							hasError={errors.selectedStartYearDistance ? true : false} />
+							hasError={errors.selectedStartYearDistance ? true : false}
+							helpText={errors.selectedStartYearDistance} />
 					</div>
 					<div style={{ display: 'inline-block', width: '30%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='endYearDistance' label='How many years to look in the future?'
@@ -272,7 +267,8 @@ class ConfigureDialog extends Component {
 							useSmallerFontSize
 							value={this.configStore.selectedEndYearDistance.toString()}
 							onChange={this._handleEndYearDistanceInput}
-							hasError={errors.selectedEndYearDistance ? true : false} />
+							hasError={errors.selectedEndYearDistance ? true : false}
+							helpText={errors.selectedEndYearDistance} />
 					</div>
 					<div style={{ display: 'inline-block', width: '20%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<SelectField id='xAxisUnit' label='X axis unit'
@@ -280,7 +276,8 @@ class ConfigureDialog extends Component {
 							useSmallerFontSize
 							value={this.configStore.selectedXAxisUnit}
 							onChange={this._handleXAxisUnitSelect}
-							hasError={errors.selectedXAxisUnit ? true : false} />
+							hasError={errors.selectedXAxisUnit ? true : false}
+							helpText={errors.selectedXAxisUnit} />
 					</div>
 				</div>
 				<div>
@@ -290,7 +287,8 @@ class ConfigureDialog extends Component {
 							useSmallerFontSize
 							value={this.configStore.selectedYAxisLabel}
 							onChange={this._handleYAxisLabelInput}
-							hasError={errors.selectedYAxisLabel ? true : false} />
+							hasError={errors.selectedYAxisLabel ? true : false}
+							helpText={errors.selectedYAxisLabel} />
 					</div>
 					<div style={{ display: 'inline-block', width: '50%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='y2AxisLabel' label='Y2 axis label'
@@ -298,18 +296,20 @@ class ConfigureDialog extends Component {
 							useSmallerFontSize
 							value={this.configStore.selectedY2AxisLabel}
 							onChange={this._handleY2AxisLabelInput}
-							hasError={errors.selectedY2AxisLabel ? true : false} />
+							hasError={errors.selectedY2AxisLabel ? true : false}
+							helpText={errors.selectedY2AxisLabel} />
 					</div>
 				</div>
 				<div className={ 'panel panel-default small' + (errors.selectedDataSeries ? ' panel-danger' : '') } style={{ marginBottom: '0' }}>
 					<div className='panel-heading'>
 						<b>Data series</b>
+						{this._renderDataSeriesErrors(errors.selectedDataSeries ? errors.selectedDataSeries : {})}
 					</div>
 					<div className='panel-body' style={{
 						paddingRight: '0px',
 						paddingBottom: '0px'
 					}}>
-						{this._renderDataSeries(errors.selectedDataSeries)}
+						{this._renderDataSeries(errors.selectedDataSeries ? errors.selectedDataSeries : {})}
 					</div>
 					<div className='panel-footer text-right'>
 						<button type='button'
@@ -324,6 +324,36 @@ class ConfigureDialog extends Component {
 		);
 	}
 
+	_renderDataSeriesErrors(errors) {
+		const keys = Object.keys(errors);
+		if (keys.length < 1) {
+			return null;
+		}
+		let errorSet = {};
+		keys.forEach((key) => {
+			const dsErr = errors[key];
+			for (let key2 in dsErr) {
+				const dsPropErr = dsErr[key2];
+				dsPropErr.forEach((e) => {
+					errorSet[e] = e;
+				});
+			}
+		});
+		errorSet = Object.keys(errorSet);
+		if (errorSet.length < 1) {
+			return null;
+		}
+		return (
+			<ul className='small' style={{ margin: '0px' }}>
+				{errorSet.map((err, i) => {
+					return (
+						<li key={i}>{err}</li>
+					);
+				})}
+			</ul>
+		);
+	}
+
 	_renderDataSeries(errors) {
 		const dataSeriesStyle = {
 			paddingBottom: '15px'
@@ -332,7 +362,6 @@ class ConfigureDialog extends Component {
 			dataSeriesStyle.maxHeight = '200px';
 			dataSeriesStyle.overflowY = 'scroll'
 		}
-		// TODO support errors
 		return (
 			<div>
 				<div>
@@ -349,14 +378,14 @@ class ConfigureDialog extends Component {
 				</div>
 				<div style={dataSeriesStyle}>
 					{this.configStore.selectedDataSeries.map((e, i, array) => {
-						return this._renderSingleDataSeries(e, i, i === 0, i === array.length - 1);
+						return this._renderSingleDataSeries(e, i, i === 0, i === array.length - 1, errors[i] ? errors[i] : {});
 					})}
 				</div>
 			</div>
 		);
 	}
 
-	_renderSingleDataSeries(dataSeries, index, first, last) {
+	_renderSingleDataSeries(dataSeries, index, first, last, errors) {
 		return (
 			<div className='form-inline' key={index} style={{ marginBottom: SPACER_WIDTH }}>
 				<InputField id='dataSeriesName' label='Display name'
@@ -364,35 +393,40 @@ class ConfigureDialog extends Component {
 					width={DATA_SERIES_NAME_WIDTH}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.name}
-					onChange={this._handleDataSeriesNameInput(index)} />
+					onChange={this._handleDataSeriesNameInput(index)}
+					hasError={errors.name ? true : false} />
 				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<MultiSelectField id='dataSeriesLifecycles' label='Lifecycles to use'
 					width={DATA_SERIES_LIFECYCLE_WIDTH}
 					options={this.lifecycleOptions}
 					useSmallerFontSize labelReadOnly
 					values={dataSeries.lifecycles}
-					onChange={this._handleDataSeriesLifecyclesMultiSelect(index)} />
+					onChange={this._handleDataSeriesLifecyclesMultiSelect(index)}
+					hasError={errors.lifecycles ? true : false} />
 				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<SelectField id='dataSeriesType' label='Type'
 					width={DATA_SERIES_TYPE_WIDTH}
 					options={Constants.DATA_SERIES_TYPE_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.type}
-					onChange={this._handleDataSeriesTypeSelect(index)} />
+					onChange={this._handleDataSeriesTypeSelect(index)}
+					hasError={errors.type ? true : false} />
 				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<SelectField id='dataSeriesAxis' label='Y Axis'
 					width={DATA_SERIES_AXIS_WIDTH}
 					options={Constants.DATA_SERIES_AXIS_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.axis}
-					onChange={this._handleDataSeriesAxisSelect(index)} />
+					onChange={this._handleDataSeriesAxisSelect(index)}
+					hasError={errors.axis ? true : false} />
 				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<SelectField id='dataSeriesCount' label='Count'
 					width={DATA_SERIES_COUNT_WIDTH}
 					options={Constants.DATA_SERIES_COUNT_OPTIONS}
 					useSmallerFontSize labelReadOnly
 					value={dataSeries.count}
-					onChange={this._handleDataSeriesCountSelect(index)} />
+					onChange={this._handleDataSeriesCountSelect(index)}
+					hasError={errors.count ? true : false} />
 				<div style={{ display: 'inline-block', width: SPACER_WIDTH }} />
 				<button type='button'
 					className='btn btn-link btn-xs'
@@ -433,7 +467,12 @@ ConfigureDialog.propTypes = {
 	show: PropTypes.bool.isRequired,
 	setup: PropTypes.object.isRequired,
 	reportState: PropTypes.instanceOf(ReportState).isRequired,
-	factsheetTypes: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+	factsheetTypes: PropTypes.arrayOf(
+		PropTypes.shape({
+			value: PropTypes.string.isRequired,
+			label: PropTypes.string.isRequired
+		}).isRequired
+	).isRequired,
 	onClose: PropTypes.func.isRequired,
 	onOK: PropTypes.func.isRequired,
 	errors: PropTypes.object
