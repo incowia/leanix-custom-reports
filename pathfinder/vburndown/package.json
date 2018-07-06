@@ -1,6 +1,6 @@
 {
 	"name": "burndown",
-	"version": "2.0.7",
+	"version": "2.0.8",
 	"description": "Shows lifecycle information of factsheets in a burndown chart.",
 	"private": true,
 	"engines": {
@@ -44,7 +44,7 @@
 	"dependencies": {
 		"@leanix/reporting": "0.2.3",
 		"bootstrap": "3.3.7",
-		"c3": "0.6.2",
+		"c3": "0.6.3",
 		"prop-types": "15.6.2",
 		"react": "16.4.1",
 		"react-bootstrap-table": "4.3.1",

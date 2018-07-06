@@ -15,7 +15,40 @@ class C3BurndownChart {
 	_handleOnClick() {
 		const self = this;
 		return (data, element) => {
-			self._onClick(self._data[0][data.index + 1], data.id);
+			// +1 b/c the first entry in each data series is it's name
+			const index = data.index + 1;
+			const category = self._data[0][index]; // x value
+			let dataSeriesName = data.id; // y value
+			if (data.value === 0) {
+				/*
+				 a value of 0 also triggers a onclick event, but there is nothing to show,
+				 so maybe find the closest data point and show that instead, since the
+				 user doesn't see 0 values, a click might be meant for another data point
+				*/
+				let closestDataPoint = data.value;
+				let closestDataSeries = dataSeriesName;
+				for (let i = 1; i < self._data.length; i++) {
+					const dataSeries = self._data[i];
+					const dataPoint = Math.abs(dataSeries[index]);
+					if (dataPoint !== 0) {
+						if (closestDataPoint === 0) {
+							closestDataPoint = dataPoint;
+							closestDataSeries = dataSeries[0];
+						} else {
+							closestDataPoint = Math.min(closestDataPoint, dataPoint);
+							if (closestDataPoint === dataPoint) {
+								closestDataSeries = dataSeries[0];
+							}
+						}
+					}
+				}
+				if (closestDataPoint === 0) {
+					// there are no non-zero data points for the category, so ignore the click
+					return;
+				}
+				dataSeriesName = closestDataSeries;
+			}
+			self._onClick(category, dataSeriesName);
 		};
 	}
 
