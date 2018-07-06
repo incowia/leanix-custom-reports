@@ -370,7 +370,7 @@ class Report extends Component {
 			return this._renderProcessingStep(
 				'Click on a <i class="text-info">data point</i> to see an overview of which '
 				+ factsheetName
-				+ ' were counted.<br/><small>Zero data point are also clickable, but in this case the report will show the data for the closest non-zero data point instead.</small>');
+				+ ' were counted.<br/><small>Zero data points are also clickable, but in this case the report will show the data for the closest non-zero data point instead.</small>');
 		}
 		const tableData = this.state.tableData[selectedTable.dateIntervalName][selectedTable.dataSeriesName];
 		return (
