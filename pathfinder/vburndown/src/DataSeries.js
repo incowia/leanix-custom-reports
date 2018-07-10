@@ -57,7 +57,7 @@ const LABEL_AND_NAME_REGEXP = /^[\w\s]+$/i;
 function validate(lifecycleModelTranslations) {
 	const lifecycleModel = Object.keys(lifecycleModelTranslations);
 	const lmts = Utilities.getValues(lifecycleModelTranslations);
-	return (v, k) => {
+	return (v, k, nS, cS) => {
 		if (!Array.isArray(v) || v.length < 1) {
 			return 'Provided value must be a non-empty array.';
 		}

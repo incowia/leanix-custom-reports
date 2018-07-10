@@ -1,0 +1,74 @@
+@import "content.css";
+
+body {
+	margin: 0px;
+	padding: 0px 5px;
+}
+
+#report {
+	margin: 0 auto;
+	padding: 5px 5px 0px 5px;
+}
+
+/*
+ * from 'react-select/dist/react-select.css'
+ *
+ * controls are about 25% smaller
+ */
+
+.Select-control, .Select-input {
+	height: 28px !important;
+	min-width: 40px !important;
+}
+
+.Select-placeholder, .Select-value {
+	line-height: 18px !important;
+	top: 0.4em !important;
+	margin-top: 0px !important;
+	color: inherit !important;
+}
+
+.Select--multi .Select-value {
+	margin-top: 4px !important;
+}
+
+.Select-value-label, .Select-value-icon {
+	line-height: 1em !important;
+	color: inherit !important;
+	padding: 2px 5px !important;
+}
+
+.Select-arrow-zone {
+	padding-top: 0.4em !important;
+}
+
+.Select-option {
+	padding-top: 0.4em !important;
+	padding-bottom: 0.4em !important;
+}
+
+.has-error .Select-control {
+	border-color: #a94442 !important;
+}
+
+/*
+ * from 'react-bootstrap-table/css/react-bootstrap-table.css'
+ */
+.react-bs-table table td,
+.react-bs-table table th {
+	white-space: normal !important;
+}
+
+.react-bs-container-header > table > thead > tr > th {
+    vertical-align: bottom !important;
+}
+
+.react-bs-table,
+.react-bs-table-tool-bar,
+.react-bs-table-pagination {
+	margin: 0px;
+}
+
+.react-bs-table-tool-bar {
+	margin-bottom: 10px;
+}
