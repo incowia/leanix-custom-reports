@@ -96,7 +96,6 @@ class Report extends Component {
 
 	_initReport(setup) {
 		this.setup = setup;
-		console.log(setup);
 		lx.showSpinner('Loading data...');
 		// get all factsheet defs from dataModel
 		this.reportState.factsheetModels = Object.keys(Utilities.getFrom(setup, 'settings.dataModel.factSheets'));

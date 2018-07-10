@@ -125,8 +125,7 @@ function _checkFieldType(type) {
 
 function _checkTagGroup(id, tagGroups) {
 	const tagGroup = tagGroups[id];
-	// TODO check last condition
-	return tagGroup && tagGroup.tags.nodes.length > 0;
+	return tagGroup && tagGroup.tags;
 }
 
 function _checkRelField(value, setup) {
