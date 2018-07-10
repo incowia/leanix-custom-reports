@@ -41,14 +41,16 @@ class ReportState {
 			throw 'Validator must be a function.';
 		}
 		this._validators[key] = validator;
-		_checkValue(key, validator, defaultValue, this);
+		// this call omits state change vars, b/c it's a preparing step
+		_checkValue(key, validator, defaultValue);
 		this._defaultValues[key] = defaultValue;
 		// also set one for the state
 		const currentValue = this._state[key];
 		if (currentValue !== undefined && currentValue !== null) {
 			// is the previous value still valid? if so, leave it
 			try {
-				_checkValue(key, validator, currentValue, this);
+				// this call omits state change vars, b/c it's a preparing step
+				_checkValue(key, validator, currentValue);
 			} catch (err) {
 				// previous value not valid, so reset it
 				this._state[key] = undefined;
@@ -83,10 +85,26 @@ class ReportState {
 		}, defaultValue);
 	}
 
-	prepareEnumValue(key, array, defaultValue) {
+	prepareEnumValue(key, enums, defaultValue) {
 		this.prepareValue(key, (v, k, nS, cS) => {
-			if (!array.includes(v)) {
-				return 'Provided value must be one of ' + array.join(', ') + '.';
+			if (!enums.includes(v)) {
+				return 'Provided value must be one of ' + enums.join(', ') + '.';
+			}
+		}, defaultValue);
+	}
+
+	prepareComplexEnumValue(key, enums, propertyName, defaultValue) {
+		const includes = (v) => {
+			return enums.some((e) => {
+				return e[propertyName] === v[propertyName];
+			});
+		};
+		this.prepareValue(key, (v, k, nS, cS) => {
+			if (!includes(v)) {
+				const props = enums.map((e) => {
+					return e[propertyName];
+				});
+				return 'Provided value must be one of ' + props.join(', ') + '.';
 			}
 		}, defaultValue);
 	}
@@ -189,7 +207,12 @@ class ReportState {
 		return oldValues;
 	}
 
-	reset() {
+	reset(key) {
+		if (key) {
+			this._state[key] = undefined;
+			return;
+		}
+		// no key given, therefore reset all
 		for (let key in this._state) {
 			this._state[key] = undefined;
 		}

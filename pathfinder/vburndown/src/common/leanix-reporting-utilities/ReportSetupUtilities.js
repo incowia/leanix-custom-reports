@@ -33,7 +33,18 @@ function getFactsheetFieldModels(setup, factsheet) {
 	return Utilities.getFrom(setup, 'settings.dataModel.factSheets.' + factsheet + '.fields');
 }
 
+function getRelationModel(setup, relName) {
+	const mappings = Utilities.getFrom(setup, 'settings.dataModel.relationMapping');
+	const relMapName = mappings[relName] ? mappings[relName].persistedName : undefined;
+	if (!relMapName) {
+		return;
+	}
+	const relModels = Utilities.getFrom(setup, 'settings.dataModel.relations');
+	return relModels[relMapName];
+}
+
 export default {
 	getFactsheetNames: getFactsheetNames,
-	getFactsheetFieldModels: getFactsheetFieldModels
+	getFactsheetFieldModels: getFactsheetFieldModels,
+	getRelationModel: getRelationModel
 };
