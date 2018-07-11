@@ -24,8 +24,15 @@ SOFTWARE. */
 
 const ALL_TAG_GROUPS_QUERY = `{tagGroups: allTagGroups(sort: {mode: BY_FIELD, key: "name", order: asc}) {
 		edges { node {
-				id name restrictToFactSheetTypes mode
+				id name
 				tags { edges { node { id name } } }
+			}}
+		}}`;
+
+const EXTENDED_ALL_TAG_GROUPS_QUERY = `{tagGroups: allTagGroups(sort: {mode: BY_FIELD, key: "name", order: asc}) {
+		edges { node {
+				id name restrictToFactSheetTypes mode
+				tags { edges { node { id name color } } }
 			}}
 		}}`;
 
@@ -123,5 +130,6 @@ getFirstTagID(tagGroupName, tagName) {
 }*/
 
 export default {
-	ALL_TAG_GROUPS_QUERY: ALL_TAG_GROUPS_QUERY
+	ALL_TAG_GROUPS_QUERY: ALL_TAG_GROUPS_QUERY,
+	EXTENDED_ALL_TAG_GROUPS_QUERY: EXTENDED_ALL_TAG_GROUPS_QUERY
 };

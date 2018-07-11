@@ -32,6 +32,7 @@ class Report extends Component {
 		this.setup = null; // set during initReport
 		this.factsheetTypes = null; // set during initReport
 		this.factsheetTypeOptions = null; // set during initReport
+		this.legendItemData = null; // set during handleData
 		this.reportState = new ReportState();
 		this.reportState.prepareBooleanValue('showEmptyRows', false);
 		this.reportState.prepareBooleanValue('showEmptyColumns', false);
@@ -42,11 +43,15 @@ class Report extends Component {
 		this._updateDynamicReportState = this._updateDynamicReportState.bind(this);
 		this._createConfig = this._createConfig.bind(this);
 		this._createAllViewInfosQuery = this._createAllViewInfosQuery.bind(this);
+		this._createAdditionalDataQuery = this._createAdditionalDataQuery.bind(this);
+		this._createViewQuery = this._createViewQuery.bind(this);
 		this._handleError = this._handleError.bind(this);
 		this._handleData = this._handleData.bind(this);
+		this._createUIData = this._createUIData.bind(this);
 		this._handleOnClose = this._handleOnClose.bind(this);
 		this._handleOnOK = this._handleOnOK.bind(this);
 		this._handleViewSelect = this._handleViewSelect.bind(this);
+		this._getViewModelByKey = this._getViewModelByKey.bind(this);
 		this._handleXAxisSelect = this._handleXAxisSelect.bind(this);
 		this._handleYAxisSelect = this._handleYAxisSelect.bind(this);
 		this._handleSwapAxes = this._handleSwapAxes.bind(this);
@@ -73,11 +78,14 @@ class Report extends Component {
 		// get all factsheet types
 		this.factsheetTypes = ReportSetupUtilities.getFactsheetNames(setup);
 		// get all tags, then data for the views and finally the data from facet config
-		lx.executeGraphQL(TagUtilities.ALL_TAG_GROUPS_QUERY).then((tagGroups) => {
+		lx.executeGraphQL(TagUtilities.EXTENDED_ALL_TAG_GROUPS_QUERY).then((tagGroups) => {
 			this.index.putGraphQL(tagGroups);
 			// get the views
 			lx.executeGraphQL(this._createAllViewInfosQuery()).then((allViewInfos) => {
-				this.viewModels = DataHandler.createViewModels(setup, allViewInfos, this.index.tagGroups.byID);
+				this.viewModels = DataHandler.createViewModels(setup,
+					allViewInfos,
+					this.index.tagGroups.byID);
+				// TODO rangeLegend viewModels must evaluate their values
 				// filter out all factsheet types that have no viewModels
 				this.factsheetTypes = Object.keys(this.viewModels);
 				if (!this.factsheetTypes) {
@@ -130,7 +138,6 @@ class Report extends Component {
 				// saved one is not valid anymore
 				return err;
 			}
-			this._updateDynamicReportState(newFactsheetType);
 			// reset select states for view & axes, b/c factsheet type changed
 			this.reportState.reset('selectedView');
 			this.reportState.reset('selectedXAxis');
@@ -138,6 +145,7 @@ class Report extends Component {
 			delete newState.selectedView;
 			delete newState.selectedXAxis;
 			delete newState.selectedYAxis;
+			this._updateDynamicReportState(newFactsheetType);
 		}
 		// now update the other values
 		try {
@@ -154,16 +162,20 @@ class Report extends Component {
 		// some data is dynamic and depends on the selected factsheet type
 		const viewModels = this.viewModels[factsheetType];
 		// always fallback to the first one
-		this.reportState.prepareComplexEnumValue('selectedView', viewModels, 'key', viewModels[0]);
+		this.reportState.prepareComplexEnumValue('selectedView', viewModels, this._getViewModelKey, viewModels[0]);
 		// view options have at least 2 elements, see '_initReport'
 		if (viewModels.length === 2) {
 			// x & y axes should differ
-			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels, 'key', viewModels[0]);
-			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels, 'key', viewModels[1]);
+			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels, this._getViewModelKey, viewModels[0]);
+			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels, this._getViewModelKey, viewModels[1]);
 		} else {
-			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels, 'key', viewModels[1]);
-			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels, 'key', viewModels[2]);
+			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels, this._getViewModelKey, viewModels[1]);
+			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels, this._getViewModelKey, viewModels[2]);
 		}
+	}
+
+	_getViewModelKey(viewModel) {
+		return viewModel.key;
 	}
 
 	_createConfig() {
@@ -242,6 +254,37 @@ class Report extends Component {
 		return `{${query}}`;
 	}
 
+	_createAdditionalDataQuery(ids, factsheetType, attributes) {
+		// create ids string, but pay attention to server-side limitation of 1024 entries
+		const idsString = ids.length < 1025 ? ids.map((e) => {
+			return '"' + e.id + '"';
+		}).join(',') : undefined;
+		// use either ids or at least the factsheet type for the filter
+		const idFilter = idsString ? `filter: { ids: [${idsString}] }`
+			: (factsheetType ? `filter: {facetFilters: [{facetKey: "FactSheetTypes", keys: ["${factsheetType}"]}]}` : '');
+		let attributeDef = 'id ' + attributes.filter((e, i) => {
+			// avoid duplicates
+			return attributes.indexOf(e, i + 1) < 0;
+		}).join(' ');
+		if (factsheetType) {
+			attributeDef = `...on ${factsheetType} { ${attributeDef} }`;
+		}
+		return `{additional: allFactSheets(${idFilter}) {
+					edges { node {
+						${attributeDef}
+					}}
+				}}`;
+	}
+
+	_createViewQuery(factsheetType, viewKey) {
+		return `{view(
+					key: "${viewKey}",
+					filter: {facetFilters: [{facetKey: "FactSheetTypes", keys: ["${factsheetType}"]}]}
+				) {
+					legendItems { id value bgColor color transparency inLegend }
+				}}`;
+	}
+
 	_handleError(err) {
 		console.error(err);
 		this.setState({
@@ -250,18 +293,77 @@ class Report extends Component {
 	}
 
 	_handleData() {
+		/*
+		 1. remove previous data
+		 2. get data values
+		 3. get legend items
+		 Request are separated so the report doesn't run into server-side request-length limitations
+		*/
+		lx.showSpinner('Loading data...');
+		const factsheetType = this.reportState.get('selectedFactsheetType');
+		const viewModel = this.reportState.get('selectedView');
+		const xAxisModel = this.reportState.get('selectedXAxis');
+		const yAxisModel = this.reportState.get('selectedYAxis');
+		const attributes = [];
+		attributes.push(DataHandler.getQueryAttribute(viewModel));
+		attributes.push(DataHandler.getQueryAttribute(xAxisModel));
+		attributes.push(DataHandler.getQueryAttribute(yAxisModel));
+		const additionalDataQuery = this._createAdditionalDataQuery(this.index.last.nodes, factsheetType, attributes);
+		lx.executeGraphQL(additionalDataQuery).then((additionalData) => {
+			this.index.remove('additional');
+			this.index.putGraphQL(additionalData);
+			if (this.legendItemData && this.legendItemData._key === viewModel.key) {
+				// no need to query the same legend items again
+				this._createUIData();
+				return;
+			}
+			lx.executeGraphQL(this._createViewQuery(factsheetType, viewModel.key)).then((viewData) => {
+				const legendItems = viewData.view.legendItems.sort((f, s) => {
+					return f.id - s.id;
+				}).reduce((acc, e) => {
+					acc[e.value] = e;
+					return acc;
+				}, {});
+				legendItems._rawLegendItems = viewData.view.legendItems;
+				legendItems._key = viewModel.key;
+				this.legendItemData = legendItems;
+				this._createUIData();
+			}).catch(this._handleError);
+		}).catch(this._handleError);
+	}
+
+	_createUIData() {
+		const factsheetType = this.reportState.get('selectedFactsheetType');
+		const viewModel = this.reportState.get('selectedView');
+		const xAxisModel = this.reportState.get('selectedXAxis');
+		const yAxisModel = this.reportState.get('selectedYAxis');
+		const data = DataHandler.create(this.setup,
+			factsheetType,
+			viewModel,
+			xAxisModel,
+			yAxisModel,
+			this.legendItemData);
 		console.log(this.setup);
 		console.log(this.viewModels);
 		console.log(this.factsheetTypes);
 		console.log(this.reportState);
 		console.log(this.index);
-		const data = DataHandler.create();
+		console.log(this.legendItemData);
+		console.log(factsheetType);
+		console.log(viewModel);
+		console.log(xAxisModel);
+		console.log(yAxisModel);
+		console.log(data);
 		lx.hideSpinner();
+		// missingData: null,
+		// legendData: null,
+		// matrixData: null,
+		// matrixDataAvailable: false,
 		this.setState({
 			loadingState: ReportLoadingState.SUCCESSFUL
 		});
-		// publish report state to the framework here, b/c all changes always trigger this method
-		this.reportState.publish(); // TODO not true
+		// publish report state to the framework here, b/c nearly all changes trigger this method
+		this.reportState.publish();
 	}
 
 	_handleOnClose() {
@@ -286,8 +388,7 @@ class Report extends Component {
 		});
 		if (oldSFT === this.reportState.get('selectedFactsheetType')) {
 			// no need to update report config
-			// publish call is special here, b/c this action doesn't trigger '_handleData'
-			// TODO not true
+			// publish call is special here, b/c this action doesn't trigger '_createUIData'
 			this.reportState.publish();
 			return true;
 		}
@@ -301,8 +402,15 @@ class Report extends Component {
 		if (selectedView.key === option.value) {
 			return;
 		}
+		this.reportState.set('selectedView', this._getViewModelByKey(option.value));
 		this._resetUI();
-		// TODO re-compute matrix
+		this._handleData();
+	}
+
+	_getViewModelByKey(key) {
+		return this.viewModels[this.reportState.get('selectedFactsheetType')].find((e) => {
+			return e.key === key;
+		});
 	}
 
 	_handleXAxisSelect(option) {
@@ -310,8 +418,9 @@ class Report extends Component {
 		if (selectedXAxis.key === option.value) {
 			return;
 		}
+		this.reportState.set('selectedXAxis', this._getViewModelByKey(option.value));
 		this._resetUI();
-		// TODO re-compute matrix
+		this._handleData();
 	}
 
 	_handleYAxisSelect(option) {
@@ -319,8 +428,9 @@ class Report extends Component {
 		if (selectedYAxis.key === option.value) {
 			return;
 		}
+		this.reportState.set('selectedYAxis', this._getViewModelByKey(option.value));
 		this._resetUI();
-		// TODO re-compute matrix
+		this._handleData();
 	}
 
 	_handleSwapAxes() {
@@ -328,7 +438,7 @@ class Report extends Component {
 			selectedXAxis: this.reportState.get('selectedYAxis'),
 			selectedYAxis: this.reportState.get('selectedXAxis')
 		});
-		// TODO re-compute matrix
+		this._createUIData();
 	}
 
 	_resetUI() {
@@ -410,15 +520,15 @@ class Report extends Component {
 				label: e.label
 			};
 		});
-		const viewOption = this.reportState.get('selectedView').value;
-		const xAxisOption = this.reportState.get('selectedXAxis').value;
-		const yAxisOption = this.reportState.get('selectedYAxis').value;
+		const viewOption = this.reportState.get('selectedView').key;
+		const xAxisOption = this.reportState.get('selectedXAxis').key;
+		const yAxisOption = this.reportState.get('selectedYAxis').key;
 		const xAxisOptions = Utilities.copyArray(viewOptions).filter((e) => {
-			// remove selected options from y axis options
+			// remove selected option from y axis options
 			return e.value !== yAxisOption;
 		});
 		const yAxisOptions = Utilities.copyArray(viewOptions).filter((e) => {
-			// remove selected options from x axis options
+			// remove selected option from x axis options
 			return e.value !== xAxisOption;
 		});
 		const errors = this.state.configureErrors ? this.state.configureErrors : {};

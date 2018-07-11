@@ -71,7 +71,7 @@ class ConfigureDialog extends Component {
 	render() {
 		if (this.props.show) {
 			if (!this.configStore) {
-				this.configStore = this.props.reportState.getAll();
+				this.configStore = this.props.reportState.get();
 			}
 		}
 		return (
