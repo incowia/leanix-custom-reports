@@ -46,6 +46,7 @@ class ReportState {
 		this._defaultValues[key] = defaultValue;
 		// also set one for the state
 		const currentValue = this._state[key];
+		// TODO 'null' is a valid value
 		if (currentValue !== undefined && currentValue !== null) {
 			// is the previous value still valid? if so, leave it
 			try {
@@ -94,6 +95,7 @@ class ReportState {
 	}
 
 	prepareComplexEnumValue(key, enums, propertyName, defaultValue) {
+		// TODO propertyName --> enumKeyGetter
 		const includes = (v) => {
 			return enums.some((e) => {
 				return e[propertyName] === v[propertyName];
@@ -144,10 +146,12 @@ class ReportState {
 	}
 
 	get(key) {
+		// TODO no key --> return all
 		if (!key) {
 			return;
 		}
 		const value = this._state[key];
+		// TODO 'null' is a valid value
 		return value === undefined || value === null ? this._defaultValues[key] : value;
 	}
 

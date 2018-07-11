@@ -7,11 +7,7 @@ function createViewModels(setup, allViewInfos, tagGroups) {
 	for (let factsheetType in allViewInfos) {
 		const fieldModels = Utilities.getFrom(setup, 'settings.dataModel.factSheets.' + factsheetType + '.fields');
 		const viewInfos = allViewInfos[factsheetType].viewInfos.filter((e) => {
-			// the 'build in' stuff is specific for leanix itself,
-			// not relevant for the report
 			switch (e.type) {
-				case 'BUILT_IN':
-					return false;
 				case 'FIELD':
 					return _checkFieldType(fieldModels[e.key].type);
 				case 'TAG':
@@ -23,6 +19,10 @@ function createViewModels(setup, allViewInfos, tagGroups) {
 				case 'FIELD_TARGET_FS':
 					// format: '<RELATION>.<FACTSHEET_TYPE>.<FIELD>'
 					return _checkTargetValue(e.key.split('.'), setup);
+				case 'BUILT_IN':
+					// the 'build in' stuff is specific for leanix itself,
+					// not relevant for the report
+					return false;
 				default:
 					console.error('Unknown viewInfo type "' + e.type + '".');
 					return false;
@@ -96,15 +96,11 @@ function _getTypeSortID(type) {
 			return 1;
 		case 'SINGLE_SELECT':
 			return 2;
-		// tag type goes with 100-199
 		case 'TAG':
 			return 100;
-		// relation field type goes with 200-299
 		case 'FIELD_RELATION':
-			return 200;
-		// relation target type goes with 300-399
 		case 'FIELD_TARGET_FS':
-			return 300;
+			return 101;
 		default:
 			console.error('_getTypeSortID: Unknown type "' + type + '".');
 			return 10000;

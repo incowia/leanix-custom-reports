@@ -101,8 +101,10 @@ class Report extends Component {
 					const updateError = this._updateReportState(setup.savedState.customState);
 					if (updateError) {
 						/*
-						 if the bookmark is the 'default' one and it contains invalids, then
-						 there will be no chance to edit the report configuration --> problem? how to fix?
+						 if the bookmark is the 'default' one and contains invalids, then
+						 there will be no chance to edit the report configuration --> problem?
+						 answer: no, b/c bookmarks are version specific, therefore this case
+						 only happen in dev mode, which is a rare case
 						*/
 						console.error('Bookmark contains invalid configuration values, please delete.');
 						this._handleError(updateError);
