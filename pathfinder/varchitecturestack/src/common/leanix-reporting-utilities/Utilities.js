@@ -256,6 +256,29 @@ function swap(array, first, second) {
 	array[second] = tmp;
 }
 
+function unique(array, keyGetter) {
+	if (!array) {
+		return;
+	}
+	const result = [];
+	if (keyGetter) {
+		array.forEach((e, i) => {
+			if (!result.some((e2) => {
+				return keyGetter(e) === keyGetter(e2);
+			})) {
+				result.push(e);
+			}
+		});
+	} else {
+		array.forEach((e, i) => {
+			if (!result.includes(e)) {
+				result.push(e);
+			}
+		});
+	}
+	return result;
+}
+
 // TODO ???
 /*
 function isArrayEmpty(arr, startIdx) {
@@ -287,5 +310,6 @@ export default {
 	areObjectsEqual: areObjectsEqual,
 	areArraysEqual: areArraysEqual,
 	containsAny: containsAny,
-	swap: swap
+	swap: swap,
+	unique: unique
 };

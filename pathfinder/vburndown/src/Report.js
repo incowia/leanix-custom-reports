@@ -63,7 +63,7 @@ class Report extends Component {
 			const fields = ReportSetupUtilities.getFactsheetFieldModels(setup, e);
 			return fields ? fields.lifecycle : false;
 		});
-		if (!this.factsheetTypes) {
+		if (!this.factsheetTypes || this.factsheetTypes.length === 0) {
 			// error, since there is no factsheet type with enough data
 			this._handleError('There is no factsheet type with enough data.');
 			lx.hideSpinner();

@@ -30,9 +30,11 @@ class Report extends Component {
 		super(props);
 		this.index = new DataIndex();
 		this.setup = null; // set during initReport
+		this.viewModels = null; // set during initReport
 		this.factsheetTypes = null; // set during initReport
 		this.factsheetTypeOptions = null; // set during initReport
 		this.legendItemData = null; // set during handleData
+		this.legendMapping = null; // set during handleData
 		this.reportState = new ReportState();
 		this.reportState.prepareBooleanValue('showEmptyRows', false);
 		this.reportState.prepareBooleanValue('showEmptyColumns', false);
@@ -51,7 +53,6 @@ class Report extends Component {
 		this._handleOnClose = this._handleOnClose.bind(this);
 		this._handleOnOK = this._handleOnOK.bind(this);
 		this._handleViewSelect = this._handleViewSelect.bind(this);
-		this._getViewModelByKey = this._getViewModelByKey.bind(this);
 		this._handleXAxisSelect = this._handleXAxisSelect.bind(this);
 		this._handleYAxisSelect = this._handleYAxisSelect.bind(this);
 		this._handleSwapAxes = this._handleSwapAxes.bind(this);
@@ -83,12 +84,12 @@ class Report extends Component {
 			// get the views
 			lx.executeGraphQL(this._createAllViewInfosQuery()).then((allViewInfos) => {
 				this.viewModels = DataHandler.createViewModels(setup,
+					this.factsheetTypes,
 					allViewInfos,
 					this.index.tagGroups.byID);
-				// TODO rangeLegend viewModels must evaluate their values
 				// filter out all factsheet types that have no viewModels
 				this.factsheetTypes = Object.keys(this.viewModels);
-				if (!this.factsheetTypes) {
+				if (!this.factsheetTypes || this.factsheetTypes.length === 0) {
 					// error, since there is no factsheet type with enough data
 					this._handleError('There is no factsheet type with enough data.');
 					lx.hideSpinner();
@@ -162,15 +163,15 @@ class Report extends Component {
 		// some data is dynamic and depends on the selected factsheet type
 		const viewModels = this.viewModels[factsheetType];
 		// always fallback to the first one
-		this.reportState.prepareComplexEnumValue('selectedView', viewModels, this._getViewModelKey, viewModels[0]);
+		this.reportState.prepareComplexEnumValue('selectedView', viewModels.views, this._getViewModelKey, viewModels.views[0]);
 		// view options have at least 2 elements, see '_initReport'
 		if (viewModels.length === 2) {
 			// x & y axes should differ
-			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels, this._getViewModelKey, viewModels[0]);
-			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels, this._getViewModelKey, viewModels[1]);
+			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels.xAxis, this._getViewModelKey, viewModels.xAxis[0]);
+			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels.yAxis, this._getViewModelKey, viewModels.yAxis[1]);
 		} else {
-			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels, this._getViewModelKey, viewModels[1]);
-			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels, this._getViewModelKey, viewModels[2]);
+			this.reportState.prepareComplexEnumValue('selectedXAxis', viewModels.xAxis, this._getViewModelKey, viewModels.xAxis[1]);
+			this.reportState.prepareComplexEnumValue('selectedYAxis', viewModels.yAxis, this._getViewModelKey, viewModels.yAxis[2]);
 		}
 	}
 
@@ -282,6 +283,7 @@ class Report extends Component {
 					filter: {facetFilters: [{facetKey: "FactSheetTypes", keys: ["${factsheetType}"]}]}
 				) {
 					legendItems { id value bgColor color transparency inLegend }
+					mapping { fsId legendId }
 				}}`;
 	}
 
@@ -321,39 +323,46 @@ class Report extends Component {
 				const legendItems = viewData.view.legendItems.sort((f, s) => {
 					return f.id - s.id;
 				}).reduce((acc, e) => {
-					acc[e.value] = e;
+					acc[e.id] = e;
 					return acc;
 				}, {});
 				legendItems._rawLegendItems = viewData.view.legendItems;
 				legendItems._key = viewModel.key;
 				this.legendItemData = legendItems;
+				this.legendMapping = viewData.view.mapping.reduce((acc, e) => {
+					// leanix doesn't support multi-select views,
+					// therefore the transformation is okay
+					acc[e.fsId] = e.legendId;
+					return acc;
+				}, {});
 				this._createUIData();
 			}).catch(this._handleError);
 		}).catch(this._handleError);
 	}
 
 	_createUIData() {
-		const factsheetType = this.reportState.get('selectedFactsheetType');
-		const viewModel = this.reportState.get('selectedView');
-		const xAxisModel = this.reportState.get('selectedXAxis');
-		const yAxisModel = this.reportState.get('selectedYAxis');
 		const data = DataHandler.create(this.setup,
-			factsheetType,
-			viewModel,
-			xAxisModel,
-			yAxisModel,
-			this.legendItemData);
+			this.reportState.get('selectedFactsheetType'),
+			{
+				view: this.reportState.get('selectedView'),
+				xAxis: this.reportState.get('selectedXAxis'),
+				yAxis: this.reportState.get('selectedYAxis')
+			}, {
+				nodes: this.index.last.nodes,
+				additionalNodeData: this.index.additional.byID,
+				legendItems: this.legendItemData,
+				tagGroups: this.index.tagGroups.byID,
+				legendMapping: this.legendMapping
+			});
 		console.log(this.setup);
 		console.log(this.viewModels);
-		console.log(this.factsheetTypes);
 		console.log(this.reportState);
 		console.log(this.index);
 		console.log(this.legendItemData);
-		console.log(factsheetType);
-		console.log(viewModel);
-		console.log(xAxisModel);
-		console.log(yAxisModel);
 		console.log(data);
+		data.legendData.forEach((e) => {
+			console.log(e.label());
+		});
 		lx.hideSpinner();
 		// missingData: null,
 		// legendData: null,
@@ -402,13 +411,14 @@ class Report extends Component {
 		if (selectedView.key === option.value) {
 			return;
 		}
-		this.reportState.set('selectedView', this._getViewModelByKey(option.value));
+		const viewModels = this.viewModels[this.reportState.get('selectedFactsheetType')].views;
+		this.reportState.set('selectedView', this._getViewModelByKey(viewModels, option.value));
 		this._resetUI();
 		this._handleData();
 	}
 
-	_getViewModelByKey(key) {
-		return this.viewModels[this.reportState.get('selectedFactsheetType')].find((e) => {
+	_getViewModelByKey(viewModels, key) {
+		return viewModels.find((e) => {
 			return e.key === key;
 		});
 	}
@@ -418,7 +428,8 @@ class Report extends Component {
 		if (selectedXAxis.key === option.value) {
 			return;
 		}
-		this.reportState.set('selectedXAxis', this._getViewModelByKey(option.value));
+		const viewModels = this.viewModels[this.reportState.get('selectedFactsheetType')].xAxis;
+		this.reportState.set('selectedXAxis', this._getViewModelByKey(viewModels, option.value));
 		this._resetUI();
 		this._handleData();
 	}
@@ -428,7 +439,8 @@ class Report extends Component {
 		if (selectedYAxis.key === option.value) {
 			return;
 		}
-		this.reportState.set('selectedYAxis', this._getViewModelByKey(option.value));
+		const viewModels = this.viewModels[this.reportState.get('selectedFactsheetType')].yAxis;
+		this.reportState.set('selectedYAxis', this._getViewModelByKey(viewModels, option.value));
 		this._resetUI();
 		this._handleData();
 	}
@@ -513,24 +525,27 @@ class Report extends Component {
 		);
 	}
 
+	_mapToViewOptions(viewModel) {
+		return {
+			value: viewModel.key,
+			label: viewModel.label
+		};
+	}
+
 	_renderSelectFields(factsheetType) {
-		const viewOptions = this.viewModels[factsheetType].map((e) => {
-			return {
-				value: e.key,
-				label: e.label
-			};
-		});
+		const viewModels = this.viewModels[factsheetType];
+		const viewOptions = viewModels.views.map(this._mapToViewOptions);
 		const viewOption = this.reportState.get('selectedView').key;
 		const xAxisOption = this.reportState.get('selectedXAxis').key;
 		const yAxisOption = this.reportState.get('selectedYAxis').key;
-		const xAxisOptions = Utilities.copyArray(viewOptions).filter((e) => {
+		const xAxisOptions = Utilities.copyArray(viewModels.xAxis).filter((viewModel) => {
 			// remove selected option from y axis options
-			return e.value !== yAxisOption;
-		});
-		const yAxisOptions = Utilities.copyArray(viewOptions).filter((e) => {
+			return viewModel.key !== yAxisOption;
+		}).map(this._mapToViewOptions);
+		const yAxisOptions = Utilities.copyArray(viewModels.yAxis).filter((viewModel) => {
 			// remove selected option from x axis options
-			return e.value !== xAxisOption;
-		});
+			return viewModel.key !== xAxisOption;
+		}).map(this._mapToViewOptions);
 		const errors = this.state.configureErrors ? this.state.configureErrors : {};
 		return (
 			<div>
