@@ -30,7 +30,7 @@ import LinkList from './LinkList';
 /* formatting functions for the table */
 
 const OVERFLOW_CELL_STYLE = {
-	maxHeight: '100px',
+	maxHeight: '150px',
 	overflow: 'auto'
 };
 
@@ -44,9 +44,10 @@ function formatLinkFactsheet(setup) {
 		if (!cell || !baseUrl) {
 			return '';
 		}
+		const type = extraData.type ? extraData.type : row[extraData.typeProp];
 		return (
 			<Link
-				link={baseUrl + '/factsheet/' + extraData.type + '/' + row[extraData.id]}
+				link={baseUrl + '/factsheet/' + type + '/' + row[extraData.id]}
 				target='_blank'
 				text={cell} />
 		);
@@ -59,12 +60,13 @@ function formatLinkArrayFactsheets(setup) {
 		if (!cell || !baseUrl) {
 			return '';
 		}
+		const type = extraData.type ? extraData.type : row[extraData.typeProp];
 		return (
 			<div style={OVERFLOW_CELL_STYLE}>
 				<LinkList links={
 					cell.reduce((acc, e, i) => {
 						acc.push({
-							link: baseUrl + '/factsheet/' + extraData.type + '/' + row[extraData.id][i],
+							link: baseUrl + '/factsheet/' + type + '/' + row[extraData.id][i],
 							target: '_blank',
 							text: e
 						});

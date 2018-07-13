@@ -46,7 +46,7 @@ class ReportState {
 		this._defaultValues[key] = defaultValue;
 		// also set one for the state
 		const currentValue = this._state[key];
-		if (currentValue !== undefined && currentValue !== null) {
+		if (currentValue !== undefined) {
 			// is the previous value still valid? if so, leave it
 			try {
 				// this call omits state change vars, b/c it's a preparing step
@@ -93,16 +93,16 @@ class ReportState {
 		}, defaultValue);
 	}
 
-	prepareComplexEnumValue(key, enums, propertyName, defaultValue) {
+	prepareComplexEnumValue(key, enums, enumKeyGetter, defaultValue) {
 		const includes = (v) => {
 			return enums.some((e) => {
-				return e[propertyName] === v[propertyName];
+				return enumKeyGetter(e) === enumKeyGetter(v);
 			});
 		};
 		this.prepareValue(key, (v, k, nS, cS) => {
 			if (!includes(v)) {
 				const props = enums.map((e) => {
-					return e[propertyName];
+					return enumKeyGetter(e);
 				});
 				return 'Provided value must be one of ' + props.join(', ') + '.';
 			}
@@ -144,14 +144,11 @@ class ReportState {
 	}
 
 	get(key) {
-		if (!key) {
-			return;
+		if (key !== undefined && key !== null) {
+			const value = this._state[key];
+			return value === undefined ? this._defaultValues[key] : value;
 		}
-		const value = this._state[key];
-		return value === undefined || value === null ? this._defaultValues[key] : value;
-	}
-
-	getAll() {
+		// no key given, therefore get all
 		const result = {};
 		for (let key in this._state) {
 			const value = this.get(key);
@@ -170,7 +167,7 @@ class ReportState {
 		if (!key) {
 			return;
 		}
-		const currentState = this.getAll();
+		const currentState = this.get();
 		const newState = Utilities.copyObject(currentState, true);
 		newState[key] = value;
 		const validator = this._validators[key];
@@ -182,7 +179,7 @@ class ReportState {
 		if (!obj) {
 			return;
 		}
-		const currentState = this.getAll();
+		const currentState = this.get();
 		const newState = Utilities.copyObject(currentState, true);
 		for (let key in obj) {
 			newState[key] = obj[key];
@@ -219,7 +216,7 @@ class ReportState {
 	}
 
 	publish() {
-		lx.publishState(this.getAll());
+		lx.publishState(this.get());
 	}
 }
 

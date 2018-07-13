@@ -1,25 +1,17 @@
-import TagUtilities from './common/leanix-reporting-utilities/TagUtilities';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportSetupUtilities from './common/leanix-reporting-utilities/ReportSetupUtilities';
-import Constants from './Constants';
 
-// TODO view model to own file
-
-function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
+function createModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 	const viewModelsPerFactsheet = {};
 	factsheetTypes.forEach((factsheetType) => {
 		const fieldModels = Utilities.getFrom(setup, 'settings.dataModel.factSheets.' + factsheetType + '.fields');
-		const viewModels = {
-			views: [],
-			xAxis: undefined,
-			yAxis: undefined
-		};
+		const models = [];
 		allViewInfos[factsheetType].viewInfos.forEach((viewInfo) => {
 			const usesRangeLegend = viewInfo.viewOptionSupport ? viewInfo.viewOptionSupport.usesRangeLegend : false;
-			let viewModel = {
+			const model = {
 				key: viewInfo.key,
-				originalLabel: viewInfo.label,
-				rangeLegend: usesRangeLegend
+				rangeLegend: usesRangeLegend,
+				multiSelect: false // mutli-select viewInfos are not supported by leanix
 			};
 			switch (viewInfo.type) {
 				case 'FIELD':
@@ -28,11 +20,11 @@ function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 					if (!_checkFieldType(fieldType, usesRangeLegend)) {
 						return;
 					}
-					viewModel.type = 'FIELD_' + fieldType;
-					viewModel.subType = undefined;
-					viewModel.values = fieldModel.values;
-					viewModel.value = viewInfo.key;
-					viewModel.label = lx.translateField(factsheetType, viewInfo.key);
+					model.type = 'FIELD_' + fieldType;
+					model.subType = undefined;
+					model.values = fieldModel.values;
+					model.value = viewInfo.key;
+					model.label = lx.translateField(factsheetType, viewInfo.key);
 					break;
 				case 'TAG':
 					// format: 'tags.<TAG_GROUP_ID>'
@@ -40,11 +32,11 @@ function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 					if (!_checkTagGroup(tagGroupID, tagGroups)) {
 						return;
 					}
-					viewModel.type = viewInfo.type;
-					viewModel.subType = undefined;
-					viewModel.values = tagGroups[tagGroupID].tags.nodes;
-					viewModel.value = tagGroupID;
-					viewModel.label = 'Tag group: ' + viewInfo.label;
+					model.type = viewInfo.type;
+					model.subType = undefined;
+					model.values = tagGroups[tagGroupID].tags.nodes;
+					model.value = tagGroupID;
+					model.label = 'Tag group: ' + viewInfo.label;
 					break;
 				case 'FIELD_RELATION':
 					// format: '<RELATION>.<RELATION_FIELD>'
@@ -54,12 +46,12 @@ function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 					if (!_checkRelField(relFieldValue, relFRFieldModel.type, usesRangeLegend)) {
 						return;
 					}
-					viewModel.type = viewInfo.type;
-					viewModel.subType = 'FIELD_' + relFRFieldModel.type;
-					viewModel.values = usesRangeLegend ? undefined : relFRFieldModel.values;
-					viewModel.value = relFieldValue;
+					model.type = viewInfo.type;
+					model.subType = 'FIELD_' + relFRFieldModel.type;
+					model.values = usesRangeLegend ? undefined : relFRFieldModel.values;
+					model.value = relFieldValue;
 					// TODO see https://github.com/leanix/leanix-reporting/issues/11
-					viewModel.label = lx.translateRelation(relFieldValue[0]) + ': ' + relFieldValue[1];
+					model.label = lx.translateRelation(relFieldValue[0]) + ': ' + relFieldValue[1];
 					break;
 				case 'FIELD_TARGET_FS':
 					// format: '<RELATION>.<FACTSHEET_TYPE>.<FACTSHEET_FIELD>'
@@ -69,11 +61,11 @@ function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 					if (!_checkTargetValue(relTargetValue, relFTModel, factsheetTypes, linkedFactsheetFieldModel.type, usesRangeLegend)) {
 						return;
 					}
-					viewModel.type = viewInfo.type;
-					viewModel.subType = 'FIELD_' + linkedFactsheetFieldModel.type;
-					viewModel.values = usesRangeLegend ? undefined : linkedFactsheetFieldModel.values;
-					viewModel.value = relTargetValue;
-					viewModel.label = lx.translateRelation(relTargetValue[0]) + ': ' + lx.translateField(relTargetValue[1], relTargetValue[2]);
+					model.type = viewInfo.type;
+					model.subType = 'FIELD_' + linkedFactsheetFieldModel.type;
+					model.values = usesRangeLegend ? undefined : linkedFactsheetFieldModel.values;
+					model.value = relTargetValue;
+					model.label = lx.translateRelation(relTargetValue[0]) + ': ' + lx.translateField(relTargetValue[1], relTargetValue[2]);
 					break;
 				case 'BUILT_IN':
 					// the 'built in' stuff is specific for leanix itself,
@@ -83,10 +75,31 @@ function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 					console.error('Unknown viewInfo type "' + viewInfo.type + '".');
 					return;
 			}
-			viewModels.views.push(viewModel);
+			models.push(model);
 		});
-		// TODO add multiple-selectable tag groups to viewModels
-		viewModels.views.sort((f, s) => {
+		// add multi-select tag groups to models
+		for (let tagGroupID in tagGroups) {
+			const tagGroup = tagGroups[tagGroupID];
+			if (tagGroup.mode !== 'MULTIPLE'
+				|| (tagGroup.restrictToFactSheetTypes.length > 0 ? !tagGroup.restrictToFactSheetTypes.includes(factsheetType) : false)) {
+				continue;
+			}
+			const tags = tagGroup.tags;
+			if (!tags) {
+				continue;
+			}
+			models.push({
+				key: 'tags.' + tagGroupID,
+				rangeLegend: false,
+				type: 'TAG',
+				subType: undefined,
+				values: tags.nodes,
+				value: tagGroupID,
+				label: 'Tag group: ' + tagGroup.name,
+				multiSelect: true
+			});
+		}
+		models.sort((f, s) => {
 			const fSortID = _getTypeSortID(f.type);
 			const sSortID = _getTypeSortID(s.type);
 			if (fSortID === sSortID) {
@@ -94,20 +107,27 @@ function createViewModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 			}
 			return fSortID - sSortID;
 		});
-		// add models for the axes
-		// TODO view can't deal with multi-select models
-		viewModels.xAxis = viewModels.views.filter(_filterViewModelsForAxis);
-		viewModels.yAxis = viewModels.views.filter(_filterViewModelsForAxis);
-		// only include those that have more than 1 view model
-		if (viewModels.views.length > 1 && viewModels.xAxis.length > 1 && viewModels.yAxis.length > 1) {
-			viewModelsPerFactsheet[factsheetType] = viewModels;
+		// create models for view & axes
+		const viewModels = models.filter((model) => {
+			// view can't deal with multi-select models
+			return !model.multiSelect;
+		});
+		const xAxisModels = models.filter((model) => {
+			// there is no standardised expression for range-based models,
+			// therefore they can't be used for axes, also we need 'values'
+			return !model.rangeLegend || model.values !== undefined;
+		});
+		const yAxisModels = Utilities.copyArray(xAxisModels);
+		// only include those that have more than 1 model
+		if (viewModels.length > 1 && xAxisModels.length > 1 && yAxisModels.length > 1) {
+			viewModelsPerFactsheet[factsheetType] = {
+				views: viewModels,
+				xAxis: xAxisModels,
+				yAxis: yAxisModels
+			};
 		}
 	});
 	return viewModelsPerFactsheet;
-}
-
-function _filterViewModelsForAxis(viewModel) {
-	return !viewModel.rangeLegend || viewModel.values !== undefined;
 }
 
 function _getTypeSortID(type) {
@@ -157,7 +177,7 @@ function _checkFieldType(type, usesRangeLegend) {
 
 function _checkTagGroup(id, tagGroups) {
 	const tagGroup = tagGroups[id];
-	// filter out multi-selectable tags here, b/c the report will add them later
+	// filter out multi-selectable tag groups here, b/c the report will add them later,
 	// leanix doesn't support multi-select tag groups anyway
 	return tagGroup && tagGroup.mode !== 'MULTIPLE' && tagGroup.tags; // 'tags' is a subIndex
 }
@@ -184,9 +204,9 @@ function _checkTargetValue(value, relModel, factsheetTypes, fieldType, usesRange
 	return _checkFieldType(fieldType, usesRangeLegend);
 }
 
-function getQueryAttribute(viewModel) {
-	const value = viewModel.value;
-	switch (viewModel.type) {
+function getQueryAttribute(model) {
+	const value = model.value;
+	switch (model.type) {
 		case 'FIELD_LIFECYCLE':
 		case 'FIELD_PROJECT_STATUS':
 			return value + ' { asString }';
@@ -196,33 +216,33 @@ function getQueryAttribute(viewModel) {
 		case 'FIELD_LONG':
 			return value;
 		case 'FIELD_RELATION':
-			if (viewModel.rangeLegend) {
+			if (model.rangeLegend) {
 				return value[0] + '{ edges { node { ' + value[1] + ' } } }';
 			}
 			const subRelFieldViewModel = {
 				value: value[1],
-				type: viewModel.subType
+				type: model.subType
 			};
 			return value[0] + '{ edges { node { ' + getQueryAttribute(subRelFieldViewModel) + ' } } }';
 		case 'FIELD_TARGET_FS':
-			if (viewModel.rangeLegend) {
+			if (model.rangeLegend) {
 				return value[0] + '{ edges { node { factSheet { ... on ' + value[1] + ' { ' + value[2] + ' } } } } }';
 			}
 			const subRelTargetViewModel = {
 				value: value[2],
-				type: viewModel.subType
+				type: model.subType
 			};
 			return value[0] + '{ edges { node { factSheet { ... on ' + value[1] + ' { ' + getQueryAttribute(subRelTargetViewModel) + ' } } } } }';
 		case 'TAG':
 			return 'tags { id }';
 		default:
-			console.error('getQueryAttribute: Unknown type "' + viewModel.type + '" of data field "' + value + '".');
+			console.error('getQueryAttribute: Unknown type "' + model.type + '" of data field "' + value + '".');
 			return value;
 	}
 }
 
-function create(setup, factsheetType, viewModels, data) {
-	const matrix = _createMatrixGrid(factsheetType, viewModels.xAxis, viewModels.yAxis);
+function create(setup, factsheetType, models, data) {
+	const matrix = _createMatrixGrid(factsheetType, models.xAxis, models.yAxis);
 	// now add the data
 	let matrixDataAvailable = false;
 	const missingData = [];
@@ -230,21 +250,46 @@ function create(setup, factsheetType, viewModels, data) {
 		const id = e.id;
 		const additionalData = data.additionalNodeData[id];
 		// get data values
-		const xDataValues = _getDataValues(viewModels.xAxis, additionalData, data.tagGroups);
-		const yDataValues = _getDataValues(viewModels.yAxis, additionalData, data.tagGroups);
+		const xDataValues = _getDataValues(models.xAxis, additionalData, data.tagGroups);
+		const yDataValues = _getDataValues(models.yAxis, additionalData, data.tagGroups);
 		if (!xDataValues || !yDataValues) {
-			// TODO
+			missingData.push({
+				id: e.id,
+				name: e.displayName,
+				type: factsheetType,
+				reason: _createMissingDataMsgForValues(xDataValues, yDataValues, models.xAxis.label, models.yAxis.label)
+			});
 			return;
 		}
 		// determine the coordinates
-		const xCoordinates = _getCoordinates(viewModels.xAxis, xDataValues);
-		const yCoordinates = _getCoordinates(viewModels.yAxis, yDataValues);
+		const xCoordinates = _getCoordinates(models.xAxis, xDataValues);
+		const yCoordinates = _getCoordinates(models.yAxis, yDataValues);
 		if (xCoordinates.length === 0 || yCoordinates.length === 0) {
-			// TODO
+			missingData.push({
+				id: e.id,
+				name: e.displayName,
+				type: factsheetType,
+				reason: _createMissingDataMsgForCoordinates(xCoordinates, yCoordinates, xDataValues, yDataValues, models.xAxis.label, models.yAxis.label)
+			});
 			return;
 		}
 		// determine view model for the label
-		// TODO data.legendItems[ data.legendMapping[ id ] ]
+		const legendItemID = data.legendMapping[id];
+		const legendItem = legendItemID !== undefined && legendItemID !== null ? data.legendItems[legendItemID] : undefined;
+		const colors = legendItem ? {
+				legendItemID: legendItemID,
+				color: legendItem.color,
+				bgColor: legendItem.bgColor
+			} : undefined;
+		if (!colors || !legendItem.inLegend) {
+			missingData.push({
+				id: e.id,
+				name: e.displayName,
+				type: factsheetType,
+				reason: _createMissingDataMsgForVM(models.view, legendItem ? legendItem.inLegend : true)
+			});
+			return;
+		}
 		// now fill the matrix
 		matrixDataAvailable = true;
 		yCoordinates.forEach((y) => {
@@ -252,22 +297,52 @@ function create(setup, factsheetType, viewModels, data) {
 				matrix[y][x].push({
 					id: id,
 					name: e.displayName,
-					colors: undefined
+					colors: colors
 				});
 			});
 		});
 	});
 	return {
-		matrixData: matrix,
+		matrix: matrix,
 		matrixDataAvailable: matrixDataAvailable,
-		missingData: missingData,
-		legendData: _createLegendData(factsheetType, viewModels.view, data.legendItems._rawLegendItems)
+		missing: missingData,
+		legend: _createLegendData(factsheetType, models.view, data.legendItems._rawLegendItems)
 	};
 }
 
-function _getCoordinates(viewModel, dataValues) {
+function _createMissingDataMsgForValues(xDataValues, yDataValues, xAxisName, yAxisName) {
+	if (!xDataValues && !yDataValues) {
+		return 'Values for ' + xAxisName + ' & ' + yAxisName + ' are missing.';
+	}
+	if (!xDataValues) {
+		return 'Value for ' + xAxisName + ' is missing.';
+	} else {
+		return 'Value for ' + yAxisName + ' is missing.';
+	}
+}
+
+function _createMissingDataMsgForCoordinates(xCoordinates, yCoordinates, xDataValues, yDataValues, xAxisName, yAxisName) {
+	if (xCoordinates.length === 0 && yCoordinates.length === 0) {
+		return 'Unknown values for ' + xAxisName + ' (' + xDataValues.join(', ') + ') & '
+			+ yAxisName + ' (' + yDataValues.join(', ') + ').';
+	}
+	if (xCoordinates.length === 0) {
+		return 'Unknown values for ' + xAxisName + ' (' + xDataValues.join(', ') + ').';
+	} else {
+		return 'Unknown values for ' + yAxisName + ' (' + yDataValues.join(', ') + ').';
+	}
+}
+
+function _createMissingDataMsgForVM(model, inLegend) {
+	if (!inLegend) {
+		return 'Value for view is marked as hidden.';
+	}
+	return 'There are no values defined for the selected view (' + model.label + ').';
+}
+
+function _getCoordinates(model, dataValues) {
 	// +1 since 0 positions are reserved in the matrix
-	switch (viewModel.type) {
+	switch (model.type) {
 		case 'FIELD_LIFECYCLE':
 		case 'FIELD_PROJECT_STATUS':
 		case 'FIELD_SINGLE_SELECT':
@@ -277,7 +352,7 @@ function _getCoordinates(viewModel, dataValues) {
 		case 'FIELD_RELATION':
 		case 'FIELD_TARGET_FS':
 			return dataValues.map((dataValue) => {
-				return viewModel.values.findIndex((viewModelValue) => {
+				return model.values.findIndex((viewModelValue) => {
 					return dataValue === viewModelValue;
 				}) + 1;
 			}).filter((e) => {
@@ -285,22 +360,22 @@ function _getCoordinates(viewModel, dataValues) {
 			});
 		case 'TAG':
 			return dataValues.map((dataValue) => {
-				return viewModel.values.findIndex((viewModelValue) => {
+				return model.values.findIndex((viewModelValue) => {
 					return dataValue.id === viewModelValue.id;
 				}) + 1;
 			}).filter((e) => {
 				return e > 0;
 			});
 		default:
-			console.error('_getCoordinates: Unknown type "' + viewModel.type + '" of data field "' + viewModel.value + '".');
+			console.error('_getCoordinates: Unknown type "' + model.type + '" of data field "' + model.value + '".');
 			return;
 	}
 }
 
-function _getDataValues(viewModel, additionalData, tagGroups) {
-	const value = viewModel.value;
+function _getDataValues(model, additionalData, tagGroups) {
+	const value = model.value;
 	let dataValues = undefined;
-	switch (viewModel.type) {
+	switch (model.type) {
 		case 'FIELD_LIFECYCLE':
 		case 'FIELD_PROJECT_STATUS':
 			dataValues = additionalData[value];
@@ -348,7 +423,7 @@ function _getDataValues(viewModel, additionalData, tagGroups) {
 			});
 			break;
 		case 'TAG':
-			const tagGroupTags = viewModel.values;
+			const tagGroupTags = model.values;
 			const tags = additionalData.tags;
 			if (tags.length === 0) {
 				break;
@@ -364,7 +439,7 @@ function _getDataValues(viewModel, additionalData, tagGroups) {
 			});
 			break;
 		default:
-			console.error('_getDataValue: Unknown type "' + viewModel.type + '" of data field "' + value + '".');
+			console.error('_getDataValue: Unknown type "' + model.type + '" of data field "' + value + '".');
 			break;
 	}
 	dataValues = Utilities.unique(dataValues);
@@ -373,17 +448,17 @@ function _getDataValues(viewModel, additionalData, tagGroups) {
 
 function _createMatrixGrid(factsheetType, xAxisModel, yAxisModel) {
 	if (xAxisModel.rangeLegend || yAxisModel.rangeLegend) {
-		// should not happens, since range-based view models are not allowed for axes
+		// should not happens, since range-based models are not allowed for axes
 		console.error('_createMatrixGrid: can\'t create the matrix with "' + xAxisModel + ' & ' + yAxisModel + '".');
 		return;
 	}
-	const result = []; // position (0,0) will always be empty
+	const result = [];
 	// the first row contains the values from the x axis model
 	const xAxisValues = xAxisModel.values;
-	result.push([undefined].concat(xAxisValues.map((e) => {
+	result.push([[yAxisModel.label, xAxisModel.label]].concat(xAxisValues.map((e) => {
 		return _getLabelFunc(factsheetType, xAxisModel, e)();
 	})));
-	// all other rows contain the values from the y axis option as their first value
+	// all other rows contain the values from the y axis option as their first value (meaning: the first column)
 	const yAxisValues = yAxisModel.values;
 	yAxisValues.forEach((e) => {
 		// extend the row with empty arrays for later use
@@ -409,20 +484,20 @@ function _createLegendData(factsheetType, viewModel, legendItemData) {
 	return result;
 }
 
-function _getLabelFunc(factsheetType, viewModel, fallbackValue) {
+function _getLabelFunc(factsheetType, model, fallbackValue) {
 	if (fallbackValue === '__missing__') {
 		// TODO see https://github.com/leanix/leanix-reporting/issues/7
 		return () => {
 			return 'n/a';
 		};
 	}
-	if (viewModel.rangeLegend) {
+	if (model.rangeLegend) {
 		return () => {
 			return fallbackValue;
 		};
 	}
-	const value = viewModel.value;
-	switch (viewModel.type) {
+	const value = model.value;
+	switch (model.type) {
 		case 'FIELD_LIFECYCLE':
 		case 'FIELD_PROJECT_STATUS':
 		case 'FIELD_SINGLE_SELECT':
@@ -445,11 +520,17 @@ function _getLabelFunc(factsheetType, viewModel, fallbackValue) {
 				return lx.translateFieldValue(value[1], value[2], fallbackValue);
 			};
 		case 'TAG':
-			return () => {
-				return fallbackValue.name;
-			};
+			if (fallbackValue.name) {
+				return () => {
+					return fallbackValue.name;
+				};
+			} else {
+				return () => {
+					return fallbackValue;
+				};
+			}
 		default:
-			console.error('_getLabelFunc: Unknown type "' + viewModel.type + '" of data field "' + value + '".');
+			console.error('_getLabelFunc: Unknown type "' + model.type + '" of data field "' + value + '".');
 			return () => {
 				return '';
 			};
@@ -457,7 +538,7 @@ function _getLabelFunc(factsheetType, viewModel, fallbackValue) {
 }
 
 export default {
-	createViewModels: createViewModels,
+	createModels: createModels,
 	getQueryAttribute: getQueryAttribute,
 	create: create
 };

@@ -279,8 +279,6 @@ function unique(array, keyGetter) {
 	return result;
 }
 
-// TODO ???
-/*
 function isArrayEmpty(arr, startIdx) {
 	if (!arr) {
 		return true;
@@ -299,7 +297,7 @@ function isArrayEmpty(arr, startIdx) {
 		}
 	}
 	return true;
-}*/
+}
 
 export default {
 	getFrom: getFrom,
@@ -311,5 +309,6 @@ export default {
 	areArraysEqual: areArraysEqual,
 	containsAny: containsAny,
 	swap: swap,
-	unique: unique
+	unique: unique,
+	isArrayEmpty: isArrayEmpty
 };

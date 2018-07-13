@@ -97,12 +97,12 @@ function _buildSubIndices(node, lifecycleModel) {
 		if (!_isRelation(attr)) {
 			continue;
 		}
-		node[key] = _buildIndex(attr, true, lifecycleModel);
+		node[key] = attr.edges.length === 0 ? undefined : _buildIndex(attr, true, lifecycleModel);
 	}
 }
 
 function _isRelation(attr) {
-	if (!attr || !Array.isArray(attr.edges) || attr.edges.length === 0) {
+	if (!attr || !Array.isArray(attr.edges)) {
 		return false;
 	}
 	return true;

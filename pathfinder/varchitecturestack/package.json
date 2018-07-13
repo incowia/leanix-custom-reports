@@ -6,7 +6,7 @@
 		"node": ">=8.11.3"
 	},
 	"leanixReport": {
-		"id": "com.leanix.architecturestack",
+		"id": "net.leanix.architecturestack",
 		"title": "Architecture Stack",
 		"defaultConfig": {}
 	},

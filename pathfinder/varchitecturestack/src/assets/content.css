@@ -1,20 +1,16 @@
-#content {
-	display: inline-block;
-}
-
-#content .legend {
-	margin-bottom: 0.5em;
-	display: inline-block;
-}
-
 #content .matrix {
 	display: inline-block;
 }
 
 .matrix table {
 	border-collapse: separate;
-	border-spacing: 0.25em;
+	border-spacing: 2px;
 	empty-cells: hide;
+}
+
+.matrix th.matrix-labels {
+	background: #F3F3F3 !important;
+	color: inherit;
 }
 
 .matrix .label {
@@ -26,7 +22,8 @@
 }
 
 .matrix th {
-	background: lightgrey;
+	background: #0E90D2;
+	color: #FFFFFF;
 	padding: 0.5em;
 }
 
