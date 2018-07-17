@@ -1,6 +1,6 @@
 {
 	"name": "vplatformtransformationviews",
-	"version": "0.0.5",
+	"version": "1.0.0",
 	"description": "A report with different views of the platform transformation process.",
 	"engines": {
 		"node": ">=8.11.3"
