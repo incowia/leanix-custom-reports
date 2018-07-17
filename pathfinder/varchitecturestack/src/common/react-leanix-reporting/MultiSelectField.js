@@ -59,7 +59,7 @@ class MultiSelectField extends Component {
 					matchPos='start'
 					matchProp='label'
 					ignoreCase={true}
-					disabled={this.props.options.length < 1}
+					disabled={this.props.disabled || this.props.options.length < 1}
 					value={this.props.values}
 					onChange={this._onChange} />
 				{this._renderHelpText()}
@@ -93,7 +93,8 @@ MultiSelectField.propTypes = {
 	placeholder: PropTypes.string,
 	width: PropTypes.string,
 	hasError: PropTypes.bool,
-	helpText: PropTypes.string
+	helpText: PropTypes.string,
+	disabled: PropTypes.bool
 };
 
 export default MultiSelectField;

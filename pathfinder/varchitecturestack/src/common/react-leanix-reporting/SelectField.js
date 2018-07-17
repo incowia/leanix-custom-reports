@@ -61,7 +61,7 @@ class SelectField extends Component {
 					ignoreCase={true}
 					clearable={false}
 					searchable={false}
-					disabled={this.props.options.length < 1}
+					disabled={this.props.disabled || this.props.options.length < 1}
 					value={this.props.value}
 					onChange={this._onChange} />
 				{this._renderHelpText()}
@@ -95,7 +95,8 @@ SelectField.propTypes = {
 	labelReadOnly: PropTypes.bool,
 	width: PropTypes.string,
 	hasError: PropTypes.bool,
-	helpText: PropTypes.string
+	helpText: PropTypes.string,
+	disabled: PropTypes.bool
 };
 
 export default SelectField;

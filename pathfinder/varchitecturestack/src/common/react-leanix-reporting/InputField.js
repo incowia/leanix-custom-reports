@@ -48,6 +48,7 @@ class InputField extends Component {
 					{this.props.label}
 				</label>
 				<input type={this.props.type}
+					disabled={this.props.disabled}
 					alt={this.props.label}
 					className={'form-control' + (this.props.useSmallerFontSize ? ' input-sm' : '')}
 					style={style}
@@ -87,7 +88,8 @@ InputField.propTypes = {
 	max: PropTypes.string,
 	width: PropTypes.string,
 	hasError: PropTypes.bool,
-	helpText: PropTypes.string
+	helpText: PropTypes.string,
+	disabled: PropTypes.bool
 };
 
 export default InputField;

@@ -113,8 +113,8 @@ class Matrix extends Component {
 			// first cell contains x & y axis labels
 			return (
 				<th key={rowIndex + '-' + columnIndex} className='matrix-labels small' style={{ minWidth: this.props.cellWidth }}>
-					<div className='text-right' style={{ borderBottom: '1px solid black' }}>{cell[1]}</div>
-					<div className='text-left'>{cell[0]}</div>
+					<div className='text-right' style={{ borderBottom: '1px solid black' }}>{cell[0]}</div>
+					<div className='text-left'>{cell[1]}</div>
 				</th>
 			);
 		}

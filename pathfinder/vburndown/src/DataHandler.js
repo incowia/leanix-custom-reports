@@ -24,15 +24,26 @@ function create(nodes, unit, startYearDistance, endYearDistance, dataSeries, lif
 	const chartData = [
 		['time'].concat(categories)
 	];
+	const missingData = [];
+	const preFilteredNodes = nodes.filter((node) => {
+		// only include nodes that have lifecycles
+		if (!node.lifecycle || node.lifecycle.length === 0) {
+			missingData.push({
+				id: node.id,
+				name: node.displayName,
+				type: node.type,
+				reason: 'No lifecycle defined.'
+			});
+			return false;
+		}
+		return true;
+	});
 	dataSeries.forEach((dataSerie, i) => {
 		const dataSeriesValues = [dataSerie.name];
 		chartData.push(dataSeriesValues);
 		const inverseValues = dataSerie.type.endsWith('-');
-		const filteredNodes = nodes.filter((node) => {
+		const filteredNodes = preFilteredNodes.filter((node) => {
 			// only include nodes that have matching lifecycles
-			if (!node.lifecycle) {
-				return false;
-			}
 			const nodeLifecycles = node.lifecycle.map((e) => {
 				return e.name;
 			});
@@ -75,6 +86,7 @@ function create(nodes, unit, startYearDistance, endYearDistance, dataSeries, lif
 	return {
 		chartData: chartData,
 		tableData: tableData,
+		missing: missingData,
 		current: current
 	};
 }

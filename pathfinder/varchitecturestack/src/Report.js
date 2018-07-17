@@ -60,6 +60,7 @@ class Report extends Component {
 		this._handleYAxisSelect = this._handleYAxisSelect.bind(this);
 		this._handleSwapAxes = this._handleSwapAxes.bind(this);
 		this._resetUI = this._resetUI.bind(this);
+		this._filterAndMapModelsToViewOptions = this._filterAndMapModelsToViewOptions.bind(this);
 		// react state definition (init)
 		this.state = {
 			loadingState: ReportLoadingState.INIT,
@@ -476,8 +477,10 @@ class Report extends Component {
 	}
 
 	_renderInit() {
+		const factsheetType = this.reportState.get('selectedFactsheetType');
 		return (
 			<div>
+				{this._renderSelectFields(factsheetType)}
 				{this._renderProcessingStep('Initialise report...')}
 				<div id='content' />
 			</div>
@@ -489,8 +492,10 @@ class Report extends Component {
 	}
 
 	_renderLoading() {
+		const factsheetType = this.reportState.get('selectedFactsheetType');
 		return (
 			<div>
+				{this._renderSelectFields(factsheetType)}
 				{this._renderProcessingStep('Loading data...')}
 				<div id='content' />
 			</div>
@@ -534,36 +539,56 @@ class Report extends Component {
 		);
 	}
 
-	_mapModelToViewOptions(model) {
+	_mapModelsToViewOptions(model) {
 		return {
 			value: model.key,
 			label: model.label
 		};
 	}
 
+	_filterAndMapModelsToViewOptions(models, filter) {
+		const result = [];
+		models.forEach((model) => {
+			if (filter(model)) {
+				result.push(this._mapModelsToViewOptions(model));
+			}
+		});
+		return result;
+	}
+
 	_renderSelectFields(factsheetType) {
-		const models = this.models[factsheetType];
-		const viewOptions = models.views.map(this._mapModelToViewOptions);
-		const viewOption = this.reportState.get('selectedView').key;
-		const xAxisOption = this.reportState.get('selectedXAxis').key;
-		const yAxisOption = this.reportState.get('selectedYAxis').key;
-		const xAxisOptions = Utilities.copyArray(models.xAxis).filter((model) => {
-			// remove selected y axis from x axis options
-			return model.key !== yAxisOption;
-		}).map(this._mapModelToViewOptions);
-		const yAxisOptions = Utilities.copyArray(models.yAxis).filter((model) => {
-			// remove selected x axis from y axis options
-			return model.key !== xAxisOption;
-		}).map(this._mapModelToViewOptions);
+		let viewOption = undefined;
+		let xAxisOption = undefined;
+		let yAxisOption = undefined;
+		let viewOptions = [];
+		let xAxisOptions = [];
+		let yAxisOptions = [];
+		if (factsheetType) {
+			viewOption = this.reportState.get('selectedView').key;
+			xAxisOption = this.reportState.get('selectedXAxis').key;
+			yAxisOption = this.reportState.get('selectedYAxis').key;
+			const models = this.models[factsheetType];
+			viewOptions = models.views.map(this._mapModelsToViewOptions);
+			xAxisOptions = this._filterAndMapModelsToViewOptions(models.xAxis, (model) => {
+				// remove selected y axis from x axis options
+				return model.key !== yAxisOption;
+			});
+			yAxisOptions = this._filterAndMapModelsToViewOptions(models.yAxis, (model) => {
+				// remove selected x axis from y axis options
+				return model.key !== xAxisOption;
+			});
+		}
 		const errors = this.state.configureErrors ? this.state.configureErrors : {};
+		const disabled = this.state.loadingState !== ReportLoadingState.SUCCESSFUL;
 		return (
 			<div>
 				<span style={SELECT_FIELD_STYLE}>
 					<SelectField id='view' label='View'
 						options={viewOptions}
 						useSmallerFontSize
+						disabled={disabled}
 						value={viewOption}
-						onChange={this._handleViewSelect}
+						onChange={viewOptions && viewOptions.length === 0 ? undefined : this._handleViewSelect}
 						hasError={errors.selectedView ? true : false}
 						helpText={errors.selectedView} />
 				</span>
@@ -571,15 +596,16 @@ class Report extends Component {
 					<SelectField id='x-axis' label='X-Axis'
 						options={xAxisOptions}
 						useSmallerFontSize
+						disabled={disabled}
 						value={xAxisOption}
-						onChange={this._handleXAxisSelect}
+						onChange={xAxisOptions && xAxisOptions.length === 0 ? undefined : this._handleXAxisSelect}
 						hasError={errors.selectedXAxis ? true : false}
 						helpText={errors.selectedXAxis} />
 				</span>
 				<span style={SWAP_BUTTON_STYLE}>
 					<button type='button' className='btn btn-link btn-xs'
 						aria-label='Swap axes' title='Swap axes'
-						disabled={(xAxisOptions && xAxisOptions.length < 1) || (yAxisOptions && yAxisOptions.length < 1)}
+						disabled={disabled || (xAxisOptions && xAxisOptions.length < 1) || (yAxisOptions && yAxisOptions.length < 1)}
 						onClick={this._handleSwapAxes}
 					>
 						<span className='glyphicon glyphicon-retweet' aria-hidden='true' />
@@ -590,8 +616,9 @@ class Report extends Component {
 					<SelectField id='y-axis' label='Y-Axis'
 						options={yAxisOptions}
 						useSmallerFontSize
+						disabled={disabled}
 						value={yAxisOption}
-						onChange={this._handleYAxisSelect}
+						onChange={yAxisOptions && yAxisOptions.length === 0 ? undefined : this._handleYAxisSelect}
 						hasError={errors.selectedYAxis ? true : false}
 						helpText={errors.selectedYAxis} />
 				</span>

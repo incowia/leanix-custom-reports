@@ -66,8 +66,8 @@ class MissingDataAlert extends Component {
 		const factsheet = this.props.factsheetType ? lx.translateFactSheetType(this.props.factsheetType, 'singular') : 'Factsheet';
 		return (
 			<BootstrapTable data={this.props.data} keyField='id'
-				striped condensed hover search exportCSV
-				height='450px' options={{ clearSearch: true }}
+				striped condensed hover search exportCSV pagination
+				options={{ clearSearch: true, hideSizePerPage: true, paginationShowsTotal: true }}
 			>
 				<TableHeaderColumn dataSort
 					 dataField='name'

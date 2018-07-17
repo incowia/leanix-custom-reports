@@ -1,6 +1,6 @@
 {
 	"name": "architecturestack",
-	"version": "2.0.0",
+	"version": "2.0.2",
 	"description": "Shows a matrix that is formed based on the properties and/or tags of factsheets. Depending on the configuration, X and Y axes as well as the coloring are adjustable.",
 	"engines": {
 		"node": ">=8.11.3"

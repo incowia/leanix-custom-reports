@@ -11,7 +11,7 @@ function createModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 			const model = {
 				key: viewInfo.key,
 				rangeLegend: usesRangeLegend,
-				multiSelect: false // mutli-select viewInfos are not supported by leanix
+				fromViewInfo: true
 			};
 			switch (viewInfo.type) {
 				case 'FIELD':
@@ -96,7 +96,7 @@ function createModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 				values: tags.nodes,
 				value: tagGroupID,
 				label: 'Tag group: ' + tagGroup.name,
-				multiSelect: true
+				fromViewInfo: false
 			});
 		}
 		models.sort((f, s) => {
@@ -107,19 +107,22 @@ function createModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 			}
 			return fSortID - sSortID;
 		});
-		// create models for view & axes
-		const viewModels = models.filter((model) => {
-			// view can't deal with multi-select models
-			return !model.multiSelect;
+		const uniqueModels = Utilities.unique(models, (model) => {
+			return model.key;
 		});
-		const xAxisModels = models.filter((model) => {
+		// create models for view & axes
+		const viewModels = uniqueModels.filter((model) => {
+			// view can only deal with the ones from view info data
+			return model.fromViewInfo;
+		});
+		const xAxisModels = uniqueModels.filter((model) => {
 			// there is no standardised expression for range-based models,
 			// therefore they can't be used for axes, also we need 'values'
 			return !model.rangeLegend || model.values !== undefined;
 		});
 		const yAxisModels = Utilities.copyArray(xAxisModels);
-		// only include those that have more than 1 model
-		if (viewModels.length > 1 && xAxisModels.length > 1 && yAxisModels.length > 1) {
+		// only include those that have at least one view and more than 1 axis model (x & y)
+		if (viewModels.length > 0 && xAxisModels.length > 1 && yAxisModels.length > 1) {
 			viewModelsPerFactsheet[factsheetType] = {
 				views: viewModels,
 				xAxis: xAxisModels,
@@ -132,12 +135,12 @@ function createModels(setup, factsheetTypes, allViewInfos, tagGroups) {
 
 function _getTypeSortID(type) {
 	switch (type) {
-		// field types range 0-99
 		case 'FIELD_LIFECYCLE':
 			return 0;
 		case 'FIELD_PROJECT_STATUS':
 			return 1;
 		case 'FIELD_SINGLE_SELECT':
+		case 'FIELD_MULTIPLE_SELECT':
 			return 2;
 		case 'FIELD_DOUBLE':
 			return 3;
@@ -167,7 +170,7 @@ function _checkFieldType(type, usesRangeLegend) {
 		case 'LIFECYCLE':
 		case 'PROJECT_STATUS':
 		case 'SINGLE_SELECT':
-		//case 'MULTIPLE_SELECT': --> not supported as view by leanix, report has to do it, worth it?
+		case 'MULTIPLE_SELECT':
 			return true;
 		default:
 			console.error('_checkFieldType: Unknown type "' + type + '".');
@@ -211,6 +214,7 @@ function getQueryAttribute(model) {
 		case 'FIELD_PROJECT_STATUS':
 			return value + ' { asString }';
 		case 'FIELD_SINGLE_SELECT':
+		case 'FIELD_MULTIPLE_SELECT':
 		case 'FIELD_DOUBLE':
 		case 'FIELD_INTEGER':
 		case 'FIELD_LONG':
@@ -346,6 +350,7 @@ function _getCoordinates(model, dataValues) {
 		case 'FIELD_LIFECYCLE':
 		case 'FIELD_PROJECT_STATUS':
 		case 'FIELD_SINGLE_SELECT':
+		case 'FIELD_MULTIPLE_SELECT':
 		case 'FIELD_DOUBLE':
 		case 'FIELD_INTEGER':
 		case 'FIELD_LONG':
@@ -385,6 +390,7 @@ function _getDataValues(model, additionalData, tagGroups) {
 			dataValues = [dataValues.asString];
 			break;
 		case 'FIELD_SINGLE_SELECT':
+		case 'FIELD_MULTIPLE_SELECT':
 		case 'FIELD_DOUBLE':
 		case 'FIELD_INTEGER':
 		case 'FIELD_LONG':
@@ -455,7 +461,7 @@ function _createMatrixGrid(factsheetType, xAxisModel, yAxisModel) {
 	const result = [];
 	// the first row contains the values from the x axis model
 	const xAxisValues = xAxisModel.values;
-	result.push([[yAxisModel.label, xAxisModel.label]].concat(xAxisValues.map((e) => {
+	result.push([[xAxisModel.label, yAxisModel.label]].concat(xAxisValues.map((e) => {
 		return _getLabelFunc(factsheetType, xAxisModel, e)();
 	})));
 	// all other rows contain the values from the y axis option as their first value (meaning: the first column)
@@ -501,6 +507,7 @@ function _getLabelFunc(factsheetType, model, fallbackValue) {
 		case 'FIELD_LIFECYCLE':
 		case 'FIELD_PROJECT_STATUS':
 		case 'FIELD_SINGLE_SELECT':
+		case 'FIELD_MULTIPLE_SELECT':
 			return () => {
 				return lx.translateFieldValue(factsheetType, value, fallbackValue);
 			};

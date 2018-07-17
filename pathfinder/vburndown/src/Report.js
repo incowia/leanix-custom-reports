@@ -7,6 +7,7 @@ import DateUtilities from './common/leanix-reporting-utilities/DateUtilities';
 import LifecycleUtilities from './common/leanix-reporting-utilities/LifecycleUtilities';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportState from './common/leanix-reporting-utilities/ReportState';
+import MissingDataAlert from './common/react-leanix-reporting/MissingDataAlert';
 import ConfigureDialog from './ConfigureDialog';
 import BurndownChart from './BurndownChart';
 import Table from './Table';
@@ -29,6 +30,7 @@ class Report extends Component {
 			'Count of transitions', 'Provided value must be a non-empty alphanumeric string.');
 		this.reportState.prepareOptionalRegExpValue('selectedY2AxisLabel', DataSeries.LABEL_AND_NAME_REGEXP,
 			'Count in production', 'Provided value must be an alphanumeric string.');
+		this.reportState.prepareBooleanValue('showMissingDataWarning', true);
 		// bindings
 		this._initReport = this._initReport.bind(this);
 		this._updateReportState = this._updateReportState.bind(this);
@@ -38,12 +40,14 @@ class Report extends Component {
 		this._handleData = this._handleData.bind(this);
 		this._handleOnClose = this._handleOnClose.bind(this);
 		this._handleOnOK = this._handleOnOK.bind(this);
+		this._handleDismissAlertButton = this._handleDismissAlertButton.bind(this);
 		this._handleOnClick = this._handleOnClick.bind(this);
 		this._resetUI = this._resetUI.bind(this);
 		// react state definition (init)
 		this.state = {
 			loadingState: ReportLoadingState.INIT,
 			showConfigure: false,
+			missingData: null,
 			chartData: null,
 			tableData: null,
 			selectedTable: null,
@@ -237,6 +241,7 @@ class Report extends Component {
 		lx.hideSpinner();
 		this.setState({
 			loadingState: ReportLoadingState.SUCCESSFUL,
+			missingData: data.missing,
 			chartData: data.chartData,
 			tableData: data.tableData,
 			current: data.current
@@ -276,6 +281,12 @@ class Report extends Component {
 		return true;
 	}
 
+	_handleDismissAlertButton() {
+		this.reportState.set('showMissingDataWarning', false);
+		this.reportState.publish();
+		this.forceUpdate();
+	}
+
 	_handleOnClick(dateIntervalName, dataSeriesName) {
 		this.setState({
 			selectedTable: {
@@ -288,6 +299,9 @@ class Report extends Component {
 	_resetUI() {
 		this.setState({
 			showConfigure: false,
+			missingData: null,
+			chartData: null,
+			tableData: null,
 			selectedTable: null,
 			configureErrors: null
 		});
@@ -349,6 +363,12 @@ class Report extends Component {
 					errors={this.state.configureErrors}
 				/>
 				{this._renderProcessingStep('Burndown: ' + factsheetName)}
+				<MissingDataAlert
+					show={this.reportState.get('showMissingDataWarning')}
+					data={this.state.missingData}
+					onClose={this._handleDismissAlertButton}
+					factsheetType={factsheetType}
+					setup={this.setup} />
 				<div id='chart'>
 					<BurndownChart
 						data={this.state.chartData}

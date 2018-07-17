@@ -45,6 +45,7 @@ class Checkbox extends Component {
 			<div className={ 'checkbox' + (this.props.useSmallerFontSize ? ' small' : '') + (this.props.hasError ? ' has-error' : '') }>
 				<label htmlFor={this.props.id}>
 					<input type='checkbox'
+						disabled={this.props.disabled}
 						alt={this.props.label}
 						id={this.props.id}
 						name={'Checkbox-' + this.props.id}
@@ -75,7 +76,8 @@ Checkbox.propTypes = {
 	value: PropTypes.bool.isRequired,
 	useSmallerFontSize: PropTypes.bool,
 	hasError: PropTypes.bool,
-	helpText: PropTypes.string
+	helpText: PropTypes.string,
+	disabled: PropTypes.bool
 };
 
 export default Checkbox;

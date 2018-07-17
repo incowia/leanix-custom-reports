@@ -7,6 +7,7 @@ import ModalDialog from './common/react-leanix-reporting/ModalDialog';
 import SelectField from './common/react-leanix-reporting/SelectField';
 import MultiSelectField from './common/react-leanix-reporting/MultiSelectField';
 import InputField from './common/react-leanix-reporting/InputField';
+import Checkbox from './common/react-leanix-reporting/Checkbox';
 import DataSeries from './DataSeries';
 import Constants from './Constants';
 
@@ -34,6 +35,7 @@ class ConfigureDialog extends Component {
 		this._handleXAxisUnitSelect = this._handleXAxisUnitSelect.bind(this);
 		this._handleYAxisLabelInput = this._handleYAxisLabelInput.bind(this);
 		this._handleY2AxisLabelInput = this._handleY2AxisLabelInput.bind(this);
+		this._handleShowMissingDataWarningCheck = this._handleShowMissingDataWarningCheck.bind(this);
 		this._handleDataSeriesNameInput = this._handleDataSeriesNameInput.bind(this);
 		this._handleDataSeriesLifecyclesMultiSelect = this._handleDataSeriesLifecyclesMultiSelect.bind(this);
 		this._handleDataSeriesTypeSelect = this._handleDataSeriesTypeSelect.bind(this);
@@ -136,6 +138,14 @@ class ConfigureDialog extends Component {
 		this.forceUpdate();
 	}
 
+	_handleShowMissingDataWarningCheck(val) {
+		if (this.configStore.showMissingDataWarning === val) {
+			return;
+		}
+		this.configStore.showMissingDataWarning = val;
+		this.forceUpdate();
+	}
+
 	_handleDataSeriesNameInput(index) {
 		return (value) => {
 			const dataSeries = this.configStore.selectedDataSeries[index];
@@ -223,7 +233,7 @@ class ConfigureDialog extends Component {
 	render() {
 		if (this.props.show) {
 			if (!this.configStore) {
-				this.configStore = this.props.reportState.getAll();
+				this.configStore = this.props.reportState.get();
 				this._updateLifecycleVars(this.configStore.selectedFactsheetType);
 			}
 		}
@@ -281,7 +291,7 @@ class ConfigureDialog extends Component {
 					</div>
 				</div>
 				<div>
-					<div style={{ display: 'inline-block', width: '50%', paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '40%', paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='yAxisLabel' label='Y axis label'
 							type='text'
 							useSmallerFontSize
@@ -290,7 +300,7 @@ class ConfigureDialog extends Component {
 							hasError={errors.selectedYAxisLabel ? true : false}
 							helpText={errors.selectedYAxisLabel} />
 					</div>
-					<div style={{ display: 'inline-block', width: '50%', paddingLeft: SPACER_WIDTH, verticalAlign: 'top' }}>
+					<div style={{ display: 'inline-block', width: '40%', paddingLeft: SPACER_WIDTH, paddingRight: SPACER_WIDTH, verticalAlign: 'top' }}>
 						<InputField id='y2AxisLabel' label='Y2 axis label'
 							type='text'
 							useSmallerFontSize
@@ -298,6 +308,14 @@ class ConfigureDialog extends Component {
 							onChange={this._handleY2AxisLabelInput}
 							hasError={errors.selectedY2AxisLabel ? true : false}
 							helpText={errors.selectedY2AxisLabel} />
+					</div>
+					<div style={{ display: 'inline-block', width: '20%', paddingLeft: SPACER_WIDTH, verticalAlign: '-1.5em' }}>
+						<Checkbox id='showMissingDataWarning' label='Show missing data warning'
+							useSmallerFontSize
+							value={this.configStore.showMissingDataWarning}
+							onChange={this._handleShowMissingDataWarningCheck}
+							hasError={errors.showMissingDataWarning ? true : false}
+							helpText={errors.showMissingDataWarning} />
 					</div>
 				</div>
 				<div className={ 'panel panel-default small' + (errors.selectedDataSeries ? ' panel-danger' : '') } style={{ marginBottom: '0' }}>
