@@ -299,7 +299,7 @@ class Report extends Component {
 		 1. remove previous data
 		 2. get data values
 		 3. get legend items, if needed
-		 Request are separated so the report doesn't run into server-side request-length limitations
+		 Requests are separated so the report doesn't run into server-side request-length limitations
 		*/
 		lx.showSpinner('Loading data...');
 		const factsheetType = this.reportState.get('selectedFactsheetType');
@@ -313,7 +313,7 @@ class Report extends Component {
 		lx.executeGraphQL(additionalDataQuery).then((additionalData) => {
 			this.index.remove('additional');
 			this.index.putGraphQL(additionalData);
-			if (this.legendItemData && this.legendItemData._key === viewModel.key) {
+			if (this.legendItemData && this.legendItemData._key === viewModel.key && this.legendItemData._factsheetType === factsheetType) {
 				// no need to query the same legend items again
 				this._createUIData();
 				return;
@@ -327,6 +327,7 @@ class Report extends Component {
 				}, {});
 				legendItems._rawLegendItems = viewData.view.legendItems;
 				legendItems._key = viewModel.key;
+				legendItems._factsheetType = factsheetType;
 				this.legendItemData = legendItems;
 				this.legendMapping = viewData.view.mapping.reduce((acc, e) => {
 					// leanix doesn't support multi-select views,
