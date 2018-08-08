@@ -1,6 +1,6 @@
 dist
 node_modules
-lxr.json
+lxr*.json
 bundle.tgz
 .idea
 *.log
