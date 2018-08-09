@@ -1,26 +1,25 @@
 {
 	"name": "burndown",
-	"version": "1.0.0",
-	"description": "A report that shows lifecyle information of leanIX factsheets in a burndown chart.",
+	"version": "2.1.2",
+	"description": "Shows lifecycle information of factsheets in a burndown chart.",
 	"private": true,
 	"engines": {
-		"node": ">=6.11.1"
+		"node": ">=8.11.3"
 	},
 	"leanixReport": {
-		"id": "com.vodafone.burndown",
-		"title": "Factsheet Burndown Chart",
+		"id": "net.leanix.burndown",
+		"title": "Burndown",
 		"defaultConfig": {}
 	},
 	"scripts": {
+		"build": "lxr build",
 		"start": "lxr start",
 		"upload": "lxr upload",
 		"webpack": "webpack"
 	},
 	"keywords": [
 		"leanix",
-		"custom-report",
-		"burndown",
-		"chart"
+		"custom-report"
 	],
 	"author": "LeanIX GmbH",
 	"license": "MIT",
@@ -28,6 +27,7 @@
 		"babel-core": "6.25.0",
 		"babel-loader": "7.1.0",
 		"babel-preset-env": "1.5.2",
+		"babel-preset-react": "6.24.1",
 		"copy-webpack-plugin": "4.0.1",
 		"css-loader": "0.28.4",
 		"file-loader": "0.11.2",
@@ -42,10 +42,13 @@
 		"webpack-dev-server": "2.5.0"
 	},
 	"dependencies": {
-		"@leanix/reporting": "0.2.0",
+		"@leanix/reporting": "0.2.3",
 		"bootstrap": "3.3.7",
-		"c3": "0.4.17",
-		"moment": "2.18.1",
-		"moment-range": "3.0.3"
+		"c3": "0.6.5",
+		"prop-types": "15.6.2",
+		"react": "16.4.1",
+		"react-bootstrap-table": "4.3.1",
+		"react-dom": "16.4.1",
+		"react-select": "1.2.1"
 	}
 }

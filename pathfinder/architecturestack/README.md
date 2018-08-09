@@ -1,6 +1,6 @@
 # Architecture Stack
 
-Shows a matrix that is formed based on the properties and/or tags of the factsheets. Depending on the configuration, X and Y axes as well as the coloring are adjustable.
+Shows a matrix that is formed based on the properties and/or tags of factsheets. Depending on the configuration, X and Y axes as well as the coloring are adjustable.
 
 ## Table of Contents
 

@@ -10,6 +10,22 @@
 
 		<title>Application lifecycle & projects</title>
 		<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=es6,Array.prototype.includes"></script>
+		<style>
+			/*
+			 * ref-hack for bootstrap 3.3.7 glyphicons
+			 * leanIX doesn't allow loading font files from report files (uploaded/deployed report)
+			 * therefore the report needs to get the font files from somewhere else
+			 */
+			@font-face {
+				font-family: "Glyphicons Halflings";
+				src: url("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/fonts/glyphicons-halflings-regular.eot");
+				src: url("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/fonts/glyphicons-halflings-regular.eot?#iefix") format("embedded-opentype"),
+					url("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/fonts/glyphicons-halflings-regular.woff2") format("woff2"),
+					url("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/fonts/glyphicons-halflings-regular.woff") format("woff"),
+					url("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/fonts/glyphicons-halflings-regular.ttf") format("truetype"),
+					url("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular") format("svg");
+			}
+		</style>
 	</head>
 	<body>
 		<div id="report"></div>

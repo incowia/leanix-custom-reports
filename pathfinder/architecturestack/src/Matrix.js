@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import Utilities from './common/Utilities';
-import Link from './common/Link';
-import TableUtilities from './common/TableUtilities';
-import Label from './Label';
+import Utilities from './common/leanix-reporting-utilities/Utilities';
+import Label from './common/react-leanix-reporting/Label';
+import Link from './common/react-leanix-reporting/Link';
+import TableUtilities from './common/react-leanix-reporting/TableUtilities';
 
 class Matrix extends Component {
 
@@ -110,9 +110,12 @@ class Matrix extends Component {
 
 	_renderCell(cell, rowIndex, columnIndex, baseUrl) {
 		if (rowIndex === 0 && columnIndex === 0) {
-			// first cell must be empty
+			// first cell contains x & y axis labels
 			return (
-				<th key={rowIndex + '-' + columnIndex} style={{ minWidth: this.props.cellWidth }} />
+				<th key={rowIndex + '-' + columnIndex} className='matrix-labels small' style={{ minWidth: this.props.cellWidth }}>
+					<div className='text-right' style={{ borderBottom: '1px solid black' }}>{cell[0]}</div>
+					<div className='text-left'>{cell[1]}</div>
+				</th>
 			);
 		}
 		// headers are strings, data values are arrays
@@ -125,7 +128,8 @@ class Matrix extends Component {
 		} else {
 			return (
 				<th key={rowIndex + '-' + columnIndex}
-					className='text-center' style={{ minWidth: this.props.cellWidth }}>{cell}</th>
+					className='text-center' style={{ minWidth: this.props.cellWidth }}
+					title={cell}>{cell}</th>
 			);
 		}
 	}
@@ -137,12 +141,12 @@ class Matrix extends Component {
 					const link = baseUrl + '/factsheet/'
 						+ this.props.factsheetType + '/' + e.id;
 					return (
-						<div key={i} style={{ marginBottom: '0.3em', lineHeight: '0' }}>
+						<div key={i} className='text-center' style={{ marginBottom: '0.3em', lineHeight: '0' }}>
 							<Label
 								label={this._renderLabelLink(e.name, link)}
-								bgColor={e.viewModel.bgColor}
-								color={e.viewModel.color}
-								width={this.props.cellWidth}
+								bgColor={e.colors.bgColor}
+								color={e.colors.color}
+								width='100%'
 							/>
 						</div>
 					);
@@ -160,10 +164,25 @@ class Matrix extends Component {
 	}
 }
 
-// TODO write validator for 'data'
-
 Matrix.propTypes = {
-	data: PropTypes.arrayOf(PropTypes.array.isRequired).isRequired,
+	data: PropTypes.arrayOf(
+		PropTypes.arrayOf(
+			PropTypes.oneOfType([
+				PropTypes.arrayOf(PropTypes.string.isRequired),
+				PropTypes.string,
+				PropTypes.arrayOf(
+					PropTypes.shape({
+						id: PropTypes.string.isRequired,
+						name: PropTypes.string.isRequired,
+						colors: PropTypes.shape({
+							color: PropTypes.string.isRequired,
+							bgColor: PropTypes.string.isRequired
+						}).isRequired
+					}).isRequired
+				)
+			]).isRequired
+		).isRequired
+	).isRequired,
 	dataAvailable: PropTypes.bool.isRequired,
 	cellWidth: PropTypes.string.isRequired,
 	factsheetType: PropTypes.string.isRequired,
