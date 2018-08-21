@@ -126,11 +126,16 @@ function isString(value) {
 	}
 }
 
+function isFunction(value) {
+	return typeof value === 'function';
+}
+
 export default {
 	toBoolean: toBoolean,
 	toNumber: toNumber,
 	toString: toString,
 	isBoolean: isBoolean,
 	isNumber: isNumber,
-	isString: isString
+	isString: isString,
+	isFunction: isFunction
 };

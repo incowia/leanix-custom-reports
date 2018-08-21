@@ -32,8 +32,8 @@ class Link extends Component {
 		this._handleClick = this._handleClick.bind(this);
 	}
 
-	_handleClick(e) {
-		e.preventDefault();
+	_handleClick(evt) {
+		evt.preventDefault();
 		lx.openLink(this.props.link, this.props.target);
 	}
 
