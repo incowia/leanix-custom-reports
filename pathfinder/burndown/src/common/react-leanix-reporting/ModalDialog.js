@@ -24,6 +24,7 @@ SOFTWARE. */
 
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import TypeUtilities from './../leanix-reporting-utilities/TypeUtilities';
 
 class ModalDialog extends Component {
 
@@ -45,6 +46,7 @@ class ModalDialog extends Component {
 		if (!this.props.show) {
 			return null;
 		}
+		const title = TypeUtilities.isFunction(this.props.title) ? this.props.title() : this.props.title;
 		// first div prevents click triggers in the outside area
 		// second is for positioning of the content panel
 		return (
@@ -74,7 +76,7 @@ class ModalDialog extends Component {
 									onClick={this.props.onClose}>
 									<span aria-hidden='true'>&times;</span>
 								</button>
-								{this.props.title}
+								{title}
 							</h4>
 						</div>
 						<div className='panel-body'>
@@ -115,7 +117,7 @@ class ModalDialog extends Component {
 ModalDialog.propTypes = {
 	show: PropTypes.bool.isRequired,
 	width: PropTypes.string.isRequired,
-	title: PropTypes.string.isRequired,
+	title: PropTypes.oneOfType([PropTypes.string, PropTypes.func]).isRequired,
 	content: PropTypes.func.isRequired,
 	onClose: PropTypes.func.isRequired,
 	onOK: PropTypes.func

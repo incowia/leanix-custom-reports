@@ -1,10 +1,10 @@
 {
 	"name": "burndown",
-	"version": "2.1.2",
+	"version": "2.1.3",
 	"description": "Shows lifecycle information of factsheets in a burndown chart.",
 	"private": true,
 	"engines": {
-		"node": ">=8.11.3"
+		"node": ">=8.11.4"
 	},
 	"leanixReport": {
 		"id": "net.leanix.burndown",
@@ -42,13 +42,13 @@
 		"webpack-dev-server": "2.5.0"
 	},
 	"dependencies": {
-		"@leanix/reporting": "0.2.3",
+		"@leanix/reporting": "0.2.5",
 		"bootstrap": "3.3.7",
-		"c3": "0.6.5",
+		"c3": "0.6.7",
 		"prop-types": "15.6.2",
-		"react": "16.4.1",
+		"react": "16.4.2",
 		"react-bootstrap-table": "4.3.1",
-		"react-dom": "16.4.1",
+		"react-dom": "16.4.2",
 		"react-select": "1.2.1"
 	}
 }
