@@ -531,7 +531,11 @@ class Report extends Component {
 			}
 			application.lifecycles = Utilities.getLifecycles(application);
 			application.currentLifecycle = Utilities.getCurrentLifecycle(application, ViewUtils.CURRENT_DATE_TIME);
+			if (!application.currentLifecycle) {
+				return;
+			}
 			result.all[application.id] = application;
+			console.log(application);
 			switch (application.currentLifecycle.phase) {
 				case ViewUtils.LIFECYLCE_PHASE_PLAN:
 				case ViewUtils.LIFECYLCE_PHASE_PHASE_IN:
