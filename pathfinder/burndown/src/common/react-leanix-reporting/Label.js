@@ -32,20 +32,19 @@ class Label extends Component {
 				style.border = '2px solid ' + this.props.bgColor;
 				break;
 		}
-		const label = this.props.label();
-		if (TypeUtilities.isString(label)) {
+		if (TypeUtilities.isFunction(this.props.label)) {
 			return (
-				<span className='label' style={style} title={label}>{label}</span>
+				<span className='label' style={style}>{this.props.label()}</span>
 			);
 		}
 		return (
-			<span className='label' style={style}>{label}</span>
+			<span className='label' style={style} title={this.props.label}>{this.props.label}</span>
 		);
 	}
 }
 
 Label.propTypes = {
-	label: PropTypes.func.isRequired,
+	label: PropTypes.oneOfType([PropTypes.string, PropTypes.func]).isRequired,
 	bgColor: PropTypes.string.isRequired,
 	color: PropTypes.string.isRequired,
 	width: PropTypes.string

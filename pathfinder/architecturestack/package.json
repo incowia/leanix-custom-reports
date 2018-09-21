@@ -1,9 +1,9 @@
 {
 	"name": "architecturestack",
-	"version": "2.0.4",
+	"version": "2.0.5",
 	"description": "Shows a matrix that is formed based on the properties and/or tags of factsheets. Depending on the configuration, X and Y axes as well as the coloring are adjustable.",
 	"engines": {
-		"node": ">=8.11.3"
+		"node": ">=8.11.4"
 	},
 	"leanixReport": {
 		"id": "net.leanix.architecturestack",
@@ -42,12 +42,12 @@
 		"webpack-dev-server": "2.5.0"
 	},
 	"dependencies": {
-		"@leanix/reporting": "0.2.3",
+		"@leanix/reporting": "0.2.5",
 		"bootstrap": "3.3.7",
 		"prop-types": "15.6.2",
-		"react": "16.4.1",
+		"react": "16.4.2",
 		"react-bootstrap-table": "4.3.1",
-		"react-dom": "16.4.1",
+		"react-dom": "16.4.2",
 		"react-select": "1.2.1"
 	}
 }

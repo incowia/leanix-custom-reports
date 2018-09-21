@@ -40,7 +40,7 @@ class Legend extends Component {
 Legend.propTypes = {
 	items: PropTypes.arrayOf(
 		PropTypes.shape({
-			label: PropTypes.func.isRequired,
+			label: PropTypes.oneOfType([PropTypes.string, PropTypes.func]).isRequired,
 			bgColor: PropTypes.string.isRequired,
 			color: PropTypes.string.isRequired
 		}).isRequired
