@@ -1,3 +1,13 @@
+/*
+
+Copyright (c) 2018 incowia GmbH
+
+This code can be exclusively used for this report only.
+Please contact [info -at- incowia.com](info@incowia.com),
+if you want to use this code artifact elsewhere.
+
+*/
+
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import TypeUtilities from './../leanix-reporting-utilities/TypeUtilities';

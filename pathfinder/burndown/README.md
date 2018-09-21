@@ -2,10 +2,26 @@
 
 Shows lifecycle information of factsheets in a burndown chart.
 
+Developed and maintained by [LeanIX GmbH](https://www.leanix.net/) and [incowia GmbH](https://www.incowia.com/).
+
 ## Table of Contents
 
+- [License](#license)
+- [Browser compatibility](#browser-compatibility)
 - [Project setup](#project-setup)
 - [Available scripts](#available-scripts)
+
+## License
+
+This report and most of the source code is free for everyone to use with the exception of all artifacts in `src/common`, which can be exclusively used for this report only. Please contact [info -at- incowia.com](info@incowia.com), if you want to use these code artifacts elsewhere.
+
+## Browser compatibility
+
+- Chromium & derivatives: 50 or higher
+- Firefox & derivatives: 50 or higher
+- Microsoft Edge: 38 or higher
+- Safari: 11 or higher
+- Internet Explorer: not supported, but might work for version 11 (not tested)
 
 ## Project setup
 
