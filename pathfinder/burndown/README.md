@@ -13,7 +13,7 @@ Developed and maintained by [LeanIX GmbH](https://www.leanix.net/) and [incowia 
 
 ## License
 
-This report and most of the source code is free for everyone to use with the exception of all artifacts in `src/common`, which can be exclusively used for this report only. Please contact [info -at- incowia.com](mailto:info@incowia.com), if you want to use these code artifacts elsewhere.
+This report and most of the source code is free for everyone to use with the exception of all artifacts in `src/common`, which can be exclusively used for this report only. Please contact [info -at- incowia.com](mailto:info@incowia.com?subject=LeanIX%20Custom%20Reports:%20Common%20artifacts), if you want to use these code artifacts elsewhere.
 
 ## Browser compatibility
 
