@@ -373,11 +373,11 @@ class Report extends Component {
 	}
 
 	_handleError(err) {
+		lx.hideSpinner();
 		console.error(err);
 		this.setState({
 			loadingState: LOADING_ERROR
 		});
-		lx.hideSpinner();
 	}
 
 	_handleData(index, platformTagId, csmTagId, transformTagId) {

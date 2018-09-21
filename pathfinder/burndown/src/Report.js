@@ -225,6 +225,7 @@ class Report extends Component {
 	}
 
 	_handleError(err) {
+		lx.hideSpinner();
 		console.error(err);
 		this.setState({
 			loadingState: ReportLoadingState.ERROR
