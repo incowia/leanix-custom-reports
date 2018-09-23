@@ -3,7 +3,7 @@
 Copyright (c) 2018 incowia GmbH
 
 This code can be exclusively used for this report only.
-Please contact [info -at- incowia.com](info@incowia.com),
+Please contact info[at]incowia.com with the subject "LeanIX Custom Reports: Common artifacts",
 if you want to use this code artifact elsewhere.
 
 */
@@ -19,6 +19,10 @@ function getFactsheetFieldModels(setup, factsheet) {
 	return Utilities.getFrom(setup, 'settings.dataModel.factSheets.' + factsheet + '.fields');
 }
 
+function getFactsheetRelationNames(setup, factsheet) {
+	return Utilities.getFrom(setup, 'settings.dataModel.factSheets.' + factsheet + '.relations');
+}
+
 function getRelationModel(setup, relName) {
 	const mappings = Utilities.getFrom(setup, 'settings.dataModel.relationMapping');
 	const relMapName = mappings[relName] ? mappings[relName].persistedName : undefined;
@@ -32,5 +36,6 @@ function getRelationModel(setup, relName) {
 export default {
 	getFactsheetNames: getFactsheetNames,
 	getFactsheetFieldModels: getFactsheetFieldModels,
+	getFactsheetRelationNames: getFactsheetRelationNames,
 	getRelationModel: getRelationModel
 };

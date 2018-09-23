@@ -3,7 +3,7 @@
 Copyright (c) 2018 incowia GmbH
 
 This code can be exclusively used for this report only.
-Please contact [info -at- incowia.com](info@incowia.com),
+Please contact info[at]incowia.com with the subject "LeanIX Custom Reports: Common artifacts",
 if you want to use this code artifact elsewhere.
 
 */

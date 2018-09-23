@@ -135,6 +135,7 @@ class Matrix extends Component {
 	}
 
 	_renderLabelLinkList(list, baseUrl) {
+		// TODO support e.colors.transparency
 		return (
 			<div>
 				{list.map((e, i) => {
