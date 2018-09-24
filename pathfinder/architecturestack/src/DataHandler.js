@@ -1,5 +1,6 @@
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import ReportSetupUtilities from './common/leanix-reporting-utilities/ReportSetupUtilities';
+import AxisModel from './AxisModel';
 
 function createAxisModels(setup, factsheetTypes, tagGroups) {
 	/*
@@ -45,40 +46,13 @@ function createAxisModels(setup, factsheetTypes, tagGroups) {
 		models = Utilities.unique(models, (model) => {
 			return model.key;
 		});
-		models.sort((f, s) => {
-			const fSortID = _getTypeSortID(f.type);
-			const sSortID = _getTypeSortID(s.type);
-			if (fSortID === sSortID) {
-				return f.label.localeCompare(s.label);
-			}
-			return fSortID - sSortID;
-		});
+		models.sort(AxisModel.sortAxisModels);
 		// only include factsheets that have more than 1 axis models
 		if (models.length > 1) {
 			factsheetTypeModels[factsheetType] = models;
 		}
 	});
 	return factsheetTypeModels;
-}
-
-function _getTypeSortID(type) {
-	switch (type) {
-		case 'FIELD_LIFECYCLE':
-			return 0;
-		case 'FIELD_PROJECT_STATUS':
-			return 1;
-		case 'FIELD_SINGLE_SELECT':
-		case 'FIELD_MULTIPLE_SELECT':
-			return 2;
-		case 'FIELD_RELATION':
-		case 'FIELD_TARGET_FS':
-			return 100;
-		case 'TAG':
-			return 101;
-		default:
-			console.error('_getTypeSortID: Unknown type "' + type + '".');
-			return 10000;
-	}
 }
 
 function _getAxisModelsFromTagGroups(factsheetType, tagGroups) {
@@ -93,14 +67,7 @@ function _getAxisModelsFromTagGroups(factsheetType, tagGroups) {
 				continue;
 			}
 		}
-		result.push({
-			key: 'tags.' + tagGroupID,
-			label: 'Tag group: ' + tagGroup.name,
-			type: 'TAG',
-			subType: null,
-			valuePath: tagGroupID,
-			values: tagGroup.tags.nodes
-		});
+		result.push(AxisModel.createForTag(tagGroupID, tagGroup.name, tagGroup.tags.nodes));
 	}
 	return result;
 }
@@ -112,14 +79,7 @@ function _getAxisModelsFromRelationTargetFactsheetFields(relName, factsheetType,
 		if (!_checkFieldModel(fieldModel)) {
 			continue;
 		}
-		result.push({
-			key: relName + '.' + factsheetType + '.' + fieldName,
-			label: lx.translateRelation(relName) + ': ' + lx.translateField(factsheetType, fieldName),
-			type: 'FIELD_TARGET_FS',
-			subType: 'FIELD_' + fieldModel.type,
-			valuePath: [relName, factsheetType, fieldName],
-			values: fieldModel.values
-		});
+		result.push(AxisModel.createForRelationTargetFactsheetField(relName, factsheetType, fieldName, fieldModel.type, fieldModel.values));
 	}
 	return result;
 }
@@ -131,15 +91,7 @@ function _getAxisModelsFromRelationFields(relName, fieldModels) {
 		if (!_checkFieldModel(fieldModel)) {
 			continue;
 		}
-		result.push({
-			key: relName + '.' + fieldName,
-			// TODO see https://github.com/leanix/leanix-reporting/issues/11
-			label: lx.translateRelation(relName) + ': ' + fieldName,
-			type: 'FIELD_RELATION',
-			subType: 'FIELD_' + fieldModel.type,
-			valuePath: [relName, fieldName],
-			values: fieldModel.values
-		});
+		result.push(AxisModel.createForRelationField(relName, fieldName, fieldModel.type, fieldModel.values));
 	}
 	return result;
 }
@@ -151,14 +103,7 @@ function _getAxisModelsFromFields(factsheetType, fieldModels) {
 		if (!_checkFieldModel(fieldModel)) {
 			continue;
 		}
-		result.push({
-			key: fieldName,
-			label: lx.translateField(factsheetType, fieldName),
-			type: 'FIELD_' + fieldModel.type,
-			subType: null,
-			valuePath: fieldName,
-			values: fieldModel.values
-		});
+		result.push(AxisModel.createForField(factsheetType, fieldName, fieldModel.type, fieldModel.values));
 	}
 	return result;
 }
@@ -219,10 +164,11 @@ function createViewModel(viewData) {
 		legendItems: {},
 		legendMapping: {}
 	};
-	const legendItems = viewData.legendItems;
-	const mapping = viewData.mapping;
 	viewData.legendItems.forEach((legendItem) => {
 		result.legendItems[legendItem.id] = legendItem;
+		if (!legendItem.transparency) {
+			legendItem.transparency = 0;
+		}
 	});
 	viewData.mapping.forEach((mapping) => {
 		result.legendMapping[mapping.fsId] = mapping.legendId;

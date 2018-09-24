@@ -43,6 +43,7 @@
 	"dependencies": {
 		"@leanix/reporting": "0.2.5",
 		"bootstrap": "3.3.7",
+		"d3-color": "1.2.3",
 		"prop-types": "15.6.2",
 		"react": "16.5.2",
 		"react-bootstrap-table": "4.3.1",

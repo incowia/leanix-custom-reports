@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import * as D3Color from 'd3-color';
 import Utilities from './common/leanix-reporting-utilities/Utilities';
 import Label from './common/react-leanix-reporting/Label';
 import Link from './common/react-leanix-reporting/Link';
@@ -135,18 +136,22 @@ class Matrix extends Component {
 	}
 
 	_renderLabelLinkList(list, baseUrl) {
-		// TODO support e.colors.transparency
 		return (
 			<div>
 				{list.map((e, i) => {
 					const link = baseUrl + '/factsheet/'
 						+ this.props.factsheetType + '/' + e.id;
+					const opacity = 1 - e.colors.transparency;
+					const bgColor = D3Color.color(e.colors.bgColor);
+					bgColor.opacity = opacity;
+					const color = D3Color.color(e.colors.color);
+					color.opacity = opacity;
 					return (
 						<div key={i} className='text-center' style={{ marginBottom: '0.3em', lineHeight: '0' }}>
 							<Label
 								label={this._renderLabelLink(e.name, link)}
-								bgColor={e.colors.bgColor}
-								color={e.colors.color}
+								bgColor={bgColor.toString()}
+								color={color.toString()}
 								width='100%'
 							/>
 						</div>
